@@ -1,0 +1,67 @@
+/* stage.css — общий каркас сцены «Отряд Мега» (1080×1920). Авторы сцен этот файл не правят. */
+html, body { margin: 0; height: 100%; background: #0b0705; overflow: hidden; }
+#root { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; transform-origin: 0 0;
+  background: #1a0f08; font-family: 'Rubik', sans-serif; user-select: none; }
+#camera, #float, #shake { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 540px 960px; }
+#world { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+/* слои глубины: нулевой размер, всё содержимое — абсолютное, в координатах мира */
+.layer { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.layer > svg, .layer > div { position: absolute; left: 0; top: 0; }
+.layer svg, svg.prop { overflow: visible; }
+svg.prop { position: absolute; left: 0; top: 0; }
+.blur-fg { filter: blur(5px); }
+.blur-far { filter: blur(1.5px); }
+
+/* атмосфера поверх мира */
+#atmo, #overlay, #grain { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; pointer-events: none; }
+#atmo .mote { position: absolute; left: 0; top: 0; border-radius: 50%; background: #ffe9b0; }
+#vignette { position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 78% 62% at 50% 44%, rgba(20,8,2,0) 55%, rgba(20,8,2,.34) 82%, rgba(20,8,2,.62) 100%),
+    linear-gradient(180deg, rgba(20,8,2,.30) 0, rgba(20,8,2,0) 12%, rgba(20,8,2,0) 68%, rgba(20,8,2,.42) 100%); }
+#grain { opacity: .11; mix-blend-mode: overlay; background-size: 320px 320px; }
+
+/* наложения: камера на них не влияет */
+#ov-black { position: absolute; inset: 0; background: #060302; opacity: 0; }
+#ov-flash { position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 48%, rgba(255,244,205,.95) 0, rgba(255,196,96,.6) 45%, rgba(255,150,50,0) 100%); }
+#ov-fx, #ov-titles, #ov-caps { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+
+/* текст с обводкой: два слоя (обводка снизу, заливка сверху) — не зависит от поддержки paint-order */
+.ol { position: relative; display: inline-block; white-space: nowrap; }
+.ol-s { -webkit-text-stroke: var(--sw, 10px) #1a0f08; color: #1a0f08; text-shadow: 0 6px 0 #1a0f08; }
+.ol-f { position: absolute; left: 0; top: 0; }
+
+/* субтитры */
+.cap { position: absolute; left: 0; top: 1326px; width: 1080px; text-align: center; }
+.cap-who { display: inline-block; font: 400 28px/1 'Russo One', sans-serif; letter-spacing: 2px; color: #1a0f08; padding: 7px 16px 6px;
+  border-radius: 9px; border: 3px solid #1a0f08; box-shadow: 0 4px 0 #1a0f08; }
+.cap-text { position: absolute; left: 0; top: 54px; width: 1080px; text-align: center; font: 900 64px/74px 'Rubik', sans-serif; color: #fff; letter-spacing: -.5px; }
+
+/* плашка места */
+.tag { position: absolute; left: 0; top: 232px; width: 1080px; text-align: center; }
+.tag > span { display: inline-block; background: #ffcf1a; color: #1a0f08; font: 400 40px/1 'Russo One', sans-serif; letter-spacing: 2px;
+  padding: 13px 26px 11px; border-radius: 8px; border: 4px solid #1a0f08; box-shadow: 0 6px 0 #1a0f08; white-space: nowrap; }
+
+/* крупный титр */
+.title { position: absolute; left: 0; width: 1080px; text-align: center; }
+.title-main { font: 400 150px/1.02 'Russo One', sans-serif; color: #fff; --sw: 16px; }
+.title-main .ol-s { text-shadow: 0 10px 0 #1a0f08; }
+.title-sub { margin-top: 22px; font: 900 50px/1.15 'Rubik', sans-serif; color: #ffcf1a; --sw: 9px; }
+
+/* счётчик */
+.counter { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 16px; padding: 12px 20px 12px 22px;
+  background: #1a0f08; border: 4px solid #ffcf1a; border-radius: 16px; box-shadow: 0 6px 0 rgba(0,0,0,.45); white-space: nowrap; }
+.counter-label { font: 400 30px/1 'Russo One', sans-serif; color: #ffcf1a; letter-spacing: 2px; }
+.counter-digits { display: flex; gap: 5px; }
+.counter-d { width: 52px; height: 76px; overflow: hidden; background: #f3e6c4; border-radius: 7px; border: 3px solid #2b1a12; position: relative; }
+.counter-d > div { position: absolute; left: 0; top: 0; width: 52px; }
+.counter-d span { display: block; height: 76px; font: 400 60px/78px 'Russo One', sans-serif; color: #1a0f08; text-align: center; }
+
+/* частицы */
+.p { position: absolute; left: 0; top: 0; opacity: 0; will-change: transform, opacity; }
+.p-c { border-radius: 50%; }
+
+/* кнопка предпросмотра */
+#startBtn { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 99; font: 900 34px 'Rubik', sans-serif;
+  padding: 18px 40px; border-radius: 16px; border: 4px solid #1a0f08; background: #ffcf1a; color: #1a0f08; cursor: pointer; box-shadow: 0 8px 0 #1a0f08; }
