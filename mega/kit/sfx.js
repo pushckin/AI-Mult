@@ -41,7 +41,7 @@
     shot: 0.66, ricochet: 0.27, bulletDirt: 0.24, emptyClick: 0.26,
     explosion: 1.05, mortarThump: 0.62, shellWhistle: 0.44, shellFlyBy: 0.24,
     doorSlam: 0.66, crunch: 0.46, bodyFall: 0.42, step: 0.15, cloth: 0.105, paper: 0.2,
-    pencil: 0.12, stamp: 0.31, spoon: 0.11, zap: 0.22, rubHands: 0.13, cashRustle: 0.14,
+    pencil: 0.12, stamp: 0.31, spoon: 0.11, zap: 0.32, rubHands: 0.13, cashRustle: 0.14,
     coin: 0.10, terminalBeep: 0.1, wireTwang: 0.2, hammer: 0.34, whoosh: 0.16,
     thud: 0.34, dustPuff: 0.16, heli: 0.18, heliLand: 0.5,
     ambience: 0.034, music: 0.24, sting: 0.24
@@ -290,7 +290,7 @@
       var G = grp({ pan: o.pan, gain: LV.shot * k * (o.gain == null ? 1 : o.gain), rev: { near: 0.22, mid: 0.38, far: 0.55 }[d], bus: o.bus });
       if (d === 'far') {
         // глухой «пок»: воздух съел верх, пришли низ и отражение от рельефа
-        nz(G, r, t, { n: 'p', fl: [{ t: 'lowpass', f: 1000 * p, f1: 240, ft: 0.12 }], a: 0.005, tau: 0.05, dur: 0.42, g: 1.5 });
+        nz(G, r, t, { n: 'p', fl: [{ t: 'lowpass', f: 1000 * p, f1: 240, ft: 0.12 }], a: 0.005, tau: 0.05, dur: 0.42, g: 1.9 });
         tn(G, t, { f: 110 * p, f1: 56, ft: 0.1, a: 0.005, tau: 0.07, dur: 0.42, g: 0.55 });
         var e = 0.2 + 0.18 * r();
         nz(G, r, t + e, { n: 'p', fl: [{ t: 'lowpass', f: 620, f1: 190, ft: 0.3 }], a: 0.025, tau: 0.12, dur: 0.75, g: 0.6 * tail });
@@ -303,13 +303,14 @@
         nz(G, r, t + 0.05 + 0.012 * r(), { fl: [{ t: 'bandpass', f: 1900 * p, q: 2.5 }], a: 0.0008, tau: 0.006, dur: 0.03, g: 0.1 });
       }
       // хлопок: широкополосный, верх быстро закрывается
-      nz(G, r, t, { fl: [{ t: 'lowpass', f: top * p, f1: 800, ft: 0.07 }], a: 0.0007, tau: 0.02 + 0.006 * r(), dur: 0.22, g: 0.55 });
+      nz(G, r, t, { fl: [{ t: 'lowpass', f: top * p, f1: 800, ft: 0.07 }], a: 0.0007, tau: 0.02 + 0.006 * r(), dur: 0.22, g: 0.9 });
       // тело: «бум» 80–200 Гц
-      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 150 * p, q: 0.7 }], a: 0.002, tau: 0.065, dur: 0.4, g: 3.2 });
-      tn(G, t, { f: 170 * p, f1: 62, ft: 0.07, a: 0.0015, tau: 0.05, dur: 0.32, g: 0.62 });
-      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 560 * p, q: 0.6 }], a: 0.001, tau: 0.035, dur: 0.25, g: 1.1 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 150 * p, q: 0.7 }], a: 0.002, tau: 0.065, dur: 0.4, g: 2.4 });
+      tn(G, t, { f: 170 * p, f1: 62, ft: 0.07, a: 0.0015, tau: 0.05, dur: 0.32, g: 0.48 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 520 * p, q: 0.6 }], a: 0.001, tau: 0.04, dur: 0.28, g: 2.6 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 1150 * p, q: 0.7 }], a: 0.0008, tau: 0.028, dur: 0.2, g: 1.3 }); // «картон» хлопка — слышен и на телефоне
       // хвост: шум с опускающимся фильтром + отражение
-      nz(G, r, t + 0.012, { n: 'p', fl: [{ t: 'lowpass', f: 2400, f1: 300, ft: 0.8 }], a: 0.014, tau: 0.22, dur: 1.3, g: 0.5 * tail });
+      nz(G, r, t + 0.012, { n: 'p', fl: [{ t: 'lowpass', f: 2400, f1: 300, ft: 0.8 }], a: 0.014, tau: 0.22, dur: 1.3, g: 0.65 * tail });
       nz(G, r, t + 0.09 + 0.07 * r(), { n: 'p', fl: [{ t: 'lowpass', f: 1300, f1: 380, ft: 0.3 }], a: 0.01, tau: 0.07, dur: 0.5, g: 0.42 * tail });
     };
 
@@ -370,17 +371,17 @@
       var G = grp({ pan: o.pan, gain: LV.explosion * k * (o.gain == null ? 1 : o.gain), rev: d === 'near' ? 0.3 : 0.5, lp: lp });
       var GL = grp({ pan: (o.pan || 0) - 0.5, gain: LV.explosion * k, rev: 0.2, lp: lp }), GR = grp({ pan: (o.pan || 0) + 0.5, gain: LV.explosion * k, rev: 0.2, lp: lp });
       // 1) первый фронт — короткий широкополосный удар, верх закрывается за 0.2 с
-      nz(G, r, t, { fl: [{ t: 'lowpass', f: 3800 * p, f1: 260, ft: 0.22 }], a: 0.002, tau: 0.07, dur: 0.5, g: 0.55 });
+      nz(G, r, t, { fl: [{ t: 'lowpass', f: 3800 * p, f1: 260, ft: 0.22 }], a: 0.002, tau: 0.07, dur: 0.5, g: 0.95 });
       // 2) низкий удар 40–60 Гц с быстрым спадом высоты (+ октава для маленьких динамиков)
-      tn(G, t, { f: 64 * p, f1: 36, ft: 0.3 * L, a: 0.006, tau: 0.38 * L, dur: 1.6 * L, g: 0.85 });
+      tn(G, t, { f: 64 * p, f1: 36, ft: 0.3 * L, a: 0.006, tau: 0.38 * L, dur: 1.6 * L, g: 0.72 });
       tn(G, t, { f: 118 * p, f1: 48, ft: 0.22 * L, a: 0.004, tau: 0.2 * L, dur: 1.0 * L, g: 0.42 });
       nz(G, r, t, { n: 'b', fl: [{ t: 'lowpass', f: 190, q: 0.6 }], a: 0.006, tau: 0.45 * L, dur: 2.0 * L, g: 1.3 });
       // 3) шумовая волна: фильтр уходит вниз за 1–2 с, громкость «перекатывается»
       var dur = 2.8 * L;
-      var wv = nz(G, r, t + 0.01, { n: 'p', fl: [{ t: 'lowpass', f: 2300 * p, f1: 150, ft: 1.7 * L }], a: 0.02, tau: 0.62 * L, dur: dur, g: 1.5 });
+      var wv = nz(G, r, t + 0.01, { n: 'p', fl: [{ t: 'lowpass', f: 2300 * p, f1: 150, ft: 1.7 * L }], a: 0.02, tau: 0.62 * L, dur: dur, g: 2.5 });
       var roll = ctx.createGain(); roll.gain.value = 0; roll.gain.setValueCurveAtTime(wander(r, dur, 9, 0.55, 1), T(t + 0.01), dur);
       wv.disconnect(); wv.connect(roll); roll.connect(G);
-      nz(G, r, t + 0.02, { n: 'p', fl: [{ t: 'bandpass', f: 420, f1: 170, q: 0.6 }], a: 0.03, tau: 0.5 * L, dur: 2.2 * L, g: 1.3 });
+      nz(G, r, t + 0.02, { n: 'p', fl: [{ t: 'bandpass', f: 420, f1: 170, q: 0.6 }], a: 0.03, tau: 0.5 * L, dur: 2.2 * L, g: 2.2 });
       // 4) «воздух» — тихое шипение ударной волны
       nz(G, r, t + 0.01, { fl: [{ t: 'highpass', f: 3200 }, { t: 'lowpass', f: 9000, f1: 3500 }], a: 0.05, tau: 0.4 * L, dur: 1.6 * L, g: 0.035 });
       // 5) осыпь: комья земли (низкие шлепки) и камешки (короткие щелчки), редеют
@@ -403,7 +404,8 @@
       nz(G, r, t, { n: 'p', fl: [{ t: 'lowpass', f: 900 * p, f1: 240, ft: 0.08 }], a: 0.002, tau: 0.045, dur: 0.3, g: 1.8 });
       // труба: полый резонанс ствола
       nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 215 * p, q: 9 }], a: 0.003, tau: 0.11, dur: 0.5, g: 5 });
-      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 640 * p, q: 9 }], a: 0.002, tau: 0.06, dur: 0.3, g: 1.6 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 640 * p, q: 6 }], a: 0.002, tau: 0.06, dur: 0.3, g: 3.4 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 1100 * p, q: 0.8 }], a: 0.001, tau: 0.03, dur: 0.2, g: 1.2 });
       nz(G, r, t + 0.015, { fl: [{ t: 'bandpass', f: 1500 * p, q: 3 }], a: 0.0008, tau: 0.008, dur: 0.04, g: 0.25 }); // звяк плиты
       nz(G, r, t + 0.02, { n: 'p', fl: [{ t: 'lowpass', f: 1500, f1: 300, ft: 0.5 }], a: 0.03, tau: 0.18, dur: 0.9, g: 0.5 }); // выдох дыма
     };
@@ -415,8 +417,8 @@
       var G = grp({ pan: o.pan, gain: LV.shellWhistle * (o.gain == null ? 1 : o.gain), rev: 0.25 });
       var f0 = (o.from || 2500) * p, f1 = (o.to || 880) * p;
       // шум через узкий резонанс с падающей частотой; громкость растёт — снаряд приближается
-      nz(G, r, t, { fl: [{ t: 'bandpass', f: f0, f1: f1, q: 22 }, { t: 'bandpass', f: f0, f1: f1, q: 7 }], dur: dur, shape: 'swell', a: 2.2, g: 9 });
-      nz(G, r, t, { fl: [{ t: 'bandpass', f: f0 * 1.52, f1: f1 * 1.52, q: 16 }], dur: dur, shape: 'swell', a: 2.8, g: 0.8 });
+      nz(G, r, t, { fl: [{ t: 'bandpass', f: f0, f1: f1, q: 11 }, { t: 'bandpass', f: f0, f1: f1, q: 4 }], dur: dur, shape: 'swell', a: 2.2, g: 5 });
+      nz(G, r, t, { fl: [{ t: 'bandpass', f: f0 * 1.52, f1: f1 * 1.52, q: 8 }], dur: dur, shape: 'swell', a: 2.8, g: 0.6 });
       nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: f0 * 0.5, f1: f1 * 0.5, q: 1.2 }], dur: dur, shape: 'swell', a: 3, g: 1.0 }); // воздух вокруг
     };
 
@@ -441,13 +443,14 @@
       var G = grp({ pan: o.pan, gain: LV.doorSlam * (o.gain == null ? 1 : o.gain), rev: 0.55 });
       nz(G, r, t - 0.09, { n: 'p', fl: [{ t: 'bandpass', f: 300, f1: 700, q: 0.8 }], dur: 0.1, shape: 'swell', a: 2, g: 0.35 }); // воздух перед ударом
       tn(G, t, { f: 92 * p, f1: 46, ft: 0.12, a: 0.003, tau: 0.16, dur: 0.8, g: 0.95 }); // низ
-      nz(G, r, t, { n: 'b', fl: [{ t: 'lowpass', f: 220 }], a: 0.004, tau: 0.16, dur: 0.8, g: 1.6 });
-      nz(G, r, t, { fl: [{ t: 'lowpass', f: 2600 * p, f1: 350, ft: 0.09 }], a: 0.0008, tau: 0.035, dur: 0.3, g: 0.55 }); // удар
-      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 480 * p, q: 0.8 }], a: 0.001, tau: 0.06, dur: 0.4, g: 1.8 });
+      nz(G, r, t, { n: 'b', fl: [{ t: 'lowpass', f: 220 }], a: 0.004, tau: 0.16, dur: 0.8, g: 1.2 });
+      nz(G, r, t, { fl: [{ t: 'lowpass', f: 2600 * p, f1: 350, ft: 0.09 }], a: 0.0008, tau: 0.035, dur: 0.3, g: 1.0 }); // удар
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 480 * p, q: 0.8 }], a: 0.001, tau: 0.06, dur: 0.4, g: 3.4 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 1000 * p, q: 0.8 }], a: 0.001, tau: 0.04, dur: 0.3, g: 1.4 });
       // стальное полотно: негармоничные моды, низкие живут дольше
       modes(G, r, t, [[173, 0.2, 0.28], [259, 0.13, 0.22], [317, 0.07, 0.2], [431, 0.07, 0.15], [588, 0.045, 0.11], [823, 0.03, 0.08], [1190, 0.016, 0.05]], { pitch: p, a: 0.002 });
       // дребезг засова: отскоки учащаются и гаснут
-      var tt = t + 0.055, gap = 0.062, a = 0.32;
+      var tt = t + 0.055, gap = 0.062, a = 0.55;
       for (var i = 0; i < 7; i++) {
         nz(G, r, tt, { fl: [{ t: 'bandpass', f: (1700 + 900 * r()) * p, q: 2.5 }], a: 0.0005, tau: 0.006, dur: 0.035, g: a });
         modes(G, r, tt, [[2140, 0.02 * a, 0.02], [3380, 0.014 * a, 0.014]], { pitch: p });
@@ -460,12 +463,12 @@
       o = o || {};
       var r = rg('crunch', t, o), p = 0.88 + 0.24 * r();
       var G = grp({ pan: o.pan, gain: LV.crunch * (o.gain == null ? 1 : o.gain), rev: 0.2 });
-      nz(G, r, t, { n: 'p', fl: [{ t: 'lowpass', f: 420 * p, f1: 180, ft: 0.06 }], a: 0.003, tau: 0.045, dur: 0.25, g: 2.2 }); // шлепок
+      nz(G, r, t, { n: 'p', fl: [{ t: 'lowpass', f: 420 * p, f1: 180, ft: 0.06 }], a: 0.003, tau: 0.045, dur: 0.25, g: 1.6 }); // шлепок
       tn(G, t, { f: 105 * p, f1: 58, ft: 0.06, a: 0.003, tau: 0.05, dur: 0.25, g: 0.6 });
       // хруст: пачка коротких щелчков (как сухая ветка / хлопья), сгущение в начале
-      grains(G, r, t + 0.004, { n: 13, span: 0.15, pow: 1.5, f0: 800, f1: 3400, q: 1.6, d0: 0.004, d1: 0.016, g: 0.75, fall: 0.6 });
-      grains(G, r, t + 0.01, { n: 6, span: 0.12, pow: 1.2, f0: 300, f1: 800, q: 1.2, d0: 0.012, d1: 0.03, g: 1.2, fall: 0.6, noise: 'p' });
-      nz(G, r, t + 0.03, { n: 'p', fl: [{ t: 'bandpass', f: 700 * p, f1: 300, q: 2 }], a: 0.02, tau: 0.04, dur: 0.16, g: 0.7 }); // «чвяк»
+      grains(G, r, t + 0.004, { n: 13, span: 0.15, pow: 1.5, f0: 800, f1: 3400, q: 1.6, d0: 0.004, d1: 0.016, g: 2.0, fall: 0.6 });
+      grains(G, r, t + 0.01, { n: 6, span: 0.12, pow: 1.2, f0: 300, f1: 800, q: 1.2, d0: 0.012, d1: 0.03, g: 2.4, fall: 0.6, noise: 'p' });
+      nz(G, r, t + 0.03, { n: 'p', fl: [{ t: 'bandpass', f: 700 * p, f1: 300, q: 2 }], a: 0.02, tau: 0.04, dur: 0.16, g: 1.4 }); // «чвяк»
     };
 
     S.thud = function (t, o) {
@@ -474,7 +477,8 @@
       var G = grp({ pan: o.pan, gain: LV.thud * (o.gain == null ? 1 : o.gain), rev: 0.2 });
       tn(G, t, { f: 82 * p, f1: 44, ft: 0.09, a: 0.004, tau: 0.11, dur: 0.6, g: 0.9 });
       nz(G, r, t, { n: 'p', fl: [{ t: 'lowpass', f: 380 * p, f1: 150, ft: 0.08 }], a: 0.003, tau: 0.06, dur: 0.35, g: 2.4 });
-      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 900, q: 0.6 }], a: 0.002, tau: 0.02, dur: 0.1, g: 0.3 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 460 * p, q: 0.8 }], a: 0.002, tau: 0.035, dur: 0.2, g: 2.2 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 1000, q: 0.6 }], a: 0.002, tau: 0.02, dur: 0.1, g: 0.6 });
     };
 
     S.bodyFall = function (t, o) {
@@ -483,13 +487,14 @@
       var r = rg('bodyFall', t, o), p = (1.12 - 0.3 * w) * (0.94 + 0.12 * r());
       var G = grp({ pan: o.pan, gain: LV.bodyFall * (0.6 + 0.6 * w) * (o.gain == null ? 1 : o.gain), rev: 0.18 });
       tn(G, t, { f: 88 * p, f1: 46, ft: 0.1, a: 0.006, tau: 0.1, dur: 0.55, g: 0.85 }); // мягкий удар
-      nz(G, r, t, { n: 'p', fl: [{ t: 'lowpass', f: 340 * p, f1: 140, ft: 0.1 }], a: 0.005, tau: 0.07, dur: 0.4, g: 2.4 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'lowpass', f: 340 * p, f1: 140, ft: 0.1 }], a: 0.005, tau: 0.07, dur: 0.4, g: 2.0 });
+      nz(G, r, t, { n: 'p', fl: [{ t: 'bandpass', f: 480 * p, q: 0.7 }], a: 0.003, tau: 0.04, dur: 0.25, g: 2.6 }); // «пух» ткани о землю
       var t2 = t + 0.16 + 0.08 * r(); // вторым приходят руки/ноги
       tn(G, t2, { f: 100 * p, f1: 55, ft: 0.07, a: 0.005, tau: 0.06, dur: 0.3, g: 0.3 });
-      nz(G, r, t2, { n: 'p', fl: [{ t: 'lowpass', f: 420 * p }], a: 0.004, tau: 0.04, dur: 0.22, g: 0.9 });
+      nz(G, r, t2, { n: 'p', fl: [{ t: 'lowpass', f: 420 * p }], a: 0.004, tau: 0.04, dur: 0.22, g: 1.5 });
       // шорох формы
-      nz(G, r, t - 0.04, { fl: [{ t: 'bandpass', f: 1900, q: 0.6 }], a: 0.04, tau: 0.09, dur: 0.4, g: 0.13 });
-      nz(G, r, t2, { fl: [{ t: 'bandpass', f: 2500, q: 0.7 }], a: 0.02, tau: 0.06, dur: 0.25, g: 0.07 });
+      nz(G, r, t - 0.04, { fl: [{ t: 'bandpass', f: 1900, q: 0.6 }], a: 0.04, tau: 0.09, dur: 0.4, g: 0.32 });
+      nz(G, r, t2, { fl: [{ t: 'bandpass', f: 2500, q: 0.7 }], a: 0.02, tau: 0.06, dur: 0.25, g: 0.18 });
       // звяк снаряжения (пряжка, фляга)
       if (o.gear !== false) {
         var tg = t + 0.03 + 0.05 * r(), q = 0.85 + 0.3 * r();
@@ -769,7 +774,7 @@
         if (!z && o.birds !== false) { // редкая птица вдали — «дышащий» свист, тихо
           for (t = a + 1.5 + 3 * r(); t < b - 0.8; t += 3.5 + 4 * r()) {
             var bf = 2700 + 900 * r(), D2 = r() > 0.5 ? GL : GR, nn = 2 + Math.floor(r() * 2);
-            for (i = 0; i < nn; i++) nz(D2, r, t + i * 0.15, { fl: [{ t: 'bandpass', f: bf, f1: bf * (i % 2 ? 0.82 : 1.25), q: 26 }, { t: 'bandpass', f: bf, f1: bf * (i % 2 ? 0.82 : 1.25), q: 8 }], dur: 0.09, shape: 'bell', g: 9 });
+            for (i = 0; i < nn; i++) nz(D2, r, t + i * 0.15, { fl: [{ t: 'bandpass', f: bf, f1: bf * (i % 2 ? 0.82 : 1.25), q: 12 }, { t: 'bandpass', f: bf, f1: bf * (i % 2 ? 0.82 : 1.25), q: 5 }], dur: 0.09, shape: 'bell', g: 3.5 });
           }
         }
         if (z) { // далёкая канонада: глухие раскаты и редкие дальние очереди
@@ -809,7 +814,7 @@
     }
     function tine(dst, r, t, m, g) { // язычок музыкальной шкатулки
       var f = mtof(m) * Math.pow(2, (r() - 0.5) * 8 / 1200);
-      tn(dst, t, { f: f, a: 0.002, tau: 0.42, dur: 1.5, g: g });
+      tn(dst, t, { f: f, a: 0.002, tau: 0.26, dur: 1.1, g: g });
       tn(dst, t, { f: f * 2.76, a: 0.001, tau: 0.09, dur: 0.4, g: g * 0.1 });
       tn(dst, t, { f: f * 5.4, a: 0.001, tau: 0.03, dur: 0.12, g: g * 0.035 });
       nz(dst, r, t, { fl: [{ t: 'bandpass', f: 2600, q: 1.5 }], a: 0.0004, tau: 0.003, dur: 0.014, g: g * 0.25 });
@@ -818,7 +823,7 @@
       o = (typeof b === 'object' ? b : o) || {};
       var r = rg('mus' + kind, a, o), lvl = LV.music * (o.gain == null ? 1 : o.gain);
       if (kind === 'fanfareSad') return fanfare(a, r, lvl);
-      var G = span(a, b, { gain: lvl, bus: musBus, rev: 0.25, fadeIn: o.fadeIn == null ? 0.3 : o.fadeIn, fadeOut: o.fadeOut == null ? 0.7 : o.fadeOut });
+      var G = span(a, b, { gain: lvl * (kind === 'tender' ? 0.7 : 1), bus: musBus, rev: 0.25, fadeIn: o.fadeIn == null ? 0.3 : o.fadeIn, fadeOut: o.fadeOut == null ? 0.7 : o.fadeOut });
       if (kind === 'march') {
         // вялый ироничный марш: туба «ум-па», малый барабан с ленивой дробью
         var PR = [0, 0, 1, 0, 2, 2, 0, 0], BASS = [[46, 41], [39, 46], [41, 48]], PAH = [[62, 65], [63, 67], [60, 63]];

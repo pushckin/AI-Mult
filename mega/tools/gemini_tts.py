@@ -14,7 +14,7 @@ CAST = {
 }
 def call(who, text):
     voice, style = CAST[who]
-    prompt = f"[{style}] {text}"  # модель читает вслух весь текст, кроме метки в квадратных скобках
+    prompt = text  # модель читает вслух весь присланный текст, поэтому никаких инструкций и меток
     body = {"contents":[{"parts":[{"text":prompt}]}],
             "generationConfig":{"responseModalities":["AUDIO"],"speechConfig":{"voiceConfig":{"prebuiltVoiceConfig":{"voiceName":voice}}}}}
     rq = urllib.request.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
