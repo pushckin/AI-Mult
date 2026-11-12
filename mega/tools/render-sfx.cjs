@@ -48,7 +48,7 @@ function stats(pcm, a, b) { // пик, RMS, максимальный скачо�
 }
 const ff = (args) => spawnSync("ffmpeg", ["-hide_banner", "-y", ...args], { encoding: "utf8" });
 function spec(wav, png, size) {
-  ff(["-loglevel", "error", "-i", wav, "-lavfi", `aformat=channel_layouts=mono,showspectrumpic=s=${size || "1400x520"}:scale=log:fscale=log:start=20:stop=16000:drange=96`, png]);
+  ff(["-loglevel", "error", "-i", wav, "-lavfi", `aformat=channel_layouts=mono,showspectrumpic=s=${size || "1400x512"}:scale=log:fscale=log:start=20:stop=16000:drange=96`, png]);
 }
 function lufs(wav) {
   const r = ff(["-i", wav, "-af", "ebur128=peak=true", "-f", "null", "-"]).stderr;
@@ -73,7 +73,7 @@ function lufs(wav) {
     const pcm = Buffer.from(res.b64, "base64");
     const wav = path.join(OUT, name + ".wav");
     fs.writeFileSync(wav, Buffer.concat([wavHeader(pcm.length), pcm]));
-    spec(wav, path.join(OUT, name + ".png"), name === "showcase" ? "2400x520" : "1600x520");
+    spec(wav, path.join(OUT, name + ".png"), name === "showcase" ? "2400x512" : "1600x512");
     const all = stats(pcm, 0, info.dur), L = lufs(wav);
     let txt = `== ${name}: ${info.dur.toFixed(2)} с, рендер ${((Date.now() - t1) / 1000).toFixed(1)} с\n` +
       `пик (float, до записи) ${db(res.peak)} dBFS | пик файла ${db(all.pk)} | RMS ${db(all.rms)} | LUFS I ${L.I} | LRA ${L.LRA} | true peak ${L.TP} dBFS\n` +
@@ -86,7 +86,7 @@ function lufs(wav) {
         if (CUTS.includes(m.name)) {
           const cut = path.join(OUT, "cut_" + m.name.replace(/\W+/g, "_"));
           ff(["-loglevel", "error", "-ss", String(Math.max(0, m.t - 0.1)), "-t", String(m.d + 0.4), "-i", wav, cut + ".wav"]);
-          spec(cut + ".wav", cut + ".png", "1200x500");
+          spec(cut + ".wav", cut + ".png", "1200x512");
         }
       }
     }
