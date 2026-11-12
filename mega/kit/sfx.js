@@ -155,7 +155,7 @@
     }
     // огибающая: атака (полукосинус) + экспоненциальный спад, конец плавно в НОЛЬ
     function envCurve(a, tau, D, peak, shape) {
-      var N = clamp(Math.ceil(D / (Math.max(a, 0.0003) / 3)), 48, 6000), c = new Float32Array(N), i, x, v;
+      var N = shape ? clamp(Math.ceil(D * 600), 64, 6000) : clamp(Math.ceil(D / (Math.max(a, 0.0003) / 3)), 48, 6000), c = new Float32Array(N), i, x, v;
       for (i = 0; i < N; i++) {
         x = i / (N - 1) * D;
         if (shape === 'bell') v = Math.pow(Math.sin(Math.PI * x / D), 2);
@@ -175,7 +175,7 @@
       for (var i = 0; i < fl.length; i++) {
         var f = fl[i], b = ctx.createBiquadFilter();
         b.type = f.t; b.Q.value = f.q == null ? 0.707 : f.q;
-        b.frequency.setValueAtTime(clamp(f.f, 20, sr * 0.45), tt);
+        if (f.curve) b.frequency.value = f.f; else b.frequency.setValueAtTime(clamp(f.f, 20, sr * 0.45), tt);
         if (f.f1) b.frequency.exponentialRampToValueAtTime(clamp(f.f1, 20, sr * 0.45), tt + (f.ft || dur));
         if (f.f2) b.frequency.exponentialRampToValueAtTime(clamp(f.f2, 20, sr * 0.45), tt + dur);
         if (f.curve) b.frequency.setValueCurveAtTime(f.curve, tt, dur);

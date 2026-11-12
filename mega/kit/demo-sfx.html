@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>SFX — витрина звуков «Отряд Мега»</title>
+<style>
+  body { margin: 0; padding: 24px; background: #1d2a1c; color: #f6d58a; font: 16px/1.4 system-ui, sans-serif; }
+  h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 15px; margin: 22px 0 8px; color: #ffcf1a; }
+  p { margin: 0 0 12px; opacity: .8; max-width: 900px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { background: #4f5a2e; color: #fff; border: 2px solid #2b1a12; border-radius: 10px; padding: 9px 13px; font: inherit; cursor: pointer; }
+  button:hover { background: #6b7340; } button.big { background: #b96a2c; }
+</style>
+</head>
+<body>
+<h1>SFX — витрина звуков</h1>
+<p>Каждая кнопка играет один звук через живой AudioContext (каждое нажатие — новое зерно, слышны варианты). Нижние кнопки — готовые мини-сцены, те же, что рендерит <code>tools/render-sfx.cjs</code>.</p>
+<h2>Отдельные звуки</h2><div class="row" id="items"></div>
+<h2>Мини-сцены</h2><div class="row" id="demos"></div>
+<script src="lines.js"></script>
+<script src="sfx.js"></script>
+<script>
+// [название, длина слота (с), что играть]
+const ITEMS = [
+  ['shot near', 1.8, (s, t) => s.shot(t, { dist: 'near' })],
+  ['shot mid', 1.8, (s, t) => s.shot(t, { dist: 'mid', pan: 0.3 })],
+  ['shot far', 2.2, (s, t) => s.shot(t, { dist: 'far', pan: -0.4 })],
+  ['burst near x5', 2.2, (s, t) => s.burst(t, 5, { dist: 'near', rate: 10 })],
+  ['burst mid x4', 2.0, (s, t) => s.burst(t, 4, { dist: 'mid', rate: 9, pan: 0.4 })],
+  ['burst far x6', 2.6, (s, t) => s.burst(t, 6, { dist: 'far', rate: 9, pan: -0.5 })],
+  ['ricochet', 1.0, (s, t) => s.ricochet(t)],
+  ['bulletDirt', 0.9, (s, t) => s.bulletDirt(t)],
+  ['emptyClick', 0.6, (s, t) => s.emptyClick(t)],
+  ['explosion big', 3.6, (s, t) => s.explosion(t, { size: 'big' })],
+  ['explosion small', 2.6, (s, t) => s.explosion(t, { size: 'small' })],
+  ['explosion big far', 3.4, (s, t) => s.explosion(t, { size: 'big', dist: 'far' })],
+  ['mortarThump', 1.4, (s, t) => s.mortarThump(t)],
+  ['shellWhistle', 2.0, (s, t) => s.shellWhistle(t, 1.6)],
+  ['shellFlyBy', 1.6, (s, t) => s.shellFlyBy(t, 1.2)],
+  ['doorSlam', 2.0, (s, t) => s.doorSlam(t + 0.1)],
+  ['crunch', 0.9, (s, t) => s.crunch(t)],
+  ['thud', 1.0, (s, t) => s.thud(t)],
+  ['bodyFall heavy', 1.2, (s, t) => s.bodyFall(t + 0.05, { weight: 'heavy' })],
+  ['bodyFall light', 1.2, (s, t) => s.bodyFall(t + 0.05, { weight: 'light' })],
+  ['footsteps concrete', 2.2, (s, t) => s.footsteps(t, t + 2, { surface: 'concrete', rate: 2 })],
+  ['footsteps dirt', 2.2, (s, t) => s.footsteps(t, t + 2, { surface: 'dirt', rate: 2 })],
+  ['cloth', 0.8, (s, t) => s.cloth(t)],
+  ['paper', 0.8, (s, t) => s.paper(t)],
+  ['pencil', 1.3, (s, t) => s.pencil(t, 1.0)],
+  ['stamp', 0.8, (s, t) => s.stamp(t)],
+  ['spoon x3', 1.2, (s, t) => { s.spoon(t); s.spoon(t + 0.3); s.spoon(t + 0.62); }],
+  ['zap', 0.7, (s, t) => s.zap(t)],
+  ['rubHands', 1.2, (s, t) => s.rubHands(t, 0.9)],
+  ['cashRustle', 0.9, (s, t) => s.cashRustle(t)],
+  ['coin', 0.9, (s, t) => s.coin(t)],
+  ['terminalBeep', 0.7, (s, t) => s.terminalBeep(t)],
+  ['wireTwang', 1.6, (s, t) => s.wireTwang(t)],
+  ['hammer x2', 1.1, (s, t) => { s.hammer(t); s.hammer(t + 0.42); }],
+  ['whoosh', 1.0, (s, t) => s.whoosh(t, 0.7)],
+  ['dustPuff', 1.0, (s, t) => s.dustPuff(t)],
+  ['heli outside', 4.4, (s, t) => s.heli(t, t + 4, { rpmFrom: 180, rpmTo: 320, ramp: 2.5 })],
+  ['heli inside', 4.4, (s, t) => s.heli(t, t + 4, { inside: true, rpmFrom: 300 })],
+  ['heliLand', 2.4, (s, t) => s.heliLand(t + 0.05)],
+  ['amb bunker', 4.4, (s, t) => s.ambience('bunker', t, t + 4)],
+  ['amb cabin', 4.4, (s, t) => s.ambience('cabin', t, t + 4)],
+  ['amb field', 6.4, (s, t) => s.ambience('field', t, t + 6)],
+  ['amb zone', 7.4, (s, t) => s.ambience('zone', t, t + 7)],
+  ['amb aftermath', 4.4, (s, t) => s.ambience('aftermath', t, t + 4)],
+  ['music march', 6.4, (s, t) => s.music('march', t, t + 6)],
+  ['music tender', 5.4, (s, t) => s.music('tender', t, t + 5)],
+  ['music fanfareSad', 3.8, (s, t) => s.music('fanfareSad', t)],
+  ['sting x2', 1.8, (s, t) => { s.sting(t, { variant: 0 }); s.sting(t + 0.9, { variant: 1 }); }]
+];
+const GAP = 0.5;
+
+const DEMOS = {};
+// (а) витрина: все звуки по очереди с паузами
+(function () {
+  const marks = []; let t = 0.3;
+  for (const [name, d] of ITEMS) { marks.push({ name, t, d }); t += d + GAP; }
+  DEMOS.showcase = { dur: t, marks, build: (ctx, t0) => { const s = SFX.init(ctx, t0, { room: 'field' }); ITEMS.forEach((it, i) => it[2](s, marks[i].t)); } };
+})();
+// (б) мини-сцена перестрелки, 8 с (как бит firefight сцены 4)
+DEMOS.firefight = { dur: 8, build: (ctx, t0) => {
+  const s = SFX.init(ctx, t0, { partStart: 82.33 + 8.98, room: 'field' });
+  s.ambience('zone', 0, 8, { fadeIn: 0.3 });
+  s.burst(0.35, 4, { dist: 'mid', pan: -0.6 });
+  s.bulletDirt(0.52, { pan: -0.1 }); s.bulletDirt(0.71, { pan: 0.15 });
+  s.burst(1.15, 5, { dist: 'far', pan: 0.7 });
+  s.shot(1.9, { dist: 'near', pan: 0.2 });
+  s.bodyFall(2.25, { weight: 0.7, pan: -0.2 });
+  s.burst(2.7, 6, { dist: 'mid', pan: 0.55, rate: 11 });
+  s.ricochet(2.95, { pan: 0.3 }); s.bulletDirt(3.2, { pan: -0.3 });
+  s.rubHands(3.5, 0.5, { pan: -0.2 }); s.zap(4.0, { pan: -0.2 }); s.stamp(4.35, { pan: -0.15 });
+  s.burst(4.4, 3, { dist: 'far', pan: -0.8 });
+  s.shot(4.95, { dist: 'mid', pan: -0.5 }); s.shot(5.2, { dist: 'near', pan: 0.1 });
+  s.bodyFall(5.45, { weight: 'light', pan: 0.25 });
+  s.burst(5.8, 5, { dist: 'mid', pan: 0.6 }); s.ricochet(6.05, { pan: -0.4 });
+  s.bodyFall(6.4, { weight: 'heavy', pan: 0 });
+  s.burst(6.7, 4, { dist: 'far', pan: 0.4 });
+  s.emptyClick(7.35, { pan: 0.5 }); s.emptyClick(7.6, { pan: -0.5 });
+  s.fadeOut(7.6, 0.4);
+} };
+// (в) миномёт → свист → взрыв (бит shell/impact сцены 3)
+DEMOS.mortar = { dur: 9, build: (ctx, t0) => {
+  const s = SFX.init(ctx, t0, { partStart: 60.27 + 8.6, room: 'field' });
+  s.ambience('field', 0, 9, { fadeIn: 0.3 });
+  s.mortarThump(0.5, { pan: -0.5 });
+  s.music('tender', 0.9, 4.7, { fadeOut: 0.25 });
+  s.whoosh(0.55, 0.6, { pan: -0.5, panTo: 0 });
+  s.cashRustle(2.2, { pan: 0.4 }); s.cashRustle(3.1, { pan: 0.4 });
+  s.shellWhistle(3.3, 1.4, { pan: 0.2 });
+  s.explosion(4.7, { size: 'big', pan: 0.2 });
+  s.coin(6.3, { pan: 0.3 }); s.thud(6.0, { pan: 0.1, gain: 0.6 });
+  s.pencil(7.2, 0.8, { pan: -0.3 });
+  s.fadeOut(8.5, 0.5);
+} };
+// сцена 1 целиком по script-timing (проверка уровней под реплики)
+DEMOS.scene1 = { dur: 34.3, build: (ctx, t0) => {
+  const T = window.TIMING[1], B = T.beats;
+  const s = SFX.init(ctx, t0, { partStart: T.partStart, room: 'bunker' });
+  s.ambience('bunker', 0, T.duration);
+  s.music('march', 0, B.stare.t, { fadeOut: 1.2 });
+  s.duckLines(T.lines);
+  for (let i = 0; i < 5; i++) s.spoon(0.25 + i * 0.9, { pan: -0.3 + i * 0.15 });
+  for (let i = 0; i < 4; i++) s.paper(B.forms.t + 0.1 + i * 0.35, { pan: -0.4 + i * 0.25 });
+  s.footsteps(B.door.t + 0.2, B.door.t + 1.6, { surface: 'concrete', rate: 2, pan: 0.3 });
+  s.whoosh(B.door.t + 1.75, 0.3, { pan: 0.5 });
+  s.doorSlam(B.door.t + 2.0, { pan: 0.5 }); s.crunch(B.door.t + 2.03, { pan: 0.5 }); s.dustPuff(B.door.t + 2.1, { pan: 0.5 });
+  s.sting(B.door.t + 2.9);
+  s.pencil(30.6, 0.5, { pan: -0.3 });
+  s.rubHands(31.2, 0.7, { pan: 0.2 }); s.stamp(32.9, { pan: 0.2 });
+  s.fadeOut(33.7, 0.6);
+} };
+window.DEMOS = DEMOS;
+window.useDemo = (name) => { window.__sound = DEMOS[name].build; return { dur: DEMOS[name].dur, marks: DEMOS[name].marks || [] }; };
+
+// ---- живое прослушивание ----
+let ac = null, live = null;
+function liveCtx() {
+  if (!ac) { ac = new AudioContext(); live = SFX.init(ac, 0, { room: 'field' }); }
+  return ac;
+}
+const box = document.getElementById('items');
+for (const it of ITEMS) {
+  const b = document.createElement('button'); b.textContent = it[0];
+  b.onclick = () => { const c = liveCtx(); it[2](live, c.currentTime + 0.08); };
+  box.appendChild(b);
+}
+const dbox = document.getElementById('demos');
+for (const k of Object.keys(DEMOS)) {
+  const b = document.createElement('button'); b.textContent = k + ' (' + DEMOS[k].dur.toFixed(1) + ' с)'; b.className = 'big';
+  b.onclick = () => { const c = new AudioContext(); DEMOS[k].build(c, c.currentTime + 0.1); };
+  dbox.appendChild(b);
+}
+</script>
+</body>
+</html>
