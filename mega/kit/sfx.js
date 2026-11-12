@@ -38,13 +38,13 @@
 
   // Итоговые уровни ролей (подобраны по замерам витрины, см. SFX.md)
   var LV = {
-    shot: 0.50, ricochet: 0.30, bulletDirt: 0.34, emptyClick: 0.20,
-    explosion: 0.78, mortarThump: 0.62, shellWhistle: 0.34, shellFlyBy: 0.30,
-    doorSlam: 0.62, crunch: 0.46, bodyFall: 0.42, step: 0.20, cloth: 0.16, paper: 0.15,
-    pencil: 0.12, stamp: 0.36, spoon: 0.11, zap: 0.22, rubHands: 0.13, cashRustle: 0.14,
-    coin: 0.10, terminalBeep: 0.085, wireTwang: 0.20, hammer: 0.34, whoosh: 0.16,
-    thud: 0.40, dustPuff: 0.20, heli: 0.30, heliLand: 0.50,
-    ambience: 0.085, music: 0.16, sting: 0.20
+    shot: 0.66, ricochet: 0.27, bulletDirt: 0.24, emptyClick: 0.26,
+    explosion: 1.05, mortarThump: 0.62, shellWhistle: 0.44, shellFlyBy: 0.24,
+    doorSlam: 0.66, crunch: 0.46, bodyFall: 0.42, step: 0.15, cloth: 0.105, paper: 0.2,
+    pencil: 0.12, stamp: 0.31, spoon: 0.11, zap: 0.22, rubHands: 0.13, cashRustle: 0.14,
+    coin: 0.10, terminalBeep: 0.1, wireTwang: 0.2, hammer: 0.34, whoosh: 0.16,
+    thud: 0.34, dustPuff: 0.16, heli: 0.18, heliLand: 0.5,
+    ambience: 0.034, music: 0.24, sting: 0.24
   };
 
   function init(ctx, t0, opts) {
@@ -95,7 +95,7 @@
     var comp = ctx.createDynamicsCompressor(); // мягкая «склейка»
     comp.threshold.value = -20; comp.knee.value = 14; comp.ratio.value = 2.5;
     comp.attack.value = 0.012; comp.release.value = 0.28;
-    var mk = ctx.createGain(); mk.gain.value = opts.master == null ? 1 : opts.master;
+    var mk = ctx.createGain(); mk.gain.value = 0.6 * (opts.master == null ? 1 : opts.master);
     var half = ctx.createGain(); half.gain.value = 0.5;
     var clip = ctx.createWaveShaper(); // мягкий ограничитель: потолок −1.6 dBFS
     (function () {
@@ -689,7 +689,7 @@
       o = o || {};
       var inside = !!o.inside, r = rg('heli', a, o), dur = b - a, ta = T(a), tb = T(b);
       var r0 = o.rpmFrom || 300, r1 = o.rpmTo || r0, f0 = r0 / 60 * 4, f1 = r1 / 60 * 4, rd = Math.min(o.ramp || dur, dur);
-      var G = span(a, b, { pan: o.pan, gain: LV.heli * (o.gain == null ? 1 : o.gain), rev: 0.1, lp: inside ? 650 : 0, fadeIn: o.fadeIn == null ? 0.5 : o.fadeIn, fadeOut: o.fadeOut == null ? 0.8 : o.fadeOut });
+      var G = span(a, b, { pan: o.pan, gain: LV.heli * (inside ? 0.7 : 1) * (o.gain == null ? 1 : o.gain), rev: 0.1, lp: inside ? 650 : 0, fadeIn: o.fadeIn == null ? 0.5 : o.fadeIn, fadeOut: o.fadeOut == null ? 0.8 : o.fadeOut });
       // импульс лопасти: синус-НЧ → формирователь → управляет громкостью шума
       var lfo = ctx.createOscillator(); lfo.frequency.setValueAtTime(f0, ta); lfo.frequency.linearRampToValueAtTime(f1, ta + rd);
       var sh = ctx.createWaveShaper(), c = new Float32Array(257);
@@ -706,7 +706,7 @@
       var tb2 = bed(G, r, a, b, { n: 'w', fl: [{ t: 'bandpass', f: 2350 * kk0, f1: 2350 * k, ft: rd, q: 16 }, { t: 'bandpass', f: 2350 * kk0, f1: 2350 * k, ft: rd, q: 5 }], g: inside ? 0.5 : 0.7, gw: [0.7, 1, 0.8] });
       bed(G, r, a, b, { n: 'p', fl: [{ t: 'lowpass', f: 900 }], g: 0.35, gw: [0.7, 1, 0.6] }); // общий гул
       if (inside) { // кабина: низкая вибрация корпуса и дребезг обшивки
-        var GI = span(a, b, { pan: o.pan, gain: LV.heli * (o.gain == null ? 1 : o.gain), rev: 0.25, fadeIn: o.fadeIn == null ? 0.5 : o.fadeIn, fadeOut: o.fadeOut == null ? 0.8 : o.fadeOut });
+        var GI = span(a, b, { pan: o.pan, gain: LV.heli * 0.7 * (o.gain == null ? 1 : o.gain), rev: 0.25, fadeIn: o.fadeIn == null ? 0.5 : o.fadeIn, fadeOut: o.fadeOut == null ? 0.8 : o.fadeOut });
         bed(GI, r, a, b, { n: 'b', fl: [{ t: 'lowpass', f: 130 }], g: 2.2, gw: [0.6, 1, 2.5] });
         var rat = bed(GI, r, a, b, { n: 'w', fl: [{ t: 'bandpass', f: 1700, q: 2.5 }], g: 0.09, gw: [0.2, 1, 3] });
         var g2 = ctx.createGain(); g2.gain.value = 0.1; var m2 = ctx.createGain(); m2.gain.value = 1.4; sh.connect(m2); m2.connect(g2.gain);
