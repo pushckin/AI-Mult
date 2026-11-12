@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Демо каркаса</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="vendor/fonts.css"><link rel="stylesheet" href="stage.css">
+</head><body>
+<div id="root" data-duration="16">
+  <div id="camera"><div id="float"><div id="shake"><div id="world"></div></div></div></div>
+  <div id="overlay"></div>
+</div>
+<script src="vendor/gsap.min.js"></script>
+<script src="stage.js"></script>
+<script>
+const { tl } = Stage.init({ duration: 16, partStart: 0 });
+// заглушки персонажей — силуэты (настоящие делает rig.js)
+function dummy(x, y, col, s) { const e = Stage.svg(`<ellipse cx="0" cy="4" rx="60" ry="10" fill="#000" opacity=".3"/><rect x="-34" y="-250" width="68" height="190" rx="26" fill="${col}" stroke="#2b1a12" stroke-width="6"/><path d="M-30,-60 v60 M30,-60 v60" stroke="#2b1a12" stroke-width="22" stroke-linecap="round"/><circle cx="0" cy="-330" r="84" fill="#f2c9a0" stroke="#2b1a12" stroke-width="6"/><path d="M-84,-340 a84,84 0 0 1 168,0 z" fill="${col}" stroke="#2b1a12" stroke-width="6"/><circle cx="-26" cy="-318" r="13" fill="#fff" stroke="#2b1a12" stroke-width="4"/><circle cx="26" cy="-318" r="13" fill="#fff" stroke="#2b1a12" stroke-width="4"/><circle cx="-24" cy="-316" r="5"/><circle cx="28" cy="-316" r="5"/>`, 'actors');
+  gsap.set(e, { x, y, scale: s || 1, transformOrigin: '0px 0px' }); return e; }
+// фоны строим по очереди и заворачиваем в обёртки, чтобы переключать
+const groups = [];
+function grab() { const g = {}; for (const [n, l] of Object.entries(Stage.layers)) { const w = document.createElement('div'); w.className = 'bgw'; w.style.cssText = 'position:absolute;left:0;top:0';
+  Array.from(l.children).filter((c) => c.className !== 'bgw').forEach((c) => w.appendChild(c)); l.appendChild(w); g[n] = w; } groups.push(g); return g; }
+const bunker = Stage.bg.bunker(); grab();
+const cabin = Stage.bg.heliCabin(); grab();
+const field = Stage.bg.field(); const heli = Stage.prop.heli({ x: 1500, y: 1210, s: .9, layer: 'mid' }); heli.rotor(tl, 8, 12); const mort = Stage.prop.mortar({ x: 2250, y: 1260, s: 1, layer: 'actors' }); grab();
+const zone = Stage.bg.zone(); grab();
+const all = groups.map((g) => Object.values(g)); const T0 = [0, 4, 8, 12, 16];
+all.forEach((els, i) => { gsap.set(els, { opacity: i === 0 ? 1 : 0 }); if (i) tl.set(els, { opacity: 1 }, T0[i]); if (i < 3) tl.set(els, { opacity: 0 }, T0[i + 1]); });
+// актёры
+const a1 = dummy(300, 1200, '#6b7340'), a2 = dummy(520, 1200, '#4f5a2e', 1), a3 = dummy(720, 1200, '#6b7340');
+const b1 = dummy(300, 1200, '#6b7340'), b2 = dummy(800, 1200, '#4f5a2e');
+const c1 = dummy(600, 1200, '#6b7340'), c2 = dummy(760, 1200, '#4f5a2e');
+const d1 = dummy(300, 1200, '#6b7340'), d2 = dummy(470, 1200, '#4f5a2e');
+// ---- 0–4 бункер ----
+Stage.camSet({ x: 540, y: 960, scale: 1 });
+Stage.cam(tl, 0.2, { x: 600, y: 930, scale: 1.12 }, 3.4, 'sine.inOut');
+Stage.tag(tl, 0.3, 'БАЗА', 2.2);
+Stage.paperFly(tl, 1.4, { x: 300, y: 800 }, { x: 560, y: 900 }, { dur: .6 });
+bunker.door.open(tl, 2.4); bunker.door.slam(tl, 3.5);
+tl.to(a1, { x: 340, duration: 1.4, ease: 'sine.inOut' }, 1);
+// ---- 4–8 салон ----
+tl.set(Stage._cam, { x: 540, y: 960, scale: 1.0, rot: 0 }, 4);
+cabin.scroll(tl, 4, 8, 900); cabin.altitude(tl, 4.2, 1, 3.5);
+Stage.cam(tl, 4.1, { x: 520, y: 900, scale: 1.14 }, 3.5, 'sine.inOut'); Stage.shake(tl, 6, 6, 1);
+Stage.tag(tl, 4.3, 'НАД ЗОНОЙ', 2.2);
+// ---- 8–12 поле ----
+tl.set(Stage._cam, { x: 540, y: 960, scale: 1, rot: 0 }, 8);
+Stage.cam(tl, 8.1, { x: 2000, y: 940, scale: 1.0 }, 3.7, 'sine.inOut');
+tl.to(c1, { x: 1500, duration: 3.6, ease: 'sine.inOut' }, 8).to(c2, { x: 1680, duration: 3.6, ease: 'sine.inOut' }, 8);
+const bf = Stage.prop.butterfly({ x: 800, y: 900, s: 1.2, layer: 'fg' }); gsap.set(bf, { opacity: 0 }); tl.set(bf, { opacity: 1 }, 8).to(bf, { x: 1900, y: 700, duration: 3, ease: 'sine.inOut' }, 8).set(bf, { opacity: 0 }, 11.9);
+Stage.tag(tl, 8.3, '3 КМ ДО ЗОНЫ', 2.2);
+Stage.tracer(tl, 10.4, 1500, 1000, 2250, 940); Stage.tracer(tl, 10.55, 1480, 1040, 2260, 1000); Stage.dirtHit(tl, 10.9, 2100, 1215);
+mort.fire && mort.fire(tl, 11.2);
+// ---- 12–16 зона ----
+tl.set(Stage._cam, { x: 1500, y: 960, scale: 1.0, rot: 0 }, 12);
+Stage.cam(tl, 12.1, { x: 1750, y: 960, scale: 1.0 }, 3.7, 'sine.inOut');
+Stage.explosion(tl, 13.0, 1700, 1230, { size: 1.2 });
+Stage.stampMark(tl, 14.3, 1300, 900, { text: 'ПОГИБ' });
+Stage.confetti(tl, 14.8, 1500, 300);
+zone.door.open(tl, 14.0);
+Stage.title(tl, 15.0, 'КОНЕЦ', { sub: 'потери в норме', dur: 0.9 });
+Stage.captions(tl, [
+  { who: 'ustav', text: 'Задача простая. Зона — здесь. Кто стоит в зоне, тот получает очки. Вопросы?', t: 0.6, dur: 3.2 },
+  { who: 'chaika', text: 'Сразу предупреждаю: это мой первый полёт.', t: 4.4, dur: 2.2 },
+  { who: 'hohotun', text: 'В голову!', t: 8.6, dur: .8 },
+  { who: 'gvozd', text: 'Так безопаснее. Никто не войдёт.', t: 9.6, dur: 2.2 },
+  { who: 'ladoshka', text: 'Семье — после моей комиссии.', t: 12.4, dur: 2.0 }]);
+Stage.blackout(tl, 15.5, .4);
+</script></body></html>
