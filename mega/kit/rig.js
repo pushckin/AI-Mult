@@ -230,7 +230,7 @@
     E.earL = G(hd, '<circle cx="0" cy="0" r="25" fill="' + SKIN + '"/><path d="M5,-9 q-12,9 0,19" stroke-width="4"/>');
     E.earR = G(hd, '<circle cx="0" cy="0" r="25" fill="' + SKIN + '"/><path d="M-5,-9 q12,9 0,19" stroke-width="4"/>');
     el('circle', { cx: 0, cy: -D.nh, r: hr, fill: SKIN }, hd);
-    var fc = E.face = G(hd), eyeR = 23, ey0 = -D.nh + 6, ex0 = 37;
+    var fc = E.face = G(hd), eyeR = 23, ey0 = -D.nh + 12, ex0 = 37;
     G(fc, '<ellipse cx="' + (-hr * 0.63) + '" cy="' + (-D.nh + 42) + '" rx="19" ry="14" fill="' + BLUSH + '" stroke="none" opacity="0.85"/><ellipse cx="' + (hr * 0.63) + '" cy="' + (-D.nh + 42) + '" rx="19" ry="14" fill="' + BLUSH + '" stroke="none" opacity="0.85"/>');
     E.eye = []; E.pup = []; E.lidU = []; E.lidD = []; E.lidLn = []; E.cross = []; E.brow = [];
     [-1, 1].forEach(function (sd, i) {
@@ -242,7 +242,7 @@
       E.eye.push(g); E.pup.push(g.querySelector('.pu')); E.lidU.push(g.querySelector('.lu')); E.lidD.push(g.querySelector('.ld')); E.lidLn.push(g.querySelector('.ll')); E.cross.push(g.querySelector('.cr'));
       var b = G(fc, '<path d="M-17,0 L17,0" stroke-width="' + def.brow[1] + '"/>'); b._x = sd * ex0; b._y = ey0 - 36 - def.brow[2]; b._s = sd; E.brow.push(b);
     });
-    E.mouth = G(fc, mouthSVG(def.rest)); E.mouth.setAttribute('transform', 'translate(0,' + (-D.nh + 62) + ')');
+    E.mouth = G(fc, mouthSVG(def.rest)); E.mouth.setAttribute('transform', 'translate(0,' + (-D.nh + 68) + ')');
     E.mo = Array.prototype.slice.call(E.mouth.querySelectorAll('.mo'));
     if (name === 'ustav') E.stache = G(fc, '<path d="M0,-6 C-12,-18 -40,-12 -46,8 C-34,2 -14,10 0,2 C14,10 34,2 46,8 C40,-12 12,-18 0,-6 Z" fill="#3a2416"/>');
     // головной убор
@@ -301,7 +301,7 @@
     put(E.pel, F.pel); put(E.chest, F.chest);
     if (E.bag) put(E.bag, F.bag);
     put(E.head, F.head);
-    if (m.hatFree > 0.5) this._mx(E.hat, SC(TR([1, 0, 0, 1, 0, 0], m.hatWX, m.hatWY, m.hatWR), s * D.hatS, s * D.hatS));
+    if (m.hatFree > 0.5) this._mx(E.hat, SC(TR(SC(TR([1, 0, 0, 1, 0, 0], m.hatWX, m.hatWY, m.hatWR), s, s), D.hatDX, D.hatDY, 0), D.hatS, D.hatS));
     else put(E.hat, F.hat);
     ['L', 'R'].forEach(function (S) {
       put(E['arm' + S + 'o1'], F['a' + S + '1']); put(E['arm' + S + 'f1'], F['a' + S + '1']);
@@ -345,7 +345,7 @@
     }
     var mo = Math.round(m.mouth);
     for (i = 0; i < E.mo.length; i++) this._set(E.mo[i], 'display', i === mo ? 'inline' : 'none');
-    if (E.stache) this._set(E.stache, 'transform', 'translate(0,' + (-D.nh + 46 - (mo === 1 || mo === 3 ? 5 : mo ? 3 : 0)) + ')');
+    if (E.stache) this._set(E.stache, 'transform', 'translate(0,' + (-D.nh + 52 - (mo === 1 || mo === 3 ? 5 : mo ? 3 : 0)) + ')');
     // тень: ширина по габариту тела, плотность по высоте
     var pts = [PT(F.lL3, 0, 0), PT(F.lR3, 0, 0), PT(F.pel, -D.tw / 2, 0), PT(F.pel, D.tw / 2, 0), PT(F.head, -D.hr, -D.nh), PT(F.head, D.hr, -D.nh), PT(F.head, 0, -D.nh - D.hr)], mn = 1e9, mxx = -1e9, low = -1e9;
     for (i = 0; i < pts.length; i++) { if (pts[i][0] < mn) mn = pts[i][0]; if (pts[i][0] > mxx) mxx = pts[i][0]; }
@@ -474,7 +474,7 @@
     o['a' + S + '1'] = wrap(r[0]); o['a' + S + '2'] = wrap(r[1] - r[0]); return o;
   };
   function add(a, b) { for (var k in b) a[k] = b[k]; return a; }
-  var STAND = { px: 0, py: 0, rot: 0, chest: 0, head: 0, plant: 1, fLx: 0, fRx: 0, fLy: 0, fRy: 0, fLr: 0, fRr: 0, aL1: 5, aL2: -9, aL3: 0, aR1: -5, aR2: 9, aR3: 0, lid: 0, brow: 0, browA: 0, eyeS: 1, ex: 0, ey: 0, jy: 0, sx: 1, sy: 1, pL: 0, pR: 0 };
+  var STAND = { px: 0, py: 0, rot: 0, chest: 0, head: 0, plant: 1, fLx: 0, fRx: 0, fLy: 0, fRy: 0, fLr: 0, fRr: 0, aL1: 5, aL2: -9, aL3: 0, aR1: -5, aR2: 9, aR3: 0, lid: 0, brow: 0, browA: 0, eyeS: 1, jy: 0, sx: 1, sy: 1, pL: 0, pR: 0 };
   var POSES = {
     stand: function () { return {}; },
     sit: function (c) { var D = c.D; return { py: D.thigh - 6, fLx: -20, fRx: 20, chest: 3, aL1: 16, aL2: -44, aR1: -16, aR2: 44 }; },
@@ -496,48 +496,6 @@
 
   P.pose = function (tl, t, pose, dur, ease, o) {
     o = o || {};
-    var B = this.B, name = typeof pose === 'string' ? pose : null, cyc = name && CYCLIC[name], total = dur, tgt, k, v;
-    if (name === 'cheerWeak') return this._cheerWeak(tl, t, dur || 1.4);
-    if (name) {
-      if (!POSES[name]) throw new Error('Rig: нет позы ' + name);
-      tgt = add(add({}, STAND), POSES[name](this));
-      if (name === 'hold') { delete tgt.pL; delete tgt.pR; }
-      var flip = o.flip != null ? o.flip : B.turnB < -0.3;
-      if (flip) { tgt = mir(tgt); v = tgt.pL; tgt.pL = tgt.pR; tgt.pR = v; v = tgt.kL; tgt.kL = tgt.kR; tgt.kR = v; if (tgt.kL == null) delete tgt.kL; if (tgt.kR == null) delete tgt.kR; tgt.ex = -tgt.ex; tgt.ex = -(-tgt.ex); }
-      tgt.rot += 360 * Math.round(B.rot / 360);
-      this._flip = flip;
-    } else {
-      tgt = {};
-      for (k in pose) { if (k === 'handL' || k === 'handR') add(tgt, this._arm(k.charAt(4), pose[k][0], pose[k][1], pose[k][2])); else tgt[k] = pose[k]; }
-    }
-    dur = cyc ? Math.min(0.35, (dur || 2) * 0.4) : (dur == null ? 0.4 : dur);
-    // кратчайший путь для рук
-    ['aL1', 'aL2', 'aR1', 'aR2'].forEach(function (a) { if (a in tgt) tgt[a] = B[a] + wrap(tgt[a] - B[a]); });
-    var g = { b: {}, h: {}, L1: {}, L2: {}, R1: {}, R2: {} }, dly = { b: 0, h: 0.05, L1: 0.03, L2: 0.085, R1: 0.03, R2: 0.085 }, big = 0;
-    for (k in tgt) {
-      if (DISCRETE[k]) continue;
-      if (Math.abs(tgt[k] - B[k]) < 1e-4) continue;
-      g[GROUPS[k] || 'b'][k] = tgt[k]; if (k.charAt(0) === 'a') big = Math.max(big, Math.abs(tgt[k] - B[k]));
-    }
-    // реквизит: тип переключается, пока масштаб нулевой
-    if ('kL' in tgt && tgt.pL > 0) this._to(tl, t, { kL: tgt.kL }, 0.02, 'power1.out');
-    if ('kR' in tgt && tgt.pR > 0) this._to(tl, t, { kR: tgt.kR }, 0.02, 'power1.out');
-    var aEase = ease || (dur >= 0.25 ? 'back.out(1.5)' : 'power2.out'), bEase = ease || 'power2.inOut', t = this;
-    ['b', 'h', 'L1', 'L2', 'R1', 'R2'].forEach(function (key) {
-      var vars = g[key], has = false, kk; for (kk in vars) { has = true; break; }
-      if (!has) return;
-      var isArm = key.length === 2, d0 = dur > 0.12 ? dly[key] : 0, t0 = arguments.length ? 0 : 0;
-      if (isArm && key.charAt(1) === '1' && dur >= 0.3 && big > 40) { // предвосхищение: короткий замах в обратную сторону
-        var an = {}; for (kk in vars) an[kk] = B[kk] - (vars[kk] - B[kk]) * 0.09;
-        t._to(tl, tstart + d0, an, dur * 0.22, 'sine.inOut'); t._to(tl, tstart + d0 + dur * 0.22, vars, dur * 0.78, aEase);
-      } else t._to(tl, tstart + d0, vars, dur, isArm || key === 'h' ? aEase : bEase);
-    });
-    return fin.call(this);
-    function fin() { return this; }
-  };
-  // (переопределяем pose чистой версией — выше оставлен общий разбор; см. ниже)
-  P.pose = function (tl, t, pose, dur, ease, o) {
-    o = o || {};
     var B = this.B, self = this, name = typeof pose === 'string' ? pose : null, cyc = name && CYCLIC[name], total = dur, tgt, k, v;
     if (name === 'cheerWeak') return this._cheerWeak(tl, t, dur || 1.4);
     var flip = false;
@@ -548,6 +506,7 @@
       flip = o.flip != null ? !!o.flip : B.turnB < -0.3;
       if (flip) { var ex = tgt.ex; tgt = mir(tgt); tgt.ex = -ex; v = tgt.pL; tgt.pL = tgt.pR; tgt.pR = v; var kl = tgt.kL, kr = tgt.kR; delete tgt.kL; delete tgt.kR; if (kr != null) tgt.kL = kr; if (kl != null) tgt.kR = kl; }
       tgt.rot += 360 * Math.round(B.rot / 360);
+      if ('ex' in tgt) this._gaze = true; else if (this._gaze) { this._gaze = false; tgt.ex = 0; tgt.ey = 0; }
     } else {
       tgt = {};
       for (k in pose) { if (k === 'handL' || k === 'handR') add(tgt, this._arm(k.charAt(4), pose[k][0], pose[k][1], pose[k][2])); else tgt[k] = pose[k]; }
@@ -827,7 +786,7 @@
     var D = ch.D, G0 = 3000, h = 1 / 120, T = st.T, sc = o.timeScale || 1, nS = Math.round(T * sc * 60) + 1, dir = o.dir;
     var P0 = dir < 0 ? mir(o.pose) : o.pose, r = rng(o.seed), jit = function (a) { return 1 + (r() - 0.5) * 2 * a; };
     var nar = 1 - 0.5 * Math.abs(P0.turnB), hx = D.hipX * nar, shx = D.shX * nar;
-    var rot0 = P0.rot, base = st.getUp ? 360 * Math.round(rot0 / 360) : 0;
+    var rot0 = P0.rot, base = 360 * Math.round(rot0 / 360);
     var X = P0.px, Y = -D.hipY + P0.py, vx = 0, vy = 0;
     var W = { pel: rot0 }, V = {}, k, i;
     W.chest = rot0 + P0.chest; W.head = W.chest + P0.head; W.aL1 = W.chest + P0.aL1; W.aL2 = W.aL1 + P0.aL2; W.aR1 = W.chest + P0.aR1; W.aR2 = W.aR1 + P0.aR2;
@@ -844,7 +803,7 @@
       keys.push([T - 0.62, q0, 'io'], [T - 0.52, q1, 'out'], [T - 0.3, q2, 'io']);
     }
     var ANG = { rot: 1, chest: 1, head: 1, aL1: 1, aL2: 1, aR1: 1, aR2: 1, lL1: 1, lL2: 1, lR1: 1, lR2: 1 };
-    keys.forEach(function (q) { for (var c in q[1]) { var v = q[1][c]; if (ANG[c] && o.jitter) v *= jit(o.jitter); if (c === 'rot') v = Math.round(q[1][c]) === q[1][c] && Math.abs(q[1][c]) % 90 === 0 ? q[1][c] : v; CHN[c].push([q[0] * sc, v, q[2] || 'io']); } });
+    keys.forEach(function (q) { for (var c in q[1]) { var v = q[1][c]; if (ANG[c] && c !== 'rot' && o.jitter) v *= jit(o.jitter); CHN[c].push([q[0] * sc, v, q[2] || 'io']); } });
     var ptr = {}; for (k in CHN) ptr[k] = 0;
     function ev(c, t) {
       var a = CHN[c], p = ptr[c];
@@ -984,7 +943,7 @@
           o2.eyeS = 1 + 0.35 * (wk ? Math.exp(-(t - 0.05) * 2.4) : 0); o2.brow = wk ? Math.exp(-t * 1.5) : 0; o2.lid = t > 1.0 * sc && t < 1.5 * sc ? 0.9 : -Math.exp(-t * 2.5);
           o2.mouth = t < 0.05 * sc ? 0 : t < 0.5 * sc ? 2 : 0; o2.ex = 0; o2.ey = 0;
         } else {
-          var dd = t >= deadAt; o2.dead = dd ? 1 : 0; o2.live = P0.live * (1 - smooth(t / 0.15));
+          var dd = t >= deadAt; o2.dead = dd ? 1 : 0; o2.live = o.live0 * (1 - smooth(t / 0.15));
           o2.eyeS = dd ? 1 : 1 + 0.3 * smooth(t / 0.07); o2.brow = dd ? 0 : smooth(t / 0.08); o2.lid = dd ? 0 : -smooth(t / 0.07);
           o2.mouth = dd ? (t < deadAt + 0.35 ? 2 : 0) : (t < 0.04 ? P0.mouth : 1);
           o2.ex = 0; o2.ey = 0;
@@ -1006,7 +965,7 @@
   var STEP = { mouth: 1, hatFree: 1, dead: 1, plant: 0 };
   P._runSim = function (tl, t, st, o) {
     var B = this.B, pose = this._poseNow(), k;
-    var res = simulate(this, st, { dir: o.dir, pose: pose, seed: this.seed + Math.round(t * 131) + (o.seed || 0), jitter: o.jitter, timeScale: o.timeScale, x0: B.x, y0: B.y });
+    var res = simulate(this, st, { dir: o.dir, pose: pose, seed: this.seed + Math.round(t * 131) + (o.seed || 0), jitter: o.jitter, timeScale: o.timeScale, x0: B.x, y0: B.y, live0: B.live });
     var tr = res.tracks, n = res.n;
     if (st.getUp) { // в конце — точная стойка и возврат ног на «посадку»
       var nb = Math.min(n - 1, 14), tg = { py: 0, chest: 0, head: 0, aL1: 5, aL2: -9, aR1: -5, aR2: 9, lL1: 0, lL2: 0, lL3: 0, lR1: 0, lR2: 0, lR3: 0, hat: 0, sx: 1, sy: 1, bag: 0 };

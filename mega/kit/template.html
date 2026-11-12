@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Сцена N</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../kit/vendor/fonts.css"><link rel="stylesheet" href="../kit/stage.css">
+</head><body>
+<div id="root" data-duration="34.3">
+  <div id="camera"><div id="float"><div id="shake"><div id="world"></div></div></div></div>
+  <div id="overlay"></div>
+</div>
+<script src="../kit/vendor/gsap.min.js"></script>
+<script src="../kit/lines.js"></script>
+<script src="../kit/rig.js"></script>
+<script src="../kit/sfx.js"></script>
+<script src="../kit/stage.js"></script>
+<script>
+const N = 1;                                  // номер сцены
+const { tl, T } = Stage.init({ scene: N });   // T = window.TIMING[N]; длительность берётся оттуда
+const bg = Stage.bg.bunker();                 // bunker | heliCabin | field | zone
+Stage.camSet({ x: 540, y: 960, scale: 1 });
+
+// --- персонажи: Rig.create(имя,{x,y,scale,facing}); y = земля Stage.GROUND ---
+// const ustav = Rig.create('ustav', { x: 300, y: Stage.GROUND, scale: 1, facing: 1 }); Stage.layers.actors.appendChild(ustav.el);
+
+Stage.tag(tl, 0.3, 'БАЗА', 2.2);
+Stage.captions(tl, T.lines);                  // субтитры по репликам из TIMING
+
+// --- ваша анимация: только tl.to / tl.set, никаких setTimeout/rAF/Math.random ---
+
+Stage.blackout(tl, T.beats.out.t, .8);        // уход в чёрный в конце
+
+// --- звук сцены (SFX из sfx.js): окружение + эффекты на абсолютные секунды сцены ---
+window.__sound = (ctx, t0) => { /* SFX.amb_bunker(ctx, t0, T.duration); ... */ };
+</script></body></html>
