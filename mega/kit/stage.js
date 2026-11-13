@@ -360,7 +360,7 @@ const FILL = (l, t, r, b, css) => div('', null, `left:${l}px;top:${t}px;width:${
 function sheet(layer, l, t, w, h, css) { const e = div('', S.layers[layer], `left:${l}px;top:${t}px;width:${w}px;height:${h}px;${css}`); return e; }
 function paint(layer, inner, blur) { const e = svg(inner, S.layers[layer]); e.style.cssText = 'position:absolute;left:0;top:0;overflow:visible'; if (blur) e.classList.add(blur); return e; }
 function defsGrad(id, stops, x2, y2) { return `<linearGradient id="${id}" x1="0" y1="0" x2="${x2 || 0}" y2="${y2 == null ? 1 : y2}">${stops.map((s) => `<stop offset="${s[0]}" stop-color="${s[1]}" ${s[2] != null ? `stop-opacity="${s[2]}"` : ''}/>`).join('')}</linearGradient>`; }
-const rivets = (x, y, w, n, col) => { let s = ''; for (let i = 0; i < n; i++) s += `<circle cx="${x + i * w / (n - 1)}" cy="${y}" r="4" fill="${col || '#2e3d2c'}"/>`; return s; };
+const rivets = (x, y, w, n, col) => { let s = ''; for (let i = 0; i < n; i++) s += `<circle cx="${x + (n > 1 ? i * w / (n - 1) : 0)}" cy="${y}" r="4" fill="${col || '#2e3d2c'}"/>`; return s; };
 
 /* ---------- БУНКЕР: стены x −400…1480, мир ≈ один экран. seats — x ящиков (верх сиденья y=1090) ---------- */
 S.bg.bunker = function () {

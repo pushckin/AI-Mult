@@ -18,17 +18,12 @@ function dummy(x, y, col, s) { const e = Stage.svg(`<ellipse cx="0" cy="4" rx="6
 const groups = [];
 function grab() { const g = {}; for (const [n, l] of Object.entries(Stage.layers)) { const w = document.createElement('div'); w.className = 'bgw'; w.style.cssText = 'position:absolute;left:0;top:0';
   Array.from(l.children).filter((c) => c.className !== 'bgw').forEach((c) => w.appendChild(c)); l.appendChild(w); g[n] = w; } groups.push(g); return g; }
-const bunker = Stage.bg.bunker(); grab();
-const cabin = Stage.bg.heliCabin(); grab();
-const field = Stage.bg.field(); const heli = Stage.prop.heli({ x: 1500, y: 1210, s: .9, layer: 'mid' }); heli.rotor(tl, 8, 12); const mort = Stage.prop.mortar({ x: 2250, y: 1260, s: 1, layer: 'actors' }); grab();
-const zone = Stage.bg.zone(); grab();
+const bunker = Stage.bg.bunker(); const a1 = dummy(300, 1200, '#6b7340'); dummy(520, 1200, '#4f5a2e'); dummy(720, 1200, '#6b7340'); grab();
+const cabin = Stage.bg.heliCabin(); dummy(300, 1200, '#6b7340'); dummy(800, 1085, '#4f5a2e'); dummy(930, 1085, '#6b7340'); grab();
+const field = Stage.bg.field(); const heli = Stage.prop.heli({ x: 1500, y: 1210, s: .9, layer: 'mid' }); heli.rotor(tl, 8, 12); const mort = Stage.prop.mortar({ x: 2250, y: 1260, s: 1, layer: 'actors' }); const c1 = dummy(600, 1200, '#6b7340'), c2 = dummy(760, 1200, '#4f5a2e'); grab();
+const zone = Stage.bg.zone(); dummy(1500, 1200, '#6b7340'); dummy(1640, 1200, '#4f5a2e'); grab();
 const all = groups.map((g) => Object.values(g)); const T0 = [0, 4, 8, 12, 16];
 all.forEach((els, i) => { gsap.set(els, { opacity: i === 0 ? 1 : 0 }); if (i) tl.set(els, { opacity: 1 }, T0[i]); if (i < 3) tl.set(els, { opacity: 0 }, T0[i + 1]); });
-// актёры
-const a1 = dummy(300, 1200, '#6b7340'), a2 = dummy(520, 1200, '#4f5a2e', 1), a3 = dummy(720, 1200, '#6b7340');
-const b1 = dummy(300, 1200, '#6b7340'), b2 = dummy(800, 1200, '#4f5a2e');
-const c1 = dummy(600, 1200, '#6b7340'), c2 = dummy(760, 1200, '#4f5a2e');
-const d1 = dummy(300, 1200, '#6b7340'), d2 = dummy(470, 1200, '#4f5a2e');
 // ---- 0–4 бункер ----
 Stage.camSet({ x: 540, y: 960, scale: 1 });
 Stage.cam(tl, 0.2, { x: 600, y: 930, scale: 1.12 }, 3.4, 'sine.inOut');

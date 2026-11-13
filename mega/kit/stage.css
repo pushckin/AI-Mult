@@ -6,7 +6,7 @@ html, body { margin: 0; height: 100%; background: #0b0705; overflow: hidden; }
 #world { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
 /* слои глубины: нулевой размер, всё содержимое — абсолютное, в координатах мира */
 .layer { position: absolute; left: 0; top: 0; width: 0; height: 0; }
-.layer > svg, .layer > div { position: absolute; left: 0; top: 0; }
+.layer > svg, .layer > div, .bgw > svg, .bgw > div { position: absolute; left: 0; top: 0; }
 .layer svg, svg.prop { overflow: visible; }
 svg.prop { position: absolute; left: 0; top: 0; }
 .blur-fg { filter: blur(5px); }

@@ -374,6 +374,7 @@
     tl.to(this.m, { rigClip: { tr: tr, n: n, dur: dur, step: step || {} }, duration: dur, ease: clock }, t);
   };
   P._kick = function (tl, t, amp) { // вторичное движение: убор и сумка доигрывают после остановки
+    if (this._busy.hatK > t) return; // предыдущий доигрыш ещё идёт
     this._to(tl, t, { hatK: amp, bagK: amp * 2.2 }, 0.1, 'sine.out');
     this._to(tl, t + 0.1, { hatK: 0, bagK: 0 }, 0.75, 'elastic.out(1.1,0.32)');
   };
