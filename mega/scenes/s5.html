@@ -137,7 +137,7 @@ const armFront = svgEl(`<g class="arm">
     <rect x="-46" y="-134" width="92" height="64" rx="8" fill="#0d2a12" stroke="#2b1a12" stroke-width="4"/>
     <rect x="-40" y="-128" width="80" height="52" rx="5" fill="#58d36b"/>
     <text x="0" y="-100" text-anchor="middle" font-family="Russo One" font-size="26" fill="#0d2a12">46 ×</text>
-    <text x="0" y="-82" text-anchor="middle" font-family="Russo One" font-size="12.5" fill="#0d2a12">ОЖИВЛЕНИЕ</text>
+    <text x="0" y="-82" text-anchor="middle" font-family="Russo One" font-size="11" fill="#0d2a12">ОЖИВЛЕНИЕ</text>
     ${[0, 1, 2].map((i) => `<rect x="${-38 + i * 26}" y="-58" width="22" height="22" rx="5" fill="${i === 2 ? '#58d36b' : '#d8d8c8'}" stroke="#2b1a12" stroke-width="3"/>`).join('')}
     ${[0, 1, 2].map((i) => `<rect x="${-38 + i * 26}" y="-30" width="22" height="20" rx="5" fill="${i === 0 ? '#e23b2e' : '#d8d8c8'}" stroke="#2b1a12" stroke-width="3"/>`).join('')}
   </g>
@@ -181,7 +181,7 @@ const T_OPEN = 15.3, T_SLAM = B.black.t - 0.28;   // створка бьёт н�
   bg.door.slam(tl, T_SLAM, { shake: 24 });
   tl.to(frontDoor.slab, { rotationY: 0, duration: 0.16, ease: 'power4.in' }, T_SLAM);
   tl.set(frontDoor.slab, { opacity: 0 }, T_SLAM + 0.17);
-  gvz.squash(tl, T_SLAM + 0.14, { axis: 'x', to: 0.2, hold: 0.5 });
+  gvz.squash(tl, T_SLAM + 0.06, { axis: 'x', to: 0.2, hold: 0.5 });
   Stage.punch(tl, T_SLAM + 0.16, 0.05);
   Stage.debris(tl, T_SLAM + 0.16, 2300, 1180, { n: 8, power: 0.7 });
   Stage.dust(tl, T_SLAM + 0.16, 2300, 1190, { n: 6, size: 50, spread: 130 });
