@@ -26,11 +26,11 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const lerp = (a, b, k) => a + (b - a) * k;
 const ss = (a, b, t) => { const x = clamp((t - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); };
 const rnd = Stage.rng(33);
-const GY = Stage.GROUND, SC = 0.85, CX = 1110, LADX = 1050;
-Stage.camSet({ x: 680, y: 930, scale: 0.92 });
+const GY = Stage.GROUND, SC = 0.85, CX = 2250, LADX = 2110;
+Stage.camSet({ x: 1150, y: 930, scale: 0.9 });
 { // большое небо и земля для полёта (родные листы конечны)
-  const sk = Stage.layers.sky; const big = svgEl(`<rect x="-3500" y="-4500" width="8000" height="4600" fill="#f6d58a"/>`, sk); sk.insertBefore(big.parentNode === sk ? big : big, sk.firstChild);
-  svgEl(`<rect x="-4000" y="1190" width="3700" height="2200" fill="#6a5426"/><rect x="3500" y="1190" width="4000" height="2200" fill="#6a5426"/>`, Stage.layers.mid);
+  const sk = Stage.layers.sky; const big = svgEl(`<rect x="-6000" y="-5000" width="14000" height="8200" fill="#f6d58a"/>`, sk); sk.insertBefore(big.parentNode === sk ? big : big, sk.firstChild);
+  svgEl(`<rect x="-6000" y="1190" width="14000" height="3000" fill="#6a5426"/>`, Stage.layers.mid);
 }
 
 /* ---------- декор: облака (для полёта), миномёт, мешок, воронка ---------- */
@@ -39,7 +39,9 @@ const clouds = [];
 for (let i = 0; i < 34; i++) { const w = 260 + rnd() * 520, x = -900 + rnd() * 3400, y = -2300 + rnd() * 1900;
   const lay = i % 3 === 0 ? Stage.layers.far2 : Stage.layers.mid; const c = svgEl(cloudSVG(w), lay);
   gsap.set(c, { x: i % 3 === 0 ? x - 400 : x, y: i % 3 === 0 ? y * .6 : y, opacity: i % 3 === 0 ? .8 : 1 }); clouds.push(c); }
-const mortar = Stage.prop.mortar({ x: 345, y: GY, s: 1.05, layer: 'mid' });
+svgEl(`<path d="M-4000,1215 V1010 H9000 V1215Z" fill="#b9733a"/>`, Stage.layers.far);
+svgEl(`<path d="M-4000,1215 V1080 H9000 V1215Z" fill="#74401f"/>`, Stage.layers.far2);
+const mortar = Stage.prop.mortar({ x: 440, y: GY, s: 1.05, layer: 'mid' });
 const sack = svgEl(`<ellipse cx="0" cy="4" rx="64" ry="12" fill="#000" opacity=".3"/><path d="M-52,0 C-70,-60 -34,-84 -22,-92 L22,-92 C34,-84 70,-60 52,0Z" fill="#b8a468" stroke="#2b1a12" stroke-width="6"/><path d="M-26,-92 q26,22 52,0" stroke="#2b1a12" stroke-width="5" fill="none"/><text x="0" y="-36" text-anchor="middle" font-family="Russo One" font-size="26" fill="#2b1a12">$</text>`, Stage.layers.mid);
 gsap.set(sack, { x: LADX - 100, y: 1232, opacity: 0 });
 const crater = svgEl(`<ellipse cx="0" cy="0" rx="190" ry="38" fill="#4a2a14" stroke="#2b1a12" stroke-width="7"/><ellipse cx="0" cy="8" rx="150" ry="26" fill="#1a0f08"/><path d="M-210,-4 q-26,-26 -4,-40 M206,-6 q26,-24 8,-40" stroke="#6a3c1c" stroke-width="14" fill="none" stroke-linecap="round"/>`, Stage.layers.mid);
@@ -47,11 +49,11 @@ gsap.set(crater, { x: CX, y: 1222, opacity: 0, scale: 0.3, transformOrigin: '0px
 
 /* ---------- персонажи ---------- */
 const mk = (name, o) => { const c = Rig.create(name, o); Stage.layers.actors.appendChild(c.el); return c; };
-const hoh = mk('hohotun', { x: 200, y: GY, scale: SC, facing: 0.5 });
-const lad = mk('ladoshka', { x: 470, y: GY, scale: SC, facing: 0.85 });
-const gvz = mk('gvozd', { x: 670, y: GY, scale: SC, facing: 0.85 });
-const ust = mk('ustav', { x: 860, y: GY, scale: SC * 1.05, facing: 0.85 });
-const chk = mk('chaika', { x: 1050, y: GY, scale: SC, facing: 0.85 });
+const hoh = mk('hohotun', { x: 290, y: GY, scale: SC, facing: 0.5 });
+const lad = mk('ladoshka', { x: 800, y: GY, scale: SC, facing: 0.85 });
+const gvz = mk('gvozd', { x: 1070, y: GY, scale: SC, facing: 0.85 });
+const ust = mk('ustav', { x: 1330, y: GY, scale: SC * 1.05, facing: 0.85 });
+const chk = mk('chaika', { x: 2110, y: GY, scale: SC, facing: 0.85 });
 Stage.layers.actors.appendChild(lad.el);
 const all = [hoh, lad, gvz, ust, chk];
 all.forEach((c) => c.blinks(tl, 0, c === chk ? B.impact.t : DUR));
@@ -83,11 +85,11 @@ mortar.fire(tl, B.shell.t);
 hoh.flinch(tl, B.shell.t, { amp: 8, dir: 1 });
 
 /* ===== ходьба цепочкой ===== */
-lad.walkTo(tl, 0.0, 530, 2.5, { stride: 0.6 });
-gvz.walkTo(tl, 0.1, 715, 2.2, { stride: 0.85 });
-ust.walkTo(tl, 0.0, 900, 1.55, { stride: 0.74 });
+lad.walkTo(tl, 0.0, 1000, 3.0, { stride: 0.6 });
+gvz.walkTo(tl, 0.1, 1250, 2.5, { stride: 0.85 });
+ust.walkTo(tl, 0.0, 1500, 1.65, { stride: 0.74 });
 chk.walkTo(tl, 0.0, CX, 3.6, { stride: 0.5 });
-lad.idle(tl, 2.6, 14.3); gvz.idle(tl, 2.4, DUR); ust.idle(tl, 1.65, DUR); chk.idle(tl, 3.7, B.impact.t - 0.05);
+lad.idle(tl, 3.1, 14.3); gvz.idle(tl, 2.7, DUR); ust.idle(tl, 1.75, 14.0); ust.idle(tl, 16.0, DUR); chk.idle(tl, 3.7, B.impact.t - 0.05);
 ust.prop(tl, 0.02, 'R', 'notebook');
 // Чайка с купюрами
 const nA = svgEl(noteSVG), nB = svgEl(noteSVG), nC = svgEl(noteSVG);
@@ -99,16 +101,17 @@ tl.to(nB, { rotation: 22, x: 14, duration: 0.31, ease: 'sine.inOut', yoyo: true,
 
 /* ===== Устав, L21–L22, L24 ===== */
 {
-  ust.turn(tl, 1.55, -0.8, 0.5); ust.look(tl, 1.6, -1, 0, 0.35);
+  ust.turn(tl, 1.6, -0.8, 0.5); ust.look(tl, 1.65, -1, 0, 0.35);
   const l21 = L(21); ust.talk(tl, l21.t, l21.dur, { energy: 1, gesture: false });
-  gvz.look(tl, 3.0, -0.9, 0, 0.4); lad.look(tl, 3.1, -0.9, 0, 0.4);
-  ust.to(tl, 8.1, { lid: 1 }, 0.8, 'sine.inOut');            // медленно закрывает глаза
+  gvz.look(tl, 3.1, -0.9, 0, 0.4); lad.look(tl, 3.3, -0.9, 0, 0.4);
+  ust.to(tl, 8.0, { lid: 1 }, 0.8, 'sine.inOut');            // медленно закрывает глаза
   ust.to(tl, B.impact.t + 0.9, { lid: 0 }, 0.5, 'sine.out');
   gvz.look(tl, B.shell.t + 0.3, 0.2, -1, 0.4); lad.look(tl, B.shell.t + 0.4, 0.2, -1, 0.4);
   [gvz, ust, lad].forEach((c) => c.flinch(tl, B.impact.t + 0.05, { amp: 10, dir: -1 }));
   const l24 = L(24);
   ust.prop(tl, 15.7, 'R', 'pencil');
-  ust.turn(tl, 15.8, 0.55, 0.5);
+  ust.turn(tl, 13.85, 0.85, 0.3); ust.walkTo(tl, 14.1, 1860, 1.8, { stride: 0.9 });
+  ust.turn(tl, 15.85, 0.55, 0.4);
   ust.pose(tl, 15.95, 'write', DUR - 15.95);
   ust.look(tl, 15.9, 0.5, 0.6, 0.4);
   ust.talk(tl, l24.t, l24.dur, { energy: 0.8, gesture: false });
@@ -117,7 +120,7 @@ tl.to(nB, { rotation: 22, x: 14, duration: 0.31, ease: 'sine.inOut', yoyo: true,
 
 /* ===== снаряд ===== */
 const F0 = B.shell.t, F1 = B.impact.t;
-const P0 = [262, 930], P1 = [170, -600], P2 = [1230, -1300], P3 = [CX + 2, 610];
+const P0 = [392, 930], P1 = [300, -600], P2 = [CX - 30, -1300], P3 = [CX + 2, 610];
 const bz = (u, i) => { const a = 1 - u; return a * a * a * P0[i] + 3 * a * a * u * P1[i] + 3 * a * u * u * P2[i] + u * u * u * P3[i]; };
 const dbz = (u, i) => { const a = 1 - u; return 3 * a * a * (P1[i] - P0[i]) + 6 * a * u * (P2[i] - P1[i]) + 3 * u * u * (P3[i] - P2[i]); };
 const uOf = (tau) => tau + 0.06 * Math.sin(2 * Math.PI * tau);
@@ -127,7 +130,7 @@ const bf = Stage.prop.butterfly({ x: 0, y: 0, layer: 'fx' }); gsap.set(bf, { opa
   e.innerHTML = `<circle cx="-6" cy="-14" r="7.5" fill="#fff" stroke="#2b1a12" stroke-width="2.5"/><circle cx="6" cy="-14" r="7.5" fill="#fff" stroke="#2b1a12" stroke-width="2.5"/><circle class="bp" cx="-8" cy="-12" r="3.2" fill="#2b1a12"/><circle class="bq" cx="4" cy="-12" r="3.2" fill="#2b1a12"/><ellipse cx="0" cy="-3" rx="3.5" ry="4.5" fill="#2b1a12"/>`; g.appendChild(e); }
 const bp = bf.querySelector('.bp'), bq = bf.querySelector('.bq');
 const drv = { t: 0 };
-const PRE = { x: 320, y: 1000, s: 1.2 };
+const PRE = { x: 430, y: 1000, s: 1.2 };
 const flight = (t) => {
   const tau = clamp((t - F0) / (F1 - F0), 0, 1), u = uOf(tau);
   const px = bz(u, 0), py = bz(u, 1), dx = dbz(u, 0), dy = dbz(u, 1), th = Math.atan2(dx, -dy);
@@ -163,6 +166,7 @@ chk.fall(tl, F1 + 0.02, { style: 'blast', dir: 1 });
 Stage.explosion(tl, F1, CX, 1020, { size: 1.5 });
 Stage.dust(tl, F1 + 0.05, CX, 1200, { n: 10, size: 110, spread: 260 });
 Stage.dust(tl, F1 + 0.5, CX - 80, 1210, { n: 6, size: 90, spread: 200 });
+[[1500, 0.5], [1250, 0.6], [1000, 0.7]].forEach(([x, d]) => Stage.dust(tl, F1 + d, x, 1195, { n: 5, size: 70, spread: 140 }));
 Stage.debris(tl, F1, CX, 1150, { n: 14, power: 1 });
 Stage.smoke(tl, F1 + 0.3, F1 + 3.0, CX, 1190, { n: 7, size: 130, rise: 240, life: 2.6, alpha: 0.5 });
 tl.to(crater, { opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(1.6)' }, F1 + 0.1);
@@ -194,8 +198,8 @@ tl.set(notes[NN - 1], { zIndex: 5 }, 0);
 /* ===== Ладошка: к воронке, на корточки, сбор, финал ===== */
 {
   lad.to(tl, 14.3, { y: 1285, sc: SC * 1.08 }, 0.5, 'sine.inOut');
-  lad.walkTo(tl, 14.7, LADX, 4.2, { stride: 0.6 });
-  lad.turn(tl, 18.85, 0.6, 0.3);
+  lad.walkTo(tl, 14.5, LADX, 4.4, { stride: 1.1 });
+  lad.turn(tl, 18.9, 0.6, 0.3);
   const CROUCH = { py: 85, chest: 16, head: -10, fLx: -10, fRx: 10 };
   lad.pose(tl, 18.95, Object.assign({ aR1: -35, aR2: -60, aL1: 30, aL2: -40 }, CROUCH), 0.45);
   for (let i = 0; i < 4; i++) {
@@ -218,15 +222,15 @@ tl.set(notes[NN - 1], { zIndex: 5 }, 0);
 Stage.tag(tl, 0.3, 'ПОЛЕ', 2.2);
 Stage.captions(tl, T.lines);
 const cam = (t, x, y, s, d, e) => Stage.cam(tl, t, { x, y, scale: s }, d, e || 'sine.inOut');
-cam(0.1, 690, 930, 0.92, 1.4);
-cam(1.5, 600, 940, 1.05, 1.5);
-cam(3.7, 330, 900, 1.45, 1.6);
-cam(7.95, 870, 880, 1.6, 0.5, 'power2.inOut');
-cam(8.75, PRE.x, PRE.y, PRE.s, 0.45, 'power2.inOut');
-cam(F1 + 0.02, 700, 960, 0.72, 1.8);
-cam(15.6, 880, 930, 1.4, 1.0);
-cam(19.0, 1070, 1000, 1.3, 1.0);
-cam(20.9, 1080, 1010, 1.55, 2.2);
+cam(0.1, 1280, 930, 0.95, 1.4);
+cam(1.55, 1390, 920, 1.3, 1.2);
+cam(2.75, 330, 900, 1.45, 1.3, 'power2.inOut');
+cam(7.7, 1490, 900, 1.6, 0.9, 'power2.inOut');
+cam(8.65, PRE.x, PRE.y, PRE.s, 0.55, 'power2.inOut');
+cam(F1 + 0.02, 1280, 980, 0.5, 1.3);
+cam(15.3, 1760, 940, 1.2, 1.2);
+cam(18.9, 2030, 1000, 1.3, 1.0);
+cam(20.9, 2050, 1010, 1.5, 2.2);
 Stage.blackout(tl, B.out.t + 0.2, 0.8);
 
 /* ---------- звук ---------- */
