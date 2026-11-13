@@ -549,14 +549,14 @@
     if (name === 'write') { osc('g' + M + '2', 6, 0.085); osc('g' + M + '1', 3 * sg, 0.45); osc('tNod', 1.5, 0.6); }
     if (name === 'wave') { osc('g' + M + '2', 24, 0.17); osc('g' + M + '1', 5, 0.34); }
     if (name === 'eat') {
-      var D = this.D, B = this.B, a1 = 'a' + M + '1', a2 = 'a' + M + '2', dn = {}, up, per = 1.05, tt = t, mth = this._arm('R', 16, -(D.chestH + D.nh) + 66);
+      var D = this.D, B = this.B, a1 = 'a' + M + '1', a2 = 'a' + M + '2', dn = {}, up, per = 2.3, tt = t, mth = this._arm('R', 16, -(D.chestH + D.nh) + 66);
       up = {}; up[a1] = flip ? -mth.aR1 : mth.aR1; up[a2] = flip ? -mth.aR2 : mth.aR2; dn[a1] = B[a1]; dn[a2] = B[a2];
       up[a1] = B[a1] + wrap(up[a1] - B[a1]); up[a2] = B[a2] + wrap(up[a2] - B[a2]);
       while (tt + per <= t + dur + 0.01) {
         this._to(tl, tt, up, 0.3, 'power2.out'); this._to(tl, tt + 0.1, { tNod: 6 }, 0.2, 'sine.out');
-        this.mouth(tl, tt + 0.2, 1); this.mouth(tl, tt + 0.4, 4);
+        this.mouth(tl, tt + 0.22, 1); this.mouth(tl, tt + 0.42, 0); // рот открыт только под ложку
         this._to(tl, tt + 0.42, dn, 0.36, 'power2.inOut'); this._to(tl, tt + 0.42, { tNod: 0 }, 0.3, 'sine.inOut');
-        this.mouth(tl, tt + 0.56, 5); this.mouth(tl, tt + 0.68, 4); this.mouth(tl, tt + 0.8, 5); this.mouth(tl, tt + 0.92, 0);
+        this._to(tl, tt + 0.75, { tNod: 2.2 }, 0.16, 'sine.inOut'); this._to(tl, tt + 0.91, { tNod: 0 }, 0.16, 'sine.inOut'); this._to(tl, tt + 1.1, { tNod: 2 }, 0.16, 'sine.inOut'); this._to(tl, tt + 1.26, { tNod: 0 }, 0.2, 'sine.inOut'); // жуёт с закрытым ртом: только лёгкие кивки
         tt += per;
       }
     }
