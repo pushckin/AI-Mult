@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Сцена 3</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../kit/vendor/fonts.css"><link rel="stylesheet" href="../kit/stage.css">
+</head><body>
+<div id="root" data-duration="24.15">
+  <div id="camera"><div id="float"><div id="shake"><div id="world"></div></div></div></div>
+  <div id="overlay"></div>
+</div>
+<script src="../kit/vendor/gsap.min.js"></script>
+<script src="../kit/lines.js"></script>
+<script src="../kit/rig.js"></script>
+<script src="../kit/sfx.js"></script>
+<script src="../kit/stage.js"></script>
+<script>
+const N = 3;
+const { tl, T } = Stage.init({ scene: N });
+const B = T.beats, DUR = T.duration;
+const bg = Stage.bg.field();
+const NS = 'http://www.w3.org/2000/svg';
+const svgEl = (html, parent) => {
+  if (!parent) { const g = document.createElementNS(NS, 'g'); g.innerHTML = html; return g; }
+  const v = document.createElementNS(NS, 'svg'); v.setAttribute('width', 1); v.setAttribute('height', 1); v.style.overflow = 'visible'; v.innerHTML = html; parent.appendChild(v); return v; };
+const L = (id) => T.lines.find((l) => l.id === id);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const ss = (a, b, t) => { const x = clamp((t - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); };
+const rnd = Stage.rng(33);
+const GY = Stage.GROUND, SC = 0.85, CX = 1110, LADX = 1050;
+Stage.camSet({ x: 680, y: 930, scale: 0.92 });
+{ // большое небо и земля для полёта (родные листы конечны)
+  const sk = Stage.layers.sky; const big = svgEl(`<rect x="-3500" y="-4500" width="8000" height="4600" fill="#f6d58a"/>`, sk); sk.insertBefore(big.parentNode === sk ? big : big, sk.firstChild);
+  svgEl(`<rect x="-4000" y="1190" width="3700" height="2200" fill="#6a5426"/><rect x="3500" y="1190" width="4000" height="2200" fill="#6a5426"/>`, Stage.layers.mid);
+}
+
+/* ---------- декор: облака (для полёта), миномёт, мешок, воронка ---------- */
+const cloudSVG = (w) => `<ellipse cx="0" cy="26" rx="${w * .55}" ry="${w * .12}" fill="#e9a54a" opacity=".55"/>` + [[-.3, 0, .26], [0, -.1, .32], [.3, -.02, .27], [-.08, .1, .3], [.15, .1, .24]].map(([x, y, r]) => `<ellipse cx="${x * w}" cy="${y * w * .5}" rx="${r * w}" ry="${r * w * .62}" fill="#fff3da" opacity=".93"/>`).join('');
+const clouds = [];
+for (let i = 0; i < 34; i++) { const w = 260 + rnd() * 520, x = -900 + rnd() * 3400, y = -2300 + rnd() * 1900;
+  const lay = i % 3 === 0 ? Stage.layers.far2 : Stage.layers.mid; const c = svgEl(cloudSVG(w), lay);
+  gsap.set(c, { x: i % 3 === 0 ? x - 400 : x, y: i % 3 === 0 ? y * .6 : y, opacity: i % 3 === 0 ? .8 : 1 }); clouds.push(c); }
+const mortar = Stage.prop.mortar({ x: 345, y: GY, s: 1.05, layer: 'mid' });
+const sack = svgEl(`<ellipse cx="0" cy="4" rx="64" ry="12" fill="#000" opacity=".3"/><path d="M-52,0 C-70,-60 -34,-84 -22,-92 L22,-92 C34,-84 70,-60 52,0Z" fill="#b8a468" stroke="#2b1a12" stroke-width="6"/><path d="M-26,-92 q26,22 52,0" stroke="#2b1a12" stroke-width="5" fill="none"/><text x="0" y="-36" text-anchor="middle" font-family="Russo One" font-size="26" fill="#2b1a12">$</text>`, Stage.layers.mid);
+gsap.set(sack, { x: LADX - 100, y: 1232, opacity: 0 });
+const crater = svgEl(`<ellipse cx="0" cy="0" rx="190" ry="38" fill="#4a2a14" stroke="#2b1a12" stroke-width="7"/><ellipse cx="0" cy="8" rx="150" ry="26" fill="#1a0f08"/><path d="M-210,-4 q-26,-26 -4,-40 M206,-6 q26,-24 8,-40" stroke="#6a3c1c" stroke-width="14" fill="none" stroke-linecap="round"/>`, Stage.layers.mid);
+gsap.set(crater, { x: CX, y: 1222, opacity: 0, scale: 0.3, transformOrigin: '0px 0px' });
+
+/* ---------- персонажи ---------- */
+const mk = (name, o) => { const c = Rig.create(name, o); Stage.layers.actors.appendChild(c.el); return c; };
+const hoh = mk('hohotun', { x: 200, y: GY, scale: SC, facing: 0.5 });
+const lad = mk('ladoshka', { x: 470, y: GY, scale: SC, facing: 0.85 });
+const gvz = mk('gvozd', { x: 670, y: GY, scale: SC, facing: 0.85 });
+const ust = mk('ustav', { x: 860, y: GY, scale: SC * 1.05, facing: 0.85 });
+const chk = mk('chaika', { x: 1050, y: GY, scale: SC, facing: 0.85 });
+Stage.layers.actors.appendChild(lad.el);
+const all = [hoh, lad, gvz, ust, chk];
+all.forEach((c) => c.blinks(tl, 0, c === chk ? B.impact.t : DUR));
+const noteSVG = `<rect x="-100" y="-50" width="200" height="100" rx="8" fill="#7fc070" stroke="#2b1a12" stroke-width="8"/><rect x="-86" y="-36" width="172" height="72" rx="5" fill="none" stroke="#2f6a2a" stroke-width="5"/><ellipse cx="0" cy="0" rx="32" ry="26" fill="#a8dc90" stroke="#2b1a12" stroke-width="4"/><text x="0" y="12" text-anchor="middle" font-family="Russo One" font-size="32" fill="#1f4a1a">100</text>`;
+
+/* ===== ХОХОТУН: возится у миномёта, плечи трясутся ===== */
+hoh.idle(tl, 0, DUR);
+hoh.pose(tl, 0.1, 'rubHands', 0.4);
+hoh.mouth(tl, 0.2, 3);
+for (let t = 0.3; t < 3.7; t += 0.62) hoh.bounce(tl, t, 6);
+{
+  const l = L(22);
+  hoh.mouth(tl, 3.8, 0);
+  hoh.talk(tl, l.t, l.dur, { energy: 1.4, gesture: false });
+  hoh.pose(tl, 6.0, 'point', 0.4);            // «цифры местами поменял» — пальцами
+  hoh.pose(tl, 7.5, 'rubHands', 0.4);
+  hoh.mouth(tl, l.t + l.dur + 0.04, 3);       // «так красивее» — счастливая улыбка
+  hoh.look(tl, 7.7, 0.3, -0.2, 0.3);
+  hoh.look(tl, B.shell.t + 0.2, 0.3, -1, 0.3); // провожает снаряд взглядом
+  hoh.pose(tl, B.shell.t + 0.2, 'point', 0.4);
+  hoh.pose(tl, B.impact.t + 0.3, 'stand', 0.5);
+  const l23 = L(23);
+  hoh.mouth(tl, l23.t - 0.05, 0); hoh.look(tl, B.impact.t + 0.3, 0.9, 0, 0.3);
+  hoh.jump(tl, l23.t, 140);
+  hoh.talk(tl, l23.t, l23.dur, { energy: 1.6, gesture: false });
+  hoh.mouth(tl, l23.t + l23.dur + 0.05, 3);
+}
+mortar.fire(tl, B.shell.t);
+hoh.flinch(tl, B.shell.t, { amp: 8, dir: 1 });
+
+/* ===== ходьба цепочкой ===== */
+lad.walkTo(tl, 0.0, 530, 2.5, { stride: 0.6 });
+gvz.walkTo(tl, 0.1, 715, 2.2, { stride: 0.85 });
+ust.walkTo(tl, 0.0, 900, 1.55, { stride: 0.74 });
+chk.walkTo(tl, 0.0, CX, 3.6, { stride: 0.5 });
+lad.idle(tl, 2.6, 14.3); gvz.idle(tl, 2.4, DUR); ust.idle(tl, 1.65, DUR); chk.idle(tl, 3.7, B.impact.t - 0.05);
+ust.prop(tl, 0.02, 'R', 'notebook');
+// Чайка с купюрами
+const nA = svgEl(noteSVG), nB = svgEl(noteSVG), nC = svgEl(noteSVG);
+chk.give(nA, 'R', { x: 0, y: -6, rot: -20, scale: 0.4 }); chk.give(nB, 'R', { x: 6, y: 4, rot: 10, scale: 0.4 }); chk.give(nC, 'L', { x: 0, y: 0, rot: 30, scale: 0.4 });
+chk.pose(tl, 3.7, 'hold', 0.5);
+chk.look(tl, 0.1, 0.5, 0.8, 0.4);
+tl.to(nA, { rotation: 8, y: -14, duration: 0.2, ease: 'sine.inOut', yoyo: true, repeat: 49 }, 3.8);
+tl.to(nB, { rotation: 22, x: 14, duration: 0.31, ease: 'sine.inOut', yoyo: true, repeat: 31 }, 3.9);
+
+/* ===== Устав, L21–L22, L24 ===== */
+{
+  ust.turn(tl, 1.55, -0.8, 0.5); ust.look(tl, 1.6, -1, 0, 0.35);
+  const l21 = L(21); ust.talk(tl, l21.t, l21.dur, { energy: 1, gesture: false });
+  gvz.look(tl, 3.0, -0.9, 0, 0.4); lad.look(tl, 3.1, -0.9, 0, 0.4);
+  ust.to(tl, 8.1, { lid: 1 }, 0.8, 'sine.inOut');            // медленно закрывает глаза
+  ust.to(tl, B.impact.t + 0.9, { lid: 0 }, 0.5, 'sine.out');
+  gvz.look(tl, B.shell.t + 0.3, 0.2, -1, 0.4); lad.look(tl, B.shell.t + 0.4, 0.2, -1, 0.4);
+  [gvz, ust, lad].forEach((c) => c.flinch(tl, B.impact.t + 0.05, { amp: 10, dir: -1 }));
+  const l24 = L(24);
+  ust.prop(tl, 15.7, 'R', 'pencil');
+  ust.turn(tl, 15.8, 0.55, 0.5);
+  ust.pose(tl, 15.95, 'write', DUR - 15.95);
+  ust.look(tl, 15.9, 0.5, 0.6, 0.4);
+  ust.talk(tl, l24.t, l24.dur, { energy: 0.8, gesture: false });
+  ust.look(tl, 18.45, 1, 0.1, 0.35); ust.look(tl, 19.3, 0.5, 0.6, 0.4);   // кивает на купюры
+}
+
+/* ===== снаряд ===== */
+const F0 = B.shell.t, F1 = B.impact.t;
+const P0 = [262, 930], P1 = [170, -600], P2 = [1230, -1300], P3 = [CX + 2, 610];
+const bz = (u, i) => { const a = 1 - u; return a * a * a * P0[i] + 3 * a * a * u * P1[i] + 3 * a * u * u * P2[i] + u * u * u * P3[i]; };
+const dbz = (u, i) => { const a = 1 - u; return 3 * a * a * (P1[i] - P0[i]) + 6 * a * u * (P2[i] - P1[i]) + 3 * u * u * (P3[i] - P2[i]); };
+const uOf = (tau) => tau + 0.06 * Math.sin(2 * Math.PI * tau);
+const shell = Stage.prop.shell({ x: 0, y: 0, layer: 'fx' }); gsap.set(shell, { opacity: 0 });
+const bf = Stage.prop.butterfly({ x: 0, y: 0, layer: 'fx' }); gsap.set(bf, { opacity: 0 });
+{ const g = bf.querySelector('.bf'); const e = document.createElementNS(NS, 'g');
+  e.innerHTML = `<circle cx="-6" cy="-14" r="7.5" fill="#fff" stroke="#2b1a12" stroke-width="2.5"/><circle cx="6" cy="-14" r="7.5" fill="#fff" stroke="#2b1a12" stroke-width="2.5"/><circle class="bp" cx="-8" cy="-12" r="3.2" fill="#2b1a12"/><circle class="bq" cx="4" cy="-12" r="3.2" fill="#2b1a12"/><ellipse cx="0" cy="-3" rx="3.5" ry="4.5" fill="#2b1a12"/>`; g.appendChild(e); }
+const bp = bf.querySelector('.bp'), bq = bf.querySelector('.bq');
+const drv = { t: 0 };
+const PRE = { x: 320, y: 1000, s: 1.2 };
+const flight = (t) => {
+  const tau = clamp((t - F0) / (F1 - F0), 0, 1), u = uOf(tau);
+  const px = bz(u, 0), py = bz(u, 1), dx = dbz(u, 0), dy = dbz(u, 1), th = Math.atan2(dx, -dy);
+  const a = ss(F0 + 0.1, F0 + 1.9, t), b = ss(12.2, F1, t), w = ss(12.3, F1, t);
+  const cs = 1.2 + (0.5 - 1.2) * a + (0.95 - 0.5) * b;
+  const k = 0.62 + (1.45 - 0.62) * ss(F0, F0 + 1.7, t) - 0.25 * ss(12.3, F1, t);
+  const s = k / cs;
+  let cx = px, cy = py + 380 * a;
+  cx = lerp(cx, CX - 4, w); cy = lerp(cy, 900, w);
+  const p = ss(F0, F0 + 0.6, t);
+  cx = lerp(PRE.x, cx, p); cy = lerp(PRE.y, cy, p);
+  const sc = lerp(PRE.s, cs, p);
+  Object.assign(Stage._cam, { x: cx, y: cy, scale: sc }); // камера ведёт снаряд
+  // хвост снаряда — точка вращения
+  const hl = 106 * s, tx = px - Math.sin(th) * hl, ty = py + Math.cos(th) * hl;
+  gsap.set(shell, { x: tx, y: ty, rotation: th * 180 / Math.PI, scaleX: s, scaleY: s, opacity: t >= F0 && t < F1 ? 1 : 0 });
+  // бабочка
+  const ba = (t - (F0 + 1.0)) / 2.2;
+  if (ba > 0 && ba < 1) {
+    const ox = lerp(900, 330, ss(0, .3, ba)) + lerp(0, 600, ss(.68, 1, ba)) + 40 * Math.sin(ba * 11), oy = lerp(300, -90, ss(0, .3, ba)) + lerp(0, 300, ss(.68, 1, ba)) + 55 * Math.sin(ba * 7.5);
+    const bs = 1.7 / cs;
+    gsap.set(bf, { x: px + ox, y: py + oy, scaleX: bs, scaleY: bs, rotation: Math.sin(ba * 9) * 14, opacity: ss(0, .08, ba) * (1 - ss(.9, 1, ba)) });
+    const sx = clamp(-(ox) / 300, -1, 1), sy = clamp(-(oy) / 300, -1, 1);
+    [bp, bq].forEach((e, i) => { e.setAttribute('cx', (i ? 6 : -6) + sx * 3.2); e.setAttribute('cy', -14 + sy * 3.2); });
+  } else gsap.set(bf, { opacity: 0 });
+};
+tl.to(drv, { t: 1, duration: F1 - F0, ease: 'none', onUpdate() { flight(F0 + drv.t * (F1 - F0)); } }, F0);
+
+/* ===== Чайка поднимает голову, взрыв ===== */
+chk.look(tl, F1 - 0.3, 0.05, -1, 0.18); chk.mouth(tl, F1 - 0.28, 1);
+chk.fall(tl, F1 + 0.02, { style: 'blast', dir: 1 });
+[nA, nB, nC].forEach((n) => tl.set(n, { opacity: 0 }, F1));
+Stage.explosion(tl, F1, CX, 1020, { size: 1.5 });
+Stage.dust(tl, F1 + 0.05, CX, 1200, { n: 10, size: 110, spread: 260 });
+Stage.dust(tl, F1 + 0.5, CX - 80, 1210, { n: 6, size: 90, spread: 200 });
+Stage.debris(tl, F1, CX, 1150, { n: 14, power: 1 });
+Stage.smoke(tl, F1 + 0.3, F1 + 3.0, CX, 1190, { n: 7, size: 130, rise: 240, life: 2.6, alpha: 0.5 });
+tl.to(crater, { opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(1.6)' }, F1 + 0.1);
+tl.to(sack, { opacity: 1, duration: 0.01 }, 18.4);
+
+/* ===== купюры ===== */
+const notes = [];
+const NN = 9;
+for (let i = 0; i < NN; i++) {
+  const n = svgEl(noteSVG, Stage.layers.fx); gsap.set(n, { x: CX, y: 1000, scaleX: 0.3, scaleY: 0.3, opacity: 0, rotation: rnd() * 60 }); notes.push(n);
+  const last = i === NN - 1, dir = i % 2 ? 1 : -1, hx = CX + dir * (60 + rnd() * 240) * (0.5 + i * 0.1) * 0.9;
+  const up = 420 + rnd() * 500, fall = last ? 23.0 - (F1 + 0.55) : 2.4 + rnd() * 2.4;
+  const ex = last ? LADX + 60 : CX - 150 + rnd() * 320, ey = last ? 1185 : 1215 + rnd() * 40;
+  tl.set(n, { opacity: 1 }, F1 + 0.02);
+  tl.to(n, { x: hx, y: 1000 - up, duration: 0.55, ease: 'power2.out' }, F1 + 0.02);
+  tl.to(n, { x: ex, duration: fall, ease: 'sine.inOut' }, F1 + 0.57);
+  tl.to(n, { y: ey, duration: fall, ease: 'power1.out' }, F1 + 0.57);
+  tl.to(n, { scaleX: 0.42, scaleY: 0.42, duration: 0.55, ease: 'power2.out' }, F1 + 0.02);
+  const sw = 40 + rnd() * 50, per = 0.5 + rnd() * 0.3; // покачивание
+  tl.to(n, { rotation: '+=' + (60 + rnd() * 40) * dir, duration: 0.5 + rnd() * 0.3, ease: 'sine.inOut', yoyo: true, repeat: Math.floor(fall / per) }, F1 + 0.57);
+  if (!last) {
+    const tc = 19.2 + i * 0.22;                                  // собирает в сумку
+    tl.to(n, { x: LADX - 100, y: 1150, scaleX: 0.15, scaleY: 0.15, duration: 0.32, ease: 'power2.in' }, tc);
+    tl.set(n, { opacity: 0 }, tc + 0.33);
+  }
+}
+tl.set(notes[NN - 1], { zIndex: 5 }, 0);
+
+/* ===== Ладошка: к воронке, на корточки, сбор, финал ===== */
+{
+  lad.to(tl, 14.3, { y: 1285, sc: SC * 1.08 }, 0.5, 'sine.inOut');
+  lad.walkTo(tl, 14.7, LADX, 4.2, { stride: 0.6 });
+  lad.turn(tl, 18.85, 0.6, 0.3);
+  const CROUCH = { py: 85, chest: 16, head: -10, fLx: -10, fRx: 10 };
+  lad.pose(tl, 18.95, Object.assign({ aR1: -35, aR2: -60, aL1: 30, aL2: -40 }, CROUCH), 0.45);
+  for (let i = 0; i < 4; i++) {
+    lad.pose(tl, 19.45 + i * 0.5, Object.assign({ aR1: i % 2 ? -35 : 25, aR2: i % 2 ? -60 : -35, aL1: 30, aL2: -40 }, CROUCH), 0.45);
+  }
+  lad.look(tl, 19.0, 0.4, 0.8, 0.3);
+  const l25 = L(25);
+  lad.look(tl, l25.t - 0.15, -0.6, 0.1, 0.3);
+  lad.turn(tl, l25.t - 0.15, -0.55, 0.45);
+  lad.talk(tl, l25.t, l25.dur, { energy: 1, gesture: false });
+  lad.mouth(tl, l25.t + l25.dur + 0.05, 3);
+  lad.pose(tl, l25.t + l25.dur + 0.2, Object.assign({ aR1: -20, aR2: -80, aL1: 30, aL2: -40 }, CROUCH), 0.5);  // ладонь подставлена
+  lad.look(tl, 22.2, 0.5, 0.9, 0.5);
+  const held = svgEl(noteSVG); lad.give(held, 'R', { x: 0, y: 0, rot: 20, scale: 0.4 });
+  gsap.set(held, { opacity: 0 });
+  tl.set(notes[NN - 1], { opacity: 0 }, 23.05); tl.set(held, { opacity: 1 }, 23.05);
+}
+
+/* ---------- титры и камера ---------- */
+Stage.tag(tl, 0.3, 'ПОЛЕ', 2.2);
+Stage.captions(tl, T.lines);
+const cam = (t, x, y, s, d, e) => Stage.cam(tl, t, { x, y, scale: s }, d, e || 'sine.inOut');
+cam(0.1, 690, 930, 0.92, 1.4);
+cam(1.5, 600, 940, 1.05, 1.5);
+cam(3.7, 330, 900, 1.45, 1.6);
+cam(7.95, 870, 880, 1.6, 0.5, 'power2.inOut');
+cam(8.75, PRE.x, PRE.y, PRE.s, 0.45, 'power2.inOut');
+cam(F1 + 0.02, 700, 960, 0.72, 1.8);
+cam(15.6, 880, 930, 1.4, 1.0);
+cam(19.0, 1070, 1000, 1.3, 1.0);
+cam(20.9, 1080, 1010, 1.55, 2.2);
+Stage.blackout(tl, B.out.t + 0.2, 0.8);
+
+/* ---------- звук ---------- */
+window.__sound = (ctx, t0) => {
+  const s = SFX.init(ctx, t0, { partStart: T.partStart, room: 'field' });
+  s.ambience('field', 0, DUR, { birds: false });
+  s.duckLines(T.lines);
+  s.footsteps(0.05, 1.6, { surface: 'dirt', rate: 1.9 }); s.footsteps(0.2, 2.5, { surface: 'dirt', rate: 2.4, gain: 0.8 });
+  s.footsteps(0.3, 3.6, { surface: 'dirt', rate: 1.6, gain: 0.7 });
+  s.footsteps(14.6, 18.9, { surface: 'dirt', rate: 2.0, gain: 0.9 });
+  [4.0, 5.6, 7.1, 8.5, 10.4, 11.9].forEach((t, i) => s.cashRustle(t, { n: 5, pan: 0.4, gain: 0.8 }));
+  s.mortarThump(F0, { pan: -0.5 });
+  s.duck(F0 + 0.2, F1, 9);
+  s.music('tender', F0 + 0.25, F1, { fadeOut: 0.2 });
+  s.shellWhistle(F1 - 2.4, 2.4, { pan: 0.2, gain: 0.8 });
+  s.explosion(F1, { size: 'big', pan: 0.2 });
+  s.thud(F1 + 1.15, { pan: 0.3, gain: 0.6 }); s.thud(F1 + 1.55, { pan: 0.3, gain: 0.35 });
+  s.bodyFall(F1 + 1.0, { weight: 'light', pan: 0.4 });
+  s.dustPuff(F1 + 0.3, { big: true, pan: 0.2 });
+  s.pencil(16.1, 1.2, { pan: -0.3 }); s.pencil(17.8, 0.8, { pan: -0.3 }); s.pencil(19.6, 1.0, { pan: -0.3, gain: 0.8 });
+  [19.4, 19.75, 20.1, 20.45, 20.8].forEach((t, i) => s.cashRustle(t, { n: 4, pan: 0.5, gain: 0.9 }));
+  s.coin(22.9, { pan: 0.4 });
+  s.fadeOut(DUR - 0.5, 0.5);
+};
+</script></body></html>
