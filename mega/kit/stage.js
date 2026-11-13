@@ -340,10 +340,10 @@ function makeDoor(o) {
   const w = o.w || 150, h = o.h || 560, host = resolveLayer(o.layer, 'mid'), wood = o.kind === 'wood';
   const box = div('door', host, `left:${o.x}px;top:${o.y - h}px;width:${w}px;height:${h}px`);
   const frame = svg(`<rect x="-14" y="-14" width="${w + 28}" height="${h + 14}" rx="12" fill="${wood ? '#4a2a14' : '#3f4a3b'}" ${OL}/><rect x="0" y="0" width="${w}" height="${h}" fill="#1a0f08"/>`, box); frame.style.cssText = 'position:absolute;left:0;top:0;overflow:visible';
-  const light = div('', box, `left:0;top:0;width:${w}px;height:${h}px;opacity:0;background:linear-gradient(90deg,#ffd27a 0,#f0a04a 55%,#b96a2c 100%)`);
+  const light = div('', box, `position:absolute;left:0;top:0;width:${w}px;height:${h}px;opacity:0;background:linear-gradient(90deg,#ffd27a 0,#f0a04a 55%,#b96a2c 100%)`);
   const sil = svg(`<path d="M${w * .1},${h} L${w * .25},${h * .7} L${w * .6},${h * .66} L${w * .9},${h * .78} L${w},${h} Z" fill="#8a4a24" opacity=".9"/><circle cx="${w * .6}" cy="${h * .36}" r="${w * .2}" fill="#fff1c0" opacity=".85"/>`, light);
   sil.style.cssText = 'position:absolute;left:0;top:0;overflow:visible';
-  const slab = div('', box, `left:0;top:0;width:${w}px;height:${h}px;transform-origin:0% 50%`); slab.innerHTML = slabSvg(o.kind, w, h); slab.firstChild.style.cssText = 'position:absolute;left:0;top:0;overflow:visible';
+  const slab = div('', box, `position:absolute;left:0;top:0;width:${w}px;height:${h}px;transform-origin:0% 50%`); slab.innerHTML = slabSvg(o.kind, w, h); slab.firstChild.style.cssText = 'position:absolute;left:0;top:0;overflow:visible';
   gsap.set(slab, { transformPerspective: 900, rotationY: 0, transformOrigin: '0% 50%' });
   const D = { el: box, slab, light, x: o.x, y: o.y, w, h, cx: o.x + w / 2,
     open(tl, t, oo) { oo = oo || {}; const d = oo.dur || .9; tl.to(light, { opacity: 1, duration: d * .6, ease: 'power2.out' }, t);

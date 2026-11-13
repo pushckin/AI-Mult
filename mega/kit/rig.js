@@ -505,6 +505,7 @@
     if (name) {
       if (!POSES[name]) throw new Error('Rig: нет позы ' + name);
       tgt = add(add({}, STAND), POSES[name](this));
+      if (o.sit) { var ss = POSES.sit(this); tgt.py = ss.py; tgt.fLx = ss.fLx; tgt.fRx = ss.fRx; } // o.sit: поза сидя (ноги/таз как у sit)
       if (name === 'hold') { delete tgt.pL; delete tgt.pR; }
       flip = o.flip != null ? !!o.flip : B.turnB < -0.3;
       if (flip) { var ex = tgt.ex; tgt = mir(tgt); tgt.ex = -ex; v = tgt.pL; tgt.pL = tgt.pR; tgt.pR = v; var kl = tgt.kL, kr = tgt.kR; delete tgt.kL; delete tgt.kR; if (kr != null) tgt.kL = kr; if (kl != null) tgt.kR = kl; }

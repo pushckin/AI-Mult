@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Сцена 1</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../kit/vendor/fonts.css"><link rel="stylesheet" href="../kit/stage.css">
+</head><body>
+<div id="root" data-duration="35.82">
+  <div id="camera"><div id="float"><div id="shake"><div id="world"></div></div></div></div>
+  <div id="overlay"></div>
+</div>
+<script src="../kit/vendor/gsap.min.js"></script>
+<script src="../kit/lines.js"></script>
+<script src="../kit/rig.js"></script>
+<script src="../kit/sfx.js"></script>
+<script src="../kit/stage.js"></script>
+<script>
+const N = 1;
+const { tl, T } = Stage.init({ scene: N });
+const B = T.beats, DUR = T.duration;
+const bg = Stage.bg.bunker();
+Stage.addLayer('front', 1, 'fx');
+const NS = 'http://www.w3.org/2000/svg';
+const svgEl = (html, parent) => { // без parent — <g> для руки персонажа; с parent — <svg> 1x1 в слое мира
+  if (!parent) { const g = document.createElementNS(NS, 'g'); g.innerHTML = html; return g; }
+  const v = document.createElementNS(NS, 'svg'); v.setAttribute('width', 1); v.setAttribute('height', 1); v.style.overflow = 'visible'; v.innerHTML = html; parent.appendChild(v); return v; };
+const L = (id) => T.lines.find((l) => l.id === id);
+Stage.camSet({ x: 540, y: 900, scale: 0.98 });
+
+/* ---------- пол и передний план (нижняя треть не пустая) ---------- */
+const floorDeco = svgEl(`
+  <rect x="120" y="1222" width="800" height="120" rx="14" fill="#3a2418" stroke="#2b1a12" stroke-width="6" opacity=".92"/>
+  <path d="M140,1240 H900 M140,1324 H900" stroke="#6a4422" stroke-width="6" stroke-dasharray="34 20" opacity=".7"/>
+  <rect x="150" y="1258" width="740" height="48" fill="#2a1a10" opacity=".55"/>
+  <path d="M-380,1470 C-100,1440 200,1500 520,1470 S1000,1440 1500,1480" fill="none" stroke="#0a0805" stroke-width="16" opacity=".55"/>
+  <path d="M-380,1470 C-100,1440 200,1500 520,1470 S1000,1440 1500,1480" fill="none" stroke="#2f3a2a" stroke-width="5" opacity=".7"/>
+  <path d="M-300,1590 H1400" stroke="#ffcf1a" stroke-width="12" stroke-dasharray="60 40" opacity=".18"/>`, Stage.layers.mid);
+Stage.prop.crate({ x: 40, y: 1520, w: 230, h: 170, layer: 'mid', rot: -1.5 });
+Stage.prop.crate({ x: 230, y: 1470, w: 140, h: 110, layer: 'mid', rot: 2 });
+Stage.prop.crate({ x: 980, y: 1500, w: 200, h: 150, layer: 'mid', rot: 1.2 });
+Stage.prop.crate({ x: 780, y: 1440, w: 120, h: 90, layer: 'mid', rot: -2 });
+svgEl(`<ellipse cx="610" cy="1440" rx="60" ry="14" fill="#000" opacity=".3"/><path d="M552,1440 V1330 Q552,1316 566,1316 H654 Q668,1316 668,1330 V1440 Q610,1458 552,1440Z" fill="#4f5a2e" stroke="#2b1a12" stroke-width="6"/><path d="M552,1350 Q610,1368 668,1350 M552,1400 Q610,1418 668,1400" stroke="#2b1a12" stroke-width="5" fill="none"/><ellipse cx="610" cy="1318" rx="58" ry="12" fill="#6b7340" stroke="#2b1a12" stroke-width="5"/>`, Stage.layers.mid);
+// рассыпанные хлопья и ложка на полу
+svgEl([[300,1300],[340,1318],[470,1296],[690,1310],[760,1290],[860,1316]].map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${7+i%3*2}" fill="${i%2?'#e0a040':'#f2c970'}" stroke="#2b1a12" stroke-width="3"/>`).join(''), Stage.layers.mid);
+
+/* ---------- персонажи ---------- */
+const SIT_Y = 1200 + (window.SY || 0), SC = 0.72;
+const mkc = (name, o) => { const c = Rig.create(name, o); Stage.layers.actors.appendChild(c.el); return c; };
+const ustav = mkc('ustav', { x: 52, y: 1200, scale: 0.86, facing: 0.3 });
+const hoh = mkc('hohotun', { x: 262, y: SIT_Y, scale: SC, facing: -0.4 });
+const chk = mkc('chaika', { x: 436, y: SIT_Y, scale: SC, facing: -0.4 });
+const lad = mkc('ladoshka', { x: 606, y: SIT_Y, scale: SC, facing: -0.4 });
+const gvz = mkc('gvozd', { x: 776, y: SIT_Y, scale: SC, facing: -0.4 });
+const sitters = [hoh, chk, lad, gvz];
+const all = [ustav, ...sitters];
+const SIT = { sit: true };
+
+/* жизнь на всю сцену */
+all.forEach((c) => c.idle(tl, 0, c === gvz ? 28.0 : DUR));
+all.forEach((c) => c.blinks(tl, 0, c === gvz ? 30.1 : DUR));
+
+/* посадка и еда (у каждого свой ритм: разные куски цикла eat) */
+sitters.forEach((c) => c.pose(tl, 0.01, 'sit', 0.05));
+sitters.forEach((c) => { c.prop(tl, 0.02, 'R', 'bowl'); c.prop(tl, 0.02, 'L', 'spoon'); });
+const eat = (c, a, b) => c.pose(tl, a, 'eat', b - a, null, SIT);
+const sit = (c, t, d) => c.pose(tl, t, 'sit', d == null ? 0.5 : d);
+
+/* Устав: блокнот в левой, указка в правой */
+ustav.prop(tl, 0.02, 'R', 'notebook');
+const pointer = svgEl(`<path d="M0,0 L420,0" stroke="#2b1a12" stroke-width="15" stroke-linecap="round"/><path d="M0,0 L420,0" stroke="#d9b27c" stroke-width="7" stroke-linecap="round"/><path d="M370,0 L420,0" stroke="#e23b2e" stroke-width="7" stroke-linecap="round"/>`);
+ustav.give(pointer, 'L', { x: 0, y: 0, rot: -6, scale: 1.2 });
+ustav.to(tl, 0.02, { kL: 0, pL: 1 }, 0.3, 'back.out(2)');
+
+/* взгляды: кто говорит */
+const lk = (c, t, dx, dy) => c.look(tl, t, dx, dy == null ? 0 : dy, 0.35);
+const toUstav = (t) => sitters.forEach((c, i) => lk(c, t, -0.85 + i * 0.02, 0));
+const toRight = (t, list) => (list || sitters).forEach((c) => lk(c, t, 0.8, 0));
+lk(ustav, 0.3, 0.7, -0.05); toUstav(0.3);
+
+/* ===== L01 Устав у карты ===== */
+{
+  const l = L(1);
+  ustav.talk(tl, l.t, l.dur, { energy: 1, gesture: false });
+  ustav.pose(tl, 1.15, 'point', 0.55);
+  tl.to(pointer, { opacity: 0, duration: 0.2 }, 8.3);
+  ustav.pose(tl, 8.5, 'stand', 0.5);
+}
+/* еда, часть 1: до вопроса Хохотуна */
+eat(hoh, 0.1, 7.25); eat(chk, 0.5, 5.5); eat(lad, 0.3, 6.2); eat(gvz, 0.8, 5.0);
+sit(chk, 5.7, 0.4); eat(chk, 6.1, 12.2);
+sit(lad, 6.5, 0.4); eat(lad, 6.9, 12.9);
+sit(gvz, 5.2, 0.4); eat(gvz, 5.7, 11.4);
+
+/* ===== L02 Хохотун тянет руку ===== */
+{
+  const l = L(2);
+  hoh.pose(tl, 7.15, 'wave', 0.5, null, SIT);
+  hoh.talk(tl, l.t, l.dur, { gesture: false });
+  lk(ustav, 7.4, 0.55, 0);
+  sit(hoh, 9.3, 0.5); eat(hoh, 10.0, 12.9);
+}
+/* ===== L03 Устав ===== */
+{
+  const l = L(3);
+  lk(ustav, 9.3, 0.7, 0);
+  ustav.talk(tl, l.t, l.dur, { energy: 1.05 });
+}
+/* ===== L04 «Ноль?» радостно ===== */
+{
+  const l = L(4);
+  hoh.pose(tl, 13.05, 'wave', 0.3, null, SIT);
+  hoh.talk(tl, l.t, l.dur, { energy: 1.5, gesture: false });
+  hoh.bounce(tl, l.t, 16);
+  hoh.mouth(tl, l.t + l.dur + 0.05, 3);
+  sit(hoh, 14.7, 0.5); eat(hoh, 15.3, 17.7);
+}
+/* ===== L05 «...минус» — facepalm ===== */
+{
+  const l = L(5);
+  ustav.talk(tl, l.t, l.dur, { energy: 1.1 });
+  tl.set(pointer, { opacity: 0 }, 16.7);
+  ustav.pose(tl, 16.85, 'facepalm', 0.45);
+}
+eat(chk, 12.6, 17.7); eat(lad, 13.3, 17.7); eat(gvz, 11.9, 17.6);
+
+/* ===== бит forms: бланки ===== */
+const handsX = [hoh, chk, lad, gvz].map((c) => c.m.x);
+const formNodes = [];
+const formSVG = `<rect x="-34" y="-86" width="68" height="88" rx="4" fill="#efe2bd" stroke="#2b1a12" stroke-width="5"/><rect x="-24" y="-72" width="48" height="8" fill="#2b1a12" opacity=".75"/><path d="M-24,-52 H24 M-24,-38 H24 M-24,-24 H10" stroke="#2b1a12" stroke-width="4" opacity=".6"/><circle cx="16" cy="-10" r="7" fill="#e23b2e" opacity=".8"/>`;
+{
+  ustav.pose(tl, 17.8, 'handOut', 0.4);
+  ustav.pose(tl, 19.3, 'stand', 0.5);
+  sitters.forEach((c, i) => {
+    const tt = B.forms.t + 0.1 + i * 0.3, dur = 0.62;
+    Stage.paperFly(tl, tt, { x: 318, y: 880 }, { x: c.m.x - 18, y: 990 }, { dur, arc: 190, layer: 'fx' });
+    const f = svgEl(formSVG); c.give(f, 'R', { x: 0, y: 0, rot: -6, scale: 0.95 });
+    gsap.set(f, { opacity: 0 }); formNodes.push(f);
+    c.pose(tl, tt + dur - 0.25, 'sit', 0.3);
+    c.prop(tl, tt + dur - 0.2, 'R', 'bowl', false);
+    tl.set(f, { opacity: 1 }, tt + dur);
+    c.pose(tl, tt + dur + 0.02, { aR1: -22, aR2: -92 }, 0.45);
+  });
+}
+/* ===== L06 ===== */
+{
+  const l = L(6);
+  ustav.talk(tl, l.t, l.dur, { energy: 1.0 });
+  sitters.forEach((c, i) => lk(c, 19.4, -0.85, i === 3 ? 0.15 : 0.05));
+}
+/* ===== L07 Гвоздь с листком ===== */
+{
+  const l = L(7);
+  gvz.talk(tl, l.t, l.dur, { energy: 1.1, gesture: false });
+  gvz.pose(tl, 24.45, { aR1: -40, aR2: -108 }, 0.4);
+  [hoh, chk, lad].forEach((c) => lk(c, l.t - 0.1, 0.8, 0));
+  lk(gvz, l.t - 0.1, -0.8, 0);
+  lk(ustav, l.t - 0.2, 0.85, 0);
+}
+/* ===== stare + L08 ===== */
+{
+  const l = L(8);
+  ustav.pose(tl, B.stare.t, { lid: 0.45, brow: 0.8 }, 0.5);
+  [hoh, chk, lad].forEach((c) => lk(c, B.stare.t, -0.2, 0));
+  ustav.talk(tl, l.t, l.dur, { energy: 1.25, gesture: false });
+  ustav.pose(tl, 28.05, { lid: 0.2, brow: 0 }, 0.6);
+}
+
+/* ===== бит door ===== */
+const frontDoor = Stage.door({ x: bg.door.x, y: bg.door.y, w: bg.door.w, h: bg.door.h, kind: 'steel', layer: 'front' });
+frontDoor.el.children[0].style.display = 'none'; frontDoor.el.children[1].style.display = 'none';
+const T_OPEN = 29.55, T_SLAM = 30.2;
+{
+  gvz.pose(tl, 28.02, 'stand', 0.5);
+  gvz.to(tl, 28.02, { y: 1200 }, 0.5, 'power2.out');
+  gvz.look(tl, 28.2, 0.9, 0, 0.3);
+  const e = gvz.walkTo(tl, 28.6, 952, 1.55, { face: 0.85 });
+  bg.door.open(tl, T_OPEN, { dur: 0.55 });
+  tl.to(frontDoor.slab, { rotationY: -84, duration: 0.55, ease: 'power3.inOut' }, T_OPEN);
+  bg.door.slam(tl, T_SLAM, { shake: 24 });
+  tl.to(frontDoor.slab, { rotationY: 0, duration: 0.16, ease: 'power4.in' }, T_SLAM);
+  gvz.squash(tl, T_SLAM + 0.1, { axis: 'x', to: 0.3, hold: 6 });
+  Stage.punch(tl, T_SLAM + 0.16, 0.05);
+  Stage.debris(tl, T_SLAM + 0.16, 975, 1180, { n: 8, power: 0.7 });
+  // ботинки из-под двери
+  const boots = svgEl(`<ellipse cx="0" cy="22" rx="86" ry="10" fill="#000" opacity=".3"/>
+    <g transform="translate(-34 0) rotate(-12)"><rect x="-13" y="-34" width="26" height="40" fill="#6b7340" stroke="#2b1a12" stroke-width="5"/><path d="M-18,4 L-18,-6 H12 Q34,-6 34,12 V22 H-22 Q-22,12 -18,4Z" fill="#3a2418" stroke="#2b1a12" stroke-width="5"/><rect x="-22" y="16" width="56" height="8" fill="#1a0f08"/></g>
+    <g transform="translate(36 0) rotate(10)"><rect x="-13" y="-34" width="26" height="40" fill="#6b7340" stroke="#2b1a12" stroke-width="5"/><path d="M-14,4 L-14,-6 H8 Q30,-6 30,12 V22 H-22 Q-22,12 -14,4Z" fill="#3a2418" stroke="#2b1a12" stroke-width="5"/><rect x="-22" y="16" width="52" height="8" fill="#1a0f08"/></g>`, Stage.layers.front);
+  gsap.set(boots, { x: 962, y: 1203, opacity: 0, scale: 0.4, transformOrigin: '0px 20px' });
+  tl.to(boots, { opacity: 1, scale: 1.45, duration: 0.25, ease: 'back.out(2.2)' }, T_SLAM + 0.3);
+  tl.to(boots, { rotation: 2, duration: 0.12, ease: 'sine.inOut', yoyo: true, repeat: 3 }, T_SLAM + 0.6);
+  // каска: вылетает и докатывается с затуханием
+  const helm = svgEl(`<ellipse cx="0" cy="6" rx="82" ry="10" fill="#000" opacity=".28"/><path d="M-82,0 C-82,-96 82,-96 82,0 Q0,16 -82,0Z" fill="#6b7340" stroke="#2b1a12" stroke-width="6"/><path d="M-82,0 Q0,16 82,0 Q0,2 -82,0Z" fill="#4f5a2e" stroke="#2b1a12" stroke-width="5"/><path d="M-50,-52 q22,-26 56,-30" fill="none" stroke="#8d965a" stroke-width="8" stroke-linecap="round"/>`, Stage.layers.front);
+  gsap.set(helm, { x: 940, y: 1090, opacity: 0, scale: 0.5, transformOrigin: '0px -30px', rotation: -30 });
+  const th = T_SLAM + 0.16;
+  tl.set(helm, { opacity: 1 }, th);
+  tl.to(helm, { y: 960, duration: 0.3, ease: 'power2.out' }, th).to(helm, { y: 1214, duration: 0.34, ease: 'power2.in' }, th + 0.3);
+  tl.to(helm, { y: 1180, duration: 0.14, ease: 'power2.out' }, th + 0.64).to(helm, { y: 1214, duration: 0.14, ease: 'power2.in' }, th + 0.78);
+  tl.to(helm, { y: 1206, duration: 0.07, ease: 'power2.out' }, th + 0.92).to(helm, { y: 1214, duration: 0.07, ease: 'power2.in' }, th + 0.99);
+  tl.to(helm, { x: 650, duration: 2.1, ease: 'power3.out' }, th);
+  tl.to(helm, { scale: 0.9, duration: 0.3, ease: 'power2.out' }, th);
+  tl.to(helm, { rotation: 38, duration: 0.55, ease: 'sine.inOut' }, th).to(helm, { rotation: -22, duration: 0.5, ease: 'sine.inOut' }, th + 0.55)
+    .to(helm, { rotation: 12, duration: 0.45, ease: 'sine.inOut' }, th + 1.05).to(helm, { rotation: -5, duration: 0.4, ease: 'sine.inOut' }, th + 1.5)
+    .to(helm, { rotation: 0, duration: 0.4, ease: 'sine.inOut' }, th + 1.9);
+  Stage.dust(tl, th + 0.64, 900, 1205, { n: 3, size: 30, spread: 40 });
+}
+/* ===== L09, L10, out ===== */
+{
+  const l9 = L(9), l10 = L(10);
+  ustav.prop(tl, 31.2, 'R', 'pencil');
+  ustav.pose(tl, 31.45, 'write', DUR - 31.45);
+  ustav.talk(tl, l9.t, l9.dur, { energy: 0.8, gesture: false });
+  [hoh, chk].forEach((c) => lk(c, 32.5, 0.85, 0));
+  // Ладошка: потирает ладони, карточка, штамп
+  lad.prop(tl, 32.1, 'L', 'spoon', false);
+  tl.set(formNodes[2], { opacity: 0 }, 32.15);
+  lad.pose(tl, 32.7, 'rubHands', 1.15, null, SIT);
+  lad.talk(tl, l10.t, l10.dur, { energy: 1.1, gesture: false });
+  lad.look(tl, 32.7, 0, 0.3, 0.3);
+  lad.pose(tl, 33.95, { aR1: -34, aR2: -76 }, 0.35);
+  const card = Stage.prop.card({ x: 590, y: 1110, s: 0.55, layer: 'actors', rot: -4 });
+  gsap.set(card, { opacity: 0, scale: 0.3 });
+  tl.to(card, { opacity: 1, scale: 0.55, y: 1060, duration: 0.3, ease: 'back.out(2)' }, 33.9);
+  card.stamp && card.stamp(tl, 34.32, 0);
+  Stage.stampMark(tl, 34.32, 590, 1060, { text: 'ПОГИБ', size: 30, rot: -10 });
+  lad.mouth(tl, 34.6, 3);
+}
+
+/* ---------- титры ---------- */
+Stage.tag(tl, 0.3, 'БАЗА', 2.4);
+Stage.captions(tl, T.lines);
+
+/* ---------- камера ---------- */
+const cam = (t, x, y, s, d, e) => Stage.cam(tl, t, { x, y, scale: s }, d, e || 'sine.inOut');
+cam(0.0, 490, 960, 1.14, 1.0, 'sine.out');
+cam(1.0, 330, 900, 1.3, 1.5);
+cam(2.6, 350, 900, 1.38, 3.6, 'sine.inOut');
+cam(6.4, 420, 960, 1.2, 1.0);
+cam(7.35, 300, 1000, 1.55, 0.9);
+cam(9.2, 250, 900, 1.45, 1.0);
+cam(12.7, 320, 1000, 1.9, 0.45, 'power2.inOut');
+cam(13.55, 220, 880, 1.55, 0.7);
+cam(15.0, 170, 740, 2.0, 1.9);
+cam(17.6, 470, 960, 1.15, 0.9);
+cam(18.6, 400, 960, 1.22, 5.4, 'sine.inOut');
+cam(24.1, 700, 1000, 1.75, 0.8);
+cam(25.7, 160, 740, 2.35, 2.25, 'sine.inOut');
+cam(28.0, 640, 960, 1.3, 0.8);
+cam(28.9, 800, 960, 1.45, 1.1, 'sine.inOut');
+cam(30.05, 880, 960, 1.65, 0.45, 'power2.out');
+cam(31.1, 250, 900, 1.5, 1.2);
+cam(32.4, 560, 1020, 1.7, 0.85);
+cam(34.8, 540, 990, 1.32, 1.0, 'sine.inOut');
+
+/* ---------- звук ---------- */
+window.__sound = (ctx, t0) => {
+  const s = SFX.init(ctx, t0, { partStart: T.partStart, room: 'bunker' });
+  s.ambience('bunker', 0, DUR);
+  s.music('march', 0.2, B.stare.t + 0.3, { fadeOut: 1.0, gain: 0.8 });
+  s.duckLines(T.lines);
+  [[2.4, -0.4], [4.6, 0.3], [6.2, -0.2], [10.6, 0.4], [14.0, -0.5], [16.2, 0.2]].forEach(([t, p]) => s.spoon(t, { pan: p }));
+  s.cloth(7.1, { pan: -0.3 });
+  [0, 1, 2, 3].forEach((i) => { s.cloth(B.forms.t + 0.1 + i * 0.3, { pan: -0.3 }); s.paper(B.forms.t + 0.1 + i * 0.3 + 0.55, { pan: -0.4 + i * 0.3 }); });
+  s.cloth(28.05, { pan: 0.4 });
+  s.footsteps(28.6, 30.1, { surface: 'concrete', rate: 2.2 });
+  s.whoosh(29.5, 0.55, { panTo: 0.5 });
+  s.doorSlam(T_SLAM + 0.16, { pan: 0.5 }); s.crunch(T_SLAM + 0.19, { pan: 0.5 });
+  s.dustPuff(T_SLAM + 0.3, { big: true, pan: 0.5 });
+  s.thud(T_SLAM + 0.5, { pan: 0.2, gain: 0.7 }); s.thud(T_SLAM + 0.84, { pan: 0.1, gain: 0.45 });
+  s.pencil(31.6, 1.8, { pan: -0.4 });
+  s.pencil(33.6, 1.0, { pan: -0.4, gain: 0.8 });
+  s.rubHands(32.85, 0.8, { pan: 0.1 });
+  s.zap(33.75, { gain: 0.6, pan: 0.1 });
+  s.stamp(34.32, { pan: 0.1 });
+  s.fadeOut(DUR - 0.5, 0.5);
+};
+</script></body></html>
