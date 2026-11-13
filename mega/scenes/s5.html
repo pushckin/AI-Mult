@@ -54,29 +54,30 @@ glance(enemies[0], 4.4, 6); glance(enemies[1], 5.0, -6);
 enemies.forEach((en, i) => tl.to(en.e, { y: '+=3', duration: 1.5 + i * 0.3, ease: 'sine.inOut', yoyo: true, repeat: 8 }, i * 0.4));
 
 /* ---------- колючая проволока: помятый круг ---------- */
-const SX = [780, 945, 1110, 1275, 1440];       // чайка, ладошка, устав, хохотун, гвоздь
-const ring = Stage.prop.wire({ d: 940, x: 1110, y: 1222, s: 1, rot: -2 });
-const ring2 = Stage.prop.wire({ d: 760, x: 1130, y: 1236, s: 1, rot: 4 });
-const scrap = SX.slice(0, 4).map((x, i) => Stage.prop.wire({ d: 210 + i * 14, x: x + (i - 1.5) * 6, y: 1214, s: 1, rot: (i % 2 ? 6 : -7) }));
+const SX = [600, 795, 995, 1195, 1390];       // чайка, ладошка, устав, хохотун, гвоздь
+const ring = Stage.prop.wire({ d: 1000, x: 995, y: 1222, s: 1, rot: -2 });
+const ring2 = Stage.prop.wire({ d: 800, x: 1020, y: 1240, s: 1, rot: 4 });
+const scrap = SX.slice(0, 4).map((x, i) => Stage.prop.wire({ d: 170 + i * 10, x: x + (i - 1.5) * 6, y: 1214, s: 1, rot: (i % 2 ? 6 : -7) }));
 
 /* ---------- персонажи ---------- */
 const mkc = (name, o) => { const c = Rig.create(name, o); Stage.layers.actors.appendChild(c.el); return c; };
-const SCL = 0.8;
-const chk = mkc('chaika', { x: 754, y: 1200, scale: SCL, facing: 0 });
-const lad = mkc('ladoshka', { x: 1007, y: 1200, scale: SCL, facing: 0.3 });
-const ustav = mkc('ustav', { x: 1008, y: 1200, scale: SCL, facing: 0 });
-const hoh = mkc('hohotun', { x: 1186, y: 1200, scale: SCL, facing: 0 });
-const gvz = mkc('gvozd', { x: 1355, y: 1200, scale: SCL, facing: -0.3 });
+const ST = { chk: 522, lad: 745, ustav: 905, hoh: 1101, gvz: 1456 };
+const chk = mkc('chaika', { x: ST.chk || SX[0], y: 1190, scale: 0.6, facing: 0 });
+const lad = mkc('ladoshka', { x: ST.lad || SX[1], y: 1205, scale: 0.62, facing: 0.3 });
+const ustav = mkc('ustav', { x: ST.ustav || SX[2], y: 1238, scale: 0.68, facing: 0 });
+const hoh = mkc('hohotun', { x: ST.hoh || SX[3], y: 1205, scale: 0.62, facing: 0 });
+const gvz = mkc('gvozd', { x: ST.gvz || SX[4], y: 1190, scale: 0.6, facing: -0.3 });
 const all = [chk, lad, ustav, hoh, gvz]; window.__r = { chk, lad, ustav, hoh, gvz };
 hoh.set({ mouth: 4 });
 
-// лежат уже в начале (падение «сжато» по времени)
-const FQ = 0.3;
-chk.fall(tl, 0, { style: 'back', dir: 1, timeScale: 0.3, seed: 3 });
-lad.fall(tl, 0, { style: 'knees', dir: 1, timeScale: 0.3, seed: 5 });
-ustav.fall(tl, 0, { style: 'sit', dir: -1, timeScale: 0.3, seed: 7 });
-hoh.fall(tl, 0, { style: 'face', dir: -1, timeScale: 0.3, seed: 9 });
-gvz.fall(tl, 0, { style: 'knees', dir: -1, timeScale: 0.3, seed: 11 });
+// на кадре 0 все уже лежат: клип падения «зажат» на последнем сэмпле
+const lie = (c, o) => c.fall(tl, 0, Object.assign({ timeScale: 0.02 }, o));
+lie(chk, { style: 'back', dir: -1, seed: 3 });
+lie(lad, { style: 'knees', dir: -1, seed: 5 });
+lie(ustav, { style: 'sit', dir: -1, seed: 7 });
+lie(hoh, { style: 'face', dir: -1, seed: 9 });
+lie(gvz, { style: 'knees', dir: 1, seed: 11 });
+gsap.set(Stage.el.black, { opacity: 1 }); Stage.blackoutOff(tl, 0.04, 0.2);   // склейка из чёрного прячет первые кадры падения
 hoh.pose(tl, 1.1, 'cheerWeak', 0.4);
 
 /* подъём: у каждого свой момент */
@@ -86,7 +87,7 @@ const upEnd = {};
   c.getUp(tl, GU[k], GD); upEnd[k] = GU[k] + GD + 0.2; });
 all.forEach((c, i) => {
   const k = ['chk', 'lad', 'ustav', 'hoh', 'gvz'][i];
-  c.idle(tl, upEnd[k], i === 4 ? 13.6 : DUR); c.blinks(tl, upEnd[k] + 0.1, i === 4 ? 13.6 : DUR); });
+  c.idle(tl, upEnd[k], i === 4 ? 13.55 : DUR); c.blinks(tl, upEnd[k] + 0.1, i === 4 ? 13.55 : DUR); });
 
 /* Устав с блокнотом */
 ustav.prop(tl, upEnd.ustav - 0.1, 'R', 'notebook');
@@ -126,14 +127,14 @@ Stage.punch(tl, 4.6, 0.012);
   [chk, lad, hoh, gvz].forEach((c, i) => c.look(tl, B.pause.t + 0.05 + i * 0.1, [0.4, 0.3, -0.5, -0.5][i], 0.35, 0.8));
 }
 /* ===== terminal: рука Ладошки ===== */
-const termNode = svgEl(`<ellipse cx="0" cy="4" rx="62" ry="8" fill="#000" opacity=".2"/>
+const termNode = svgEl(`<g transform="translate(0 113)"><ellipse cx="0" cy="4" rx="62" ry="8" fill="#000" opacity=".2"/>
   <path d="M-62,0 L-52,-215 Q-50,-226 -39,-226 H39 Q50,-226 52,-215 L62,0Z" fill="#2a2f2a" stroke="#2b1a12" stroke-width="6"/>
   <rect x="-44" y="-206" width="88" height="82" rx="8" fill="#0d2a12" stroke="#2b1a12" stroke-width="4"/>
   <rect x="-38" y="-200" width="76" height="70" rx="5" fill="#58d36b"/>
   <text x="0" y="-168" text-anchor="middle" font-family="Russo One" font-size="30" fill="#0d2a12">46 ×</text>
   <text x="0" y="-142" text-anchor="middle" font-family="Russo One" font-size="13" fill="#0d2a12">ОЖИВЛЕНИЕ</text>
-  ${Array.from({ length: 9 }, (_, i) => `<rect x="${-36 + (i % 3) * 26}" y="${-112 + Math.floor(i / 3) * 32}" width="20" height="23" rx="5" fill="${i === 8 ? '#58d36b' : '#d8d8c8'}" stroke="#2b1a12" stroke-width="3"/>`).join('')}`);
-lad.give(termNode, 'R', { x: 6, y: 14, rot: 0, scale: 0.85 });
+  ${Array.from({ length: 9 }, (_, i) => `<rect x="${-36 + (i % 3) * 26}" y="${-112 + Math.floor(i / 3) * 32}" width="20" height="23" rx="5" fill="${i === 8 ? '#58d36b' : '#d8d8c8'}" stroke="#2b1a12" stroke-width="3"/>`).join('')}</g>`);
+lad.give(termNode, 'R', { x: 6, y: 6, rot: -6, scale: 1.8 });
 gsap.set(termNode, { opacity: 0 });
 {
   const t0 = B.terminal.t;
@@ -153,39 +154,35 @@ gsap.set(termNode, { opacity: 0 });
 /* ===== shed: Гвоздь идёт к сараю, дверь захлопывается ===== */
 const frontDoor = Stage.door({ x: bg.door.x, y: bg.door.y, w: bg.door.w, h: bg.door.h, kind: 'wood', layer: 'front' });
 frontDoor.el.children[0].style.display = 'none'; frontDoor.el.children[1].style.display = 'none';
-const T_OPEN = 15.3, T_SLAM = B.black.t - 0.16;   // контакт створки = начало бита black
+const T_OPEN = 15.3, T_SLAM = B.black.t - 0.28;   // створка бьёт на 0,12 с раньше чёрного: сплющенный Гвоздь виден ~4 кадра
 {
   const t0 = B.shed.t;
   gvz.pose(tl, t0 - 0.05, 'cheerWeak', 0.3);
   gvz.pose(tl, t0 + 0.1, 'stand', 0.3);
   gvz.look(tl, t0 + 0.1, 0.9, 0, 0.3);
-  const e = gvz.walkTo(tl, t0 + 0.2, 2300, 1.55, { face: 0.85 });
-  [chk, lad, ustav, hoh].forEach((c, i) => c.look(tl, t0 + 0.9 + i * 0.28, 0.9, 0.05, 0.5));
-  [chk, lad, ustav, hoh].forEach((c, i) => c.turn(tl, t0 + 1.0 + i * 0.28, 0.6, 0.9));
+  const e = gvz.walkTo(tl, t0 + 0.0, 2300, 1.6, { face: 0.85 });
+  [chk, lad, ustav, hoh].forEach((c, i) => c.look(tl, t0 + 0.35 + i * 0.3, 0.9, 0.05, 0.9));
+  [chk, lad, ustav, hoh].forEach((c, i) => c.turn(tl, t0 + 0.45 + i * 0.3, 0.6, 1.1));
   gvz.idle(tl, e + 0.05, DUR);
-  gvz.pose(tl, e + 0.05, 'handOut', 0.35);
-  bg.door.open(tl, T_OPEN, { dur: 0.55 });
-  tl.to(frontDoor.slab, { rotationY: -84, duration: 0.55, ease: 'power3.inOut' }, T_OPEN);
+  gvz.pose(tl, e - 0.05, 'handOut', 0.35);
+  bg.door.open(tl, T_OPEN, { dur: 0.5 });
+  tl.to(frontDoor.slab, { rotationY: -84, duration: 0.5, ease: 'power3.inOut' }, T_OPEN);
   bg.door.slam(tl, T_SLAM, { shake: 24 });
   tl.to(frontDoor.slab, { rotationY: 0, duration: 0.16, ease: 'power4.in' }, T_SLAM);
   tl.set(frontDoor.slab, { opacity: 0 }, T_SLAM + 0.17);
-  gvz.squash(tl, T_SLAM + 0.1, { axis: 'x', to: 0.2, hold: 0.5 });
+  gvz.squash(tl, T_SLAM + 0.14, { axis: 'x', to: 0.2, hold: 0.5 });
   Stage.punch(tl, T_SLAM + 0.16, 0.05);
   Stage.debris(tl, T_SLAM + 0.16, 2300, 1180, { n: 8, power: 0.7 });
   Stage.dust(tl, T_SLAM + 0.16, 2300, 1190, { n: 6, size: 50, spread: 130 });
 }
 /* чёрный на ударе */
-Stage.blackout(tl, B.black.t - 0.01, 0.02);
+Stage.blackout(tl, B.black.t - 0.01, 0.02);   // на хрусте
 
-/* ---------- плотная завеса дыма в начале: прячет падение, потом расходится ---------- */
-const cover = svgEl(`<g fill="#5a4640" stroke="#2b1a12" stroke-width="6">${[[780,1000,260],[960,900,300],[1120,1020,320],[1290,920,300],[1460,1010,260],[1100,1180,340],[900,1160,260],[1320,1170,260]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`, Stage.layers.fx);
-gsap.set(cover, { opacity: 0.97, transformOrigin: '1100px 1050px' });
-tl.to(cover, { opacity: 0, scale: 1.25, duration: 1.1, ease: 'sine.inOut' }, 0.85);
-/* ---------- дым и конфетти ---------- */
-Stage.smoke(tl, 0, 9.5, 900, 1250, { n: 6, size: 120, rise: 380, alpha: 0.5, life: 3.2, drift: 60 });
-Stage.smoke(tl, 0, 9.5, 1300, 1260, { n: 6, size: 130, rise: 400, alpha: 0.5, life: 3.4, drift: -40 });
-Stage.smoke(tl, 0, 6.5, 1100, 1280, { n: 5, size: 150, rise: 260, alpha: 0.4, life: 3.0, drift: 20 });
-Stage.smoke(tl, 9.5, 16.1, 1100, 1260, { n: 4, size: 110, rise: 300, alpha: 0.35, life: 3.4, drift: 30 });
+/* ---------- дым: только за персонажами; у земли оседает пыль ---------- */
+[[560, 1180], [820, 1190], [1100, 1190], [1380, 1180], [1620, 1170]].forEach(([x, y], i) =>
+  Stage.smoke(tl, 0, 10.5, x, y, { n: 4, size: 130, rise: 520, alpha: 0.4, life: 3.4 + i * 0.2, drift: 30 - i * 15, layer: 'far2' }));
+Stage.smoke(tl, 10.5, 16.1, 1000, 1190, { n: 4, size: 120, rise: 480, alpha: 0.3, life: 3.6, drift: 30, layer: 'far2' });
+[[640, 0.05], [900, 0.3], [1180, 0.15], [1420, 0.5], [780, 0.9], [1050, 1.2]].forEach(([x, t]) => Stage.dust(tl, t, x, 1250, { n: 2, size: 34, spread: 70 }));
 Stage.confetti(tl, B.victory.t + 0.35, 1110, 560, { n: 30, w: 700, ang: [250, 290] });
 
 /* ---------- титры ---------- */
@@ -198,31 +195,34 @@ const E0 = B.endcard.t;
 Stage.title(tl, E0, 'ОТРЯД МЕГА', { y: 560, size: 150, sub: 'потери в пределах нормы' });
 const cnt = Stage.counter(tl, E0 + 0.25, { label: 'ПОТЕРИ', value: 47, x: 540, y: 1010 });
 cnt.set(tl, E0 + 0.85, 48);
+const wrap = document.createElement('div'); wrap.style.cssText = 'position:absolute;left:0;top:0;'; Stage.el.titles.appendChild(wrap); wrap.appendChild(cnt.el);
+gsap.set(wrap, { x: -270, y: -535, scale: 1.5, transformOrigin: '0px 0px' });   // счётчик ≈ 480 px шириной, центр (540, 980)
 const helm = svgEl(`<ellipse cx="0" cy="6" rx="46" ry="7" fill="#000" opacity=".3"/><path d="M-44,0 C-44,-54 44,-54 44,0 Q0,9 -44,0Z" fill="#6b7340" stroke="#2b1a12" stroke-width="5"/><path d="M-44,0 Q0,9 44,0 Q0,1 -44,0Z" fill="#4f5a2e" stroke="#2b1a12" stroke-width="4"/><path d="M-22,-34 Q0,-44 22,-34" stroke="#8a9a5a" stroke-width="5" fill="none" opacity=".7"/>`, Stage.el.titles);
-gsap.set(helm, { x: 380, y: 1830, rotation: -40, opacity: 1, scale: 1.5 });
-tl.to(helm, { y: 1405, duration: 1.05, ease: 'power2.out' }, E0 + 0.2);
-tl.to(helm, { x: 640, duration: 1.45, ease: 'power3.out' }, E0 + 0.2);
-tl.to(helm, { rotation: 35, duration: 0.7, ease: 'sine.inOut' }, E0 + 0.2).to(helm, { rotation: -14, duration: 0.45, ease: 'sine.inOut' }, E0 + 1.2)
-  .to(helm, { rotation: 5, duration: 0.4, ease: 'sine.inOut' }, E0 + 1.65).to(helm, { rotation: 0, duration: 0.3, ease: 'sine.out' }, E0 + 2.05);
-tl.to(helm, { y: 1390, duration: 0.12, ease: 'power2.out' }, E0 + 1.55).to(helm, { y: 1405, duration: 0.12, ease: 'power2.in' }, E0 + 1.67);
+gsap.set(helm, { x: 240, y: 1900, rotation: -50, opacity: 1, scale: 2.2 });
+tl.to(helm, { y: 1255, duration: 1.0, ease: 'power2.out' }, E0 + 0.2);
+tl.to(helm, { x: 700, duration: 1.15, ease: 'power3.out' }, E0 + 0.2);
+tl.to(helm, { rotation: 40, duration: 0.55, ease: 'sine.inOut' }, E0 + 0.2).to(helm, { rotation: -10, duration: 0.4, ease: 'sine.inOut' }, E0 + 0.75)
+  .to(helm, { rotation: 14, duration: 0.25, ease: 'sine.inOut' }, E0 + 1.15).to(helm, { rotation: -9, duration: 0.25, ease: 'sine.inOut' }, E0 + 1.4)
+  .to(helm, { rotation: 5, duration: 0.22, ease: 'sine.inOut' }, E0 + 1.65).to(helm, { rotation: 0, duration: 0.3, ease: 'sine.out' }, E0 + 1.87);
+tl.to(helm, { y: 1235, duration: 0.1, ease: 'power2.out' }, E0 + 1.05).to(helm, { y: 1255, duration: 0.12, ease: 'power2.in' }, E0 + 1.15);
 // всё плавно гаснет к последнему кадру
-tl.to(Stage.el.titles, { opacity: 0, duration: 0.75, ease: 'sine.inOut' }, DUR - 0.8);
+tl.to(Stage.el.titles, { opacity: 0, duration: 0.6, ease: 'sine.inOut' }, DUR - 0.65);
 
 /* ---------- камера ---------- */
 const cam = (t, x, y, s, d, e) => Stage.cam(tl, t, { x, y, scale: s }, d, e || 'sine.inOut');
-cam(0.0, 1030, 960, 0.9, 0.1);
-cam(0.3, 1050, 950, 0.92, 2.4, 'sine.inOut');
-cam(2.7, 1110, 930, 0.98, 1.3);
-cam(4.0, 1110, 860, 1.4, 0.9, 'power2.inOut');          // L32 на Уставе
-cam(6.3, 1250, 880, 1.45, 0.7, 'power2.inOut');         // L33 Хохотун
-cam(8.3, 1110, 900, 1.12, 0.6, 'sine.inOut');           // пауза: общий, тишина
-cam(8.95, 1110, 830, 1.5, 0.5, 'sine.inOut');           // L34: медленный наезд на лицо
-cam(9.5, 1090, 820, 2.3, 1.7, 'sine.inOut');
-cam(11.0, 1030, 860, 1.7, 0.9, 'power2.inOut');         // L35 Ладошка с терминалом
-cam(13.0, 1250, 940, 1.15, 0.8, 'sine.inOut');
-cam(13.7, 1650, 960, 1.0, 1.4, 'sine.inOut');           // следим за Гвоздём
-cam(15.1, 2150, 920, 1.12, 0.9, 'power2.inOut');
-cam(16.0, 2250, 900, 1.45, 0.25, 'power3.in');
+cam(0.0, 1000, 960, 0.95, 0.1);
+cam(0.3, 1000, 950, 0.97, 2.4, 'sine.inOut');
+cam(2.7, 995, 930, 1.0, 1.3);
+cam(4.0, 995, 880, 1.4, 0.9, 'power2.inOut');           // L32 на Уставе
+cam(6.3, 1100, 900, 1.2, 0.7, 'power2.inOut');          // L33 Хохотун считает
+cam(8.3, 995, 900, 1.12, 0.6, 'sine.inOut');            // пауза: общий, тишина
+cam(8.95, 995, 830, 1.5, 0.5, 'sine.inOut');            // L34: медленный наезд на лицо
+cam(9.4, 1000, 830, 1.95, 1.0, 'sine.inOut');
+cam(10.45, 895, 880, 1.45, 0.8, 'sine.inOut');          // терминал и L35: Ладошка + терминал + Устав
+cam(13.0, 1100, 960, 0.8, 0.8, 'sine.inOut');           // общий: все провожают Гвоздя
+cam(14.6, 1900, 940, 1.0, 1.0, 'sine.inOut');
+cam(15.5, 2200, 920, 1.2, 0.5, 'sine.inOut');
+cam(15.98, 2260, 900, 1.45, 0.22, 'power3.in');
 
 /* ---------- звук ---------- */
 window.__sound = (ctx, t0) => {
@@ -238,12 +238,12 @@ window.__sound = (ctx, t0) => {
   s.music('tender', 5.6, B.pause.t, { fadeOut: 0.25, gain: 0.6 });   // перед «Я знаю» музыка обрывается
   s.terminalBeep(B.terminal.t + 0.35, { pan: -0.2 });
   s.cloth(B.terminal.t - 0.1, { pan: -0.3 });
-  s.footsteps(B.shed.t + 0.4, B.shed.t + 1.75, { surface: 'dirt', rate: 2.6 });
-  s.whoosh(T_OPEN, 0.5, { panTo: 0.5 });
-  s.doorSlam(B.black.t, { pan: 0.4 }); s.crunch(B.black.t + 0.03, { pan: 0.4 });
+  s.footsteps(B.shed.t + 0.2, B.shed.t + 1.6, { surface: 'dirt', rate: 2.6 });
+  s.whoosh(T_OPEN, 0.45, { panTo: 0.5 });
+  s.doorSlam(T_SLAM + 0.16, { pan: 0.4 }); s.crunch(B.black.t, { pan: 0.4 });
   s.sting(E0 + 0.2, { variant: 1, gain: 0.5 });
-  s.thud(E0 + 1.05, { gain: 0.5, pan: 0.1 }); s.thud(E0 + 1.6, { gain: 0.3, pan: 0.15 });
-  s.coin(E0 + 1.2, { gain: 0.5 });
-  s.fadeOut(DUR - 1.0, 1.0);
+  s.thud(E0 + 1.1, { gain: 0.5, pan: 0.1 }); s.thud(E0 + 1.4, { gain: 0.25, pan: 0.15 });
+  s.coin(E0 + 1.3, { gain: 0.5 });
+  s.fadeOut(DUR - 0.8, 0.8);
 };
 </script></body></html>

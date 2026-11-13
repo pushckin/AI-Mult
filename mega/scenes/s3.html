@@ -50,9 +50,9 @@ gsap.set(crater, { x: CX, y: 1222, opacity: 0, scale: 0.3, transformOrigin: '0px
 /* ---------- персонажи ---------- */
 const mk = (name, o) => { const c = Rig.create(name, o); Stage.layers.actors.appendChild(c.el); return c; };
 const hoh = mk('hohotun', { x: 290, y: GY, scale: SC, facing: 0.5 });
-const lad = mk('ladoshka', { x: 800, y: GY, scale: SC, facing: 0.85 });
+const lad = mk('ladoshka', { x: 740, y: GY, scale: SC, facing: 0.85 });
 const gvz = mk('gvozd', { x: 1070, y: GY, scale: SC, facing: 0.85 });
-const ust = mk('ustav', { x: 1330, y: GY, scale: SC * 1.05, facing: 0.85 });
+const ust = mk('ustav', { x: 1390, y: GY, scale: SC * 1.05, facing: 0.85 });
 const chk = mk('chaika', { x: 2110, y: GY, scale: SC, facing: 0.85 });
 Stage.layers.actors.appendChild(lad.el);
 const all = [hoh, lad, gvz, ust, chk];
@@ -85,9 +85,9 @@ mortar.fire(tl, B.shell.t);
 hoh.flinch(tl, B.shell.t, { amp: 8, dir: 1 });
 
 /* ===== ходьба цепочкой ===== */
-lad.walkTo(tl, 0.0, 1000, 3.0, { stride: 0.6 });
+lad.walkTo(tl, 0.0, 960, 3.0, { stride: 0.6 });
 gvz.walkTo(tl, 0.1, 1250, 2.5, { stride: 0.85 });
-ust.walkTo(tl, 0.0, 1500, 1.65, { stride: 0.74 });
+ust.walkTo(tl, 0.0, 1550, 1.65, { stride: 0.74 });
 chk.walkTo(tl, 0.0, CX, 3.6, { stride: 0.5 });
 lad.idle(tl, 3.1, 14.3); gvz.idle(tl, 2.7, DUR); ust.idle(tl, 1.75, 14.0); ust.idle(tl, 16.0, DUR); chk.idle(tl, 3.7, B.impact.t - 0.05);
 ust.prop(tl, 0.02, 'R', 'notebook');
@@ -110,7 +110,7 @@ tl.to(nB, { rotation: 22, x: 14, duration: 0.31, ease: 'sine.inOut', yoyo: true,
   [gvz, ust, lad].forEach((c) => c.flinch(tl, B.impact.t + 0.05, { amp: 10, dir: -1 }));
   const l24 = L(24);
   ust.prop(tl, 15.7, 'R', 'pencil');
-  ust.turn(tl, 13.85, 0.85, 0.3); ust.walkTo(tl, 14.1, 1860, 1.8, { stride: 0.9 });
+  ust.turn(tl, 13.85, 0.85, 0.3); ust.walkTo(tl, 14.1, 1780, 1.6, { stride: 0.9 });
   ust.turn(tl, 15.85, 0.55, 0.4);
   ust.pose(tl, 15.95, 'write', DUR - 15.95);
   ust.look(tl, 15.9, 0.5, 0.6, 0.4);
@@ -223,14 +223,14 @@ Stage.tag(tl, 0.3, 'ПОЛЕ', 2.2);
 Stage.captions(tl, T.lines);
 const cam = (t, x, y, s, d, e) => Stage.cam(tl, t, { x, y, scale: s }, d, e || 'sine.inOut');
 cam(0.1, 1280, 930, 0.95, 1.4);
-cam(1.55, 1390, 920, 1.3, 1.2);
+cam(1.55, 1420, 920, 1.3, 1.2);
 cam(2.75, 330, 900, 1.45, 1.3, 'power2.inOut');
-cam(7.7, 1490, 900, 1.6, 0.9, 'power2.inOut');
+cam(7.7, 1540, 900, 1.6, 0.9, 'power2.inOut');
 cam(8.65, PRE.x, PRE.y, PRE.s, 0.55, 'power2.inOut');
 cam(F1 + 0.02, 1280, 980, 0.5, 1.3);
-cam(15.3, 1760, 940, 1.2, 1.2);
-cam(18.9, 2030, 1000, 1.3, 1.0);
-cam(20.9, 2050, 1010, 1.5, 2.2);
+cam(15.3, 1700, 940, 1.2, 1.2);
+cam(18.9, 1960, 1000, 1.25, 1.0);
+cam(20.9, 1960, 1010, 1.4, 2.2);
 Stage.blackout(tl, B.out.t + 0.2, 0.8);
 
 /* ---------- звук ---------- */
