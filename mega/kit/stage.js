@@ -413,64 +413,142 @@ S.bg.bunker = function () {
   return { door, seats, floor: 1200, mapX: 360, mapY: 590, lampX: 540, light: cone };
 };
 
-/* ---------- САЛОН ВЕРТОЛЁТА (разрез): пол y=1200, лавка справа (верх сиденья y≈1085), кресло пилота слева ---------- */
+/* ---------- САЛОН ВЕРТОЛЁТА (разрез): пол y=1200, нос слева. Кресло пилота x≈10…200, пульт 235…495, ящик ≈550, лавка 590…1100 (верх сиденья y≈1090).
+   Снизу: брюхо 1226…1330, стойки и лыжи (низ y=1442), земля с рельефом от y≈1446 (уходит вниз по altitude), облачка под брюхом; сверху винт-смаз и хвостовая балка. ---------- */
 S.bg.heliCabin = function () {
-  const gs = U(), gw = U(), c = { sc: 0, alt: 0 }, r = rng(55);
+  const gs = U(), gw = U(), c = { sc: 0, alt: 0, vib: 1, r0: 1e9, rr: 1.6 }, r = rng(55);
+  const md = (v, P) => ((v % P) + P) % P;
   // небо снаружи (фикс.)
   sheet('sky', -500, -400, 2080, 2800, 'background:linear-gradient(180deg,#f6d58a 0,#efb866 40%,#e9a54a 62%,#b96a2c 100%)');
   const cl = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})" fill="#fff3d0" opacity=".85"><ellipse cx="0" cy="0" rx="120" ry="34"/><ellipse cx="-70" cy="10" rx="80" ry="28"/><ellipse cx="80" cy="12" rx="90" ry="26"/></g>`;
-  let sk = `<circle cx="780" cy="1010" r="210" fill="#fff1c0" opacity=".5"/><circle cx="780" cy="1010" r="130" fill="#fff6d8"/>`;
-  const skyClouds = paint('sky', ''), skyG = []; 
-  skyClouds.innerHTML = sk + `<g id="${gs}"></g>`;
-  const cg = skyClouds.querySelector('#' + gs); let cs = ''; for (let i = 0; i < 6; i++) cs += cl(i * 420 - 300, 130 + r() * 1500, .8 + r() * .8); cg.innerHTML = cs;
-  const farGround = paint('sky', `<g id="${gw}"><path d="M-500,2300 L-500,1620 C-100,1560 300,1640 700,1590 S1300,1610 1600,1570 L1600,2300Z" fill="#a8683a" opacity=".8"/><path d="M-500,2300 L-500,1780 C-100,1730 300,1800 700,1750 S1300,1770 1600,1740 L1600,2300Z" fill="#7a6a2e" opacity=".9"/><path d="M-500,1900 h2100 M-500,2020 h2100" stroke="#5a3018" stroke-width="6" opacity=".4"/></g>`);
-  // корпус
+  const skyClouds = paint('sky', `<circle cx="780" cy="1010" r="210" fill="#fff1c0" opacity=".5"/><circle cx="780" cy="1010" r="130" fill="#fff6d8"/><g id="${gs}"></g>`);
+  const cg = skyClouds.querySelector('#' + gs); let cs = ''; for (let i = 0; i < 6; i++) cs += cl(i * 420 - 300, 130 + r() * 1100, .8 + r() * .8); cg.innerHTML = cs;
+
+  /* ---- земля под вертолётом (в mid, едет вместе с камерой; уходит вниз по altitude) ---- */
+  const P = 1080, XA = -P, XB = 3 * P, TAU = 6.2832, G0 = 1446;
+  const poly = (f, base, bot) => { let d = `M${XA},${f(XA) + base}`; for (let x = XA + 30; x <= XB; x += 30) d += ` L${x},${f(x) + base}`; return d + ` L${XB},${bot || 2900} L${XA},${bot || 2900}Z`; };
+  const line = (f, base) => { let d = `M${XA},${f(XA) + base}`; for (let x = XA + 30; x <= XB; x += 30) d += ` L${x},${f(x) + base}`; return d; };
+  const fR = (x) => 11 * Math.sin(x / P * TAU * 2) + 6 * Math.sin(x / P * TAU * 5 + 1);
+  const fB1 = (x) => 9 * Math.sin(x / P * TAU * 3 + 2) + 5 * Math.sin(x / P * TAU * 7);
+  const fB2 = (x) => 14 * Math.sin(x / P * TAU * 2 + 4) + 6 * Math.sin(x / P * TAU * 6 + 1);
+  const fB3 = (x) => 12 * Math.sin(x / P * TAU * 1 + 1) + 8 * Math.sin(x / P * TAU * 4 + 3);
+  const gg = U();
+  let gd = `<defs>${defsGrad(gg, [[0, '#8c8a3c'], [.16, '#7a7430'], [.55, '#5f4a24'], [1, '#3d2112']])}</defs><path d="${poly(fR, G0)}" fill="url(#${gg})"/>`;
+  [[G0 + 56, fB1, '#9a9a44', .5], [G0 + 150, fB2, '#6a7a34', .55], [G0 + 270, fB3, '#8a6a30', .5], [G0 + 390, fB1, '#a08a3c', .45]].forEach(([b, f, col, o]) => { gd += `<path d="${poly(f, b)}" fill="${col}" opacity="${o}"/><path d="${line(f, b)}" fill="none" stroke="#3d2112" stroke-width="5" opacity=".35"/>`; });
+  [[G0 + 56, fB1], [G0 + 150, fB2], [G0 + 270, fB3]].forEach(([b, f], i) => { for (let k = 1; k < 4; k++) gd += `<path d="${line(f, b + k * (i ? 28 + i * 12 : 16))}" fill="none" stroke="#2b1a12" stroke-width="${3 + i}" stroke-dasharray="${46 + i * 14} ${30 + i * 10}" opacity=".22"/>`; });
+  gd += `<path d="${line(fR, G0)}" fill="none" stroke="${C.ink}" stroke-width="7"/>`;
+  for (let k = -1; k < 3; k++) { const tr = rng(21), ox = k * P; let t = '';
+    const at = (x, b, f) => G0 + b + f(x);
+    // домик, столб, кусты, камни, пучки травы
+    const hx = ox + 250, hy = at(250, 70, fB1); t += `<g transform="translate(${hx} ${f1(hy)})"><ellipse cx="0" cy="4" rx="80" ry="9" fill="#000" opacity=".25"/><rect x="-50" y="-50" width="100" height="52" fill="#b98a52" ${OL4}/><path d="M-62,-48 L0,-92 L62,-48Z" fill="#8a3a22" ${OL4}/><rect x="-14" y="-32" width="28" height="34" fill="#3d2112"/><rect x="26" y="-38" width="16" height="16" fill="#f4c95a" ${OL4}/></g>`;
+    const px = ox + 640; t += `<path d="M${px},${f1(at(640, 40, fB1))} v-150 M${px - 36},${f1(at(640, 40, fB1) - 134)} h72" stroke="#2b1a12" stroke-width="7" fill="none" stroke-linecap="round"/>`;
+    for (let i = 0; i < 4; i++) { const x = 90 + i * 270 + tr() * 60, y = at(x, 110 + tr() * 40, fB2), s = .8 + tr() * .6; t += `<g transform="translate(${f1(ox + x)} ${f1(y)})"><ellipse cx="0" cy="4" rx="${50 * s}" ry="9" fill="#000" opacity=".22"/><ellipse cx="0" cy="${-22 * s}" rx="${46 * s}" ry="${30 * s}" fill="${i % 2 ? '#55602c' : '#4a5a26'}" ${OL4}/><path d="M${-16 * s},${-26 * s} q${14 * s},${-14 * s} ${30 * s},0" stroke="#8d965a" stroke-width="5" fill="none" stroke-linecap="round"/></g>`; }
+    for (let i = 0; i < 5; i++) { const x = 40 + i * 210 + tr() * 80, y = at(x, 230 + tr() * 130, fB3), s = .9 + tr() * .8; t += `<g transform="translate(${f1(ox + x)} ${f1(y)})"><ellipse cx="0" cy="3" rx="${42 * s}" ry="8" fill="#000" opacity=".25"/><path d="M${-40 * s},0 Q${-34 * s},${-34 * s} ${-4 * s},${-38 * s} Q${34 * s},${-34 * s} ${42 * s},0Z" fill="#8a7a68" ${OL4}/></g>`; }
+    for (let i = 0; i < 16; i++) { const x = tr() * P, y = at(x, 40 + tr() * 420, fB2); t += grassTuft(ox + x, y, .9 + tr() * .9, tr() > .5 ? '#5f6a2a' : '#9aa23e', tr); }
+    gd += t; }
+  const gndEl = paint('mid', `<g class="gnd">${gd}</g>`).querySelector('.gnd');
+  // дальние холмы за лыжами
+  const P2 = 1400, hf = (x) => 26 * Math.sin(x / P2 * TAU * 2 + .5) + 14 * Math.sin(x / P2 * TAU * 5 + 2);
+  const hills = paint('mid', `<g class="hl"><path d="${(() => { let d = `M-1400,${1396 + hf(-1400)}`; for (let x = -1370; x <= 3000; x += 35) d += ` L${x},${1396 + hf(x)}`; return d + ' L3000,1700 L-1400,1700Z'; })()}" fill="#a8683a" opacity=".85"/><path d="${(() => { let d = `M-1400,${1420 + hf(-1400 + 300) * .6}`; for (let x = -1370; x <= 3000; x += 35) d += ` L${x},${1420 + hf(x + 300) * .6}`; return d + ' L3000,1700 L-1400,1700Z'; })()}" fill="#8a4a24" opacity=".9"/></g>`).querySelector('.hl');
+  // облачка под брюхом
+  const ucl = paint('mid', `<g class="uc">${[0, 1, 2, 3, 4].map((i) => cl(i * 520 - 300 + r() * 120, 1560 + (i % 3) * 120 + r() * 40, .5 + r() * .35)).join('')}</g>`).querySelector('.uc');
+  // тень вертолёта на земле
+  const shadow = paint('mid', `<ellipse class="sh" cx="540" cy="${G0 + 16}" rx="520" ry="18" fill="#000" opacity=".32"/>`).querySelector('.sh');
+
+  /* ---- корпус ---- */
   let m = `<path d="M-100,330 C200,250 880,250 1180,330 L1180,1200 L-100,1200Z" fill="#37442a" ${OL}/><rect x="-100" y="330" width="1280" height="870" fill="#3f4d30"/>`;
   for (let x = -60; x < 1180; x += 150) m += `<path d="M${x},330 V1200" stroke="#2a351f" stroke-width="12"/><path d="M${x + 6},330 V1200" stroke="#566640" stroke-width="3"/>`;
-  m += `<path d="M-100,330 H1180" stroke="${C.ink}" stroke-width="10"/><rect x="-100" y="1200" width="1280" height="26" fill="#252b1a" ${OL}/><path d="M-100,1226 C100,1300 980,1300 1180,1226 V1330 H-100Z" fill="#4f5a2e" ${OL}/><path d="M-100,1330 H1180" stroke="${C.ink}" stroke-width="8"/>`;
-  m += `<rect x="-100" y="1200" width="1280" height="14" fill="#566640"/><path d="M-100,1150 H1180" stroke="#2a351f" stroke-width="8"/>`;
-  m += `<path d="M30,1330 V1400 M980,1330 V1400 M-40,1405 H1130" stroke="${C.ink}" stroke-width="12" stroke-linecap="round"/><path d="M-40,1405 H1130" stroke="#566640" stroke-width="4"/>`;
+  m += `<rect x="-100" y="900" width="1280" height="300" fill="#2f3a24" opacity=".55"/><path d="M-100,900 H1180" stroke="#2a351f" stroke-width="8"/>`;
+  m += `<path d="M-100,330 H1180" stroke="${C.ink}" stroke-width="10"/><rect x="-100" y="330" width="1280" height="40" fill="#2a351f" opacity=".7"/>`;
+  // пол салона: рифлёная плита и торец
+  m += `<rect x="-100" y="1200" width="1280" height="26" fill="#252b1a" ${OL}/><rect x="-100" y="1200" width="1280" height="12" fill="#566640"/>`;
+  m += `<path d="M-100,1226 H1180 V1262 H-100Z" fill="#2f3a24" ${OL4}/>${Array.from({ length: 24 }, (_, i) => `<path d="M${-80 + i * 55},1230 l16,28" stroke="#566640" stroke-width="5" opacity=".6"/>`).join('')}`;
+  // брюхо
+  m += `<path d="M-100,1262 C100,1330 980,1330 1180,1262 V1352 C980,1400 100,1400 -100,1352Z" fill="#4f5a2e" ${OL}/><path d="M-100,1290 C100,1350 980,1350 1180,1290" stroke="#2a351f" stroke-width="6" fill="none"/>`;
+  m += rivets(-40, 1318, 1160, 22, '#2a351f') + `<path d="M320,1330 v50 M760,1330 v50" stroke="#2a351f" stroke-width="6"/><rect x="420" y="1340" width="220" height="30" rx="8" fill="#3a4a28" ${OL4}/><path d="M440,1355 h180" stroke="#8a9a5a" stroke-width="4" opacity=".6"/><circle cx="880" cy="1352" r="16" fill="#e23b2e" ${OL4}/><circle cx="880" cy="1352" r="7" fill="#ffcf1a"/>`;
+  // стойки шасси и лыжи (низ лыж y=1442)
+  m += `<g><path d="M180,1350 L130,1428 M300,1360 L350,1428 M780,1360 L730,1428 M900,1350 L950,1428" stroke="${C.ink}" stroke-width="22" stroke-linecap="round"/><path d="M180,1350 L130,1428 M300,1360 L350,1428 M780,1360 L730,1428 M900,1350 L950,1428" stroke="#7a806f" stroke-width="9" stroke-linecap="round"/>
+    <path d="M-120,1432 H1200" stroke="${C.ink}" stroke-width="28" stroke-linecap="round"/><path d="M-120,1428 H1200" stroke="#7a806f" stroke-width="10"/><path d="M-120,1438 H1200" stroke="#2b3226" stroke-width="5"/><path d="M300,1360 L730,1430 M780,1360 L350,1430" stroke="${C.ink}" stroke-width="7" opacity=".5"/></g>`;
   // ось винта сверху
-  m += `<rect x="504" y="140" width="72" height="200" rx="14" fill="#566640" ${OL}/><rect x="520" y="100" width="40" height="60" fill="#2a351f" ${OL4}/>`;
+  m += `<rect x="504" y="140" width="72" height="200" rx="14" fill="#566640" ${OL}/><rect x="520" y="100" width="40" height="60" fill="#2a351f" ${OL4}/><path d="M514,200 H566 M514,250 H566 M514,300 H566" stroke="#2a351f" stroke-width="5"/>`;
+  // хвостовая балка (уходит вправо за кадр) и стабилизатор
+  m += `<path d="M900,350 C960,300 1100,262 1300,236 L1300,296 C1110,330 990,372 920,402Z" fill="#4f5a2e" ${OL}/><path d="M960,330 C1040,300 1140,280 1300,262" stroke="#7a8a52" stroke-width="5" fill="none" opacity=".6"/>${rivets(990, 338, 80, 5, '#2a351f')}`;
   paint('mid', m);
-  // окна с движущимся пейзажем
-  const wins = []; [[110, 440], [610, 440]].forEach(([x, y]) => { const w = 340, h = 250, sid = U(), el = div('', S.layers.mid, `left:${x}px;top:${y}px;width:${w}px;height:${h}px;overflow:hidden;border-radius:28px`);
+
+  /* ---- окна с движущимся пейзажем ---- */
+  const wins = []; [[110, 440], [610, 440]].forEach(([x, y]) => { const w = 340, h = 250, el = div('', S.layers.mid, `left:${x}px;top:${y}px;width:${w}px;height:${h}px;overflow:hidden;border-radius:28px`);
     const gsky = U(); const s = svg(`<defs>${defsGrad(gsky, [[0, '#f6d58a'], [.7, '#efb866'], [1, '#e9a54a']])}</defs><rect width="${w}" height="${h}" fill="url(#${gsky})"/><circle cx="240" cy="${h * .62}" r="46" fill="#fff6d8"/><g class="wc"></g><g class="wh"></g><g class="wg"></g>`, el);
     s.style.cssText = 'position:absolute;left:0;top:0;overflow:visible'; const P7 = 700;
-    let a = ''; for (let k = 0; k < 3; k++) a += cl(k * P7 / 2 + 60, 60 + (k % 2) * 40, .5); s.querySelector('.wc').innerHTML = a.replace(/\/g>/g, '/g>');
-    const poly = (f) => { let d = `M-100,${h + 200}`; for (let xx = -100; xx <= 2200; xx += 35) d += ` L${xx},${f(xx)}`; return d + ` L2200,${h + 200}Z`; };
-    s.querySelector('.wh').innerHTML = `<path d="${poly((xx) => h * .66 + Math.sin(xx / P7 * 6.2832) * 22 + Math.sin(xx / P7 * 12.566 + 1) * 10)}" fill="#a05a2c" ${OL4}/>`;
+    let a = ''; for (let k = 0; k < 3; k++) a += cl(k * P7 / 2 + 60, 60 + (k % 2) * 40, .5); s.querySelector('.wc').innerHTML = a;
+    const wpoly = (f) => { let d = `M-100,${h + 200}`; for (let xx = -100; xx <= 2200; xx += 35) d += ` L${xx},${f(xx)}`; return d + ` L2200,${h + 200}Z`; };
+    s.querySelector('.wh').innerHTML = `<path d="${wpoly((xx) => h * .66 + Math.sin(xx / P7 * 6.2832) * 22 + Math.sin(xx / P7 * 12.566 + 1) * 10)}" fill="#a05a2c" ${OL4}/>`;
     let fld = `<rect x="-100" y="${h * .8}" width="2400" height="300" fill="#7a6a2e"/>`; for (let k = -1; k < 8; k++) fld += `<path d="M${k * 350 + 40},${h * .82} h160 l60,200 h-200z" fill="${k % 2 ? '#8c8a3c' : '#6f7a36'}"/>`;
     s.querySelector('.wg').innerHTML = fld; wins.push({ s, w, h, P7 });
     div('', S.layers.mid, `left:${x}px;top:${y}px;width:${w}px;height:${h}px;border-radius:28px;background:linear-gradient(115deg,rgba(255,255,255,.28) 0,rgba(255,255,255,0) 28%,rgba(255,255,255,0) 60%,rgba(255,255,255,.12) 66%,rgba(255,255,255,0) 72%);box-shadow:inset 0 0 0 10px #252b1a,inset 0 0 0 14px #1a0f08,0 0 0 4px #1a0f08`);
   });
-  S.onUpdate(() => { const sc = c.sc, al = c.alt; wins.forEach((q) => { const P7 = q.P7, md = (v) => ((v % P7) + P7) % P7;
-    q.s.querySelector('.wc').setAttribute('transform', `translate(${f1(-md(sc * .35))},${f1(-al * 20)})`);
-    q.s.querySelector('.wh').setAttribute('transform', `translate(${f1(-md(sc * .8))},${f1(al * 70)})`);
-    q.s.querySelector('.wg').setAttribute('transform', `translate(${f1(-md(sc * 1.8))},${f1(al * 150)})`); });
-    cg.setAttribute('transform', `translate(${f1(-((c.sc * .6) % 1260 + 1260) % 1260)},0)`); farGround.setAttribute('transform', `translate(0,${f1(-c.alt * 30)})`); });
-  // кресло пилота, пульт, табличка, лавка
-  const seat = `<g><path d="M70,1200 V1130 H260 V1200Z" fill="#2a351f" ${OL}/><path d="M80,1130 C70,1030 82,900 120,820 C150,790 200,800 200,830 C190,930 200,1030 230,1130Z" fill="#4f5a2e" ${OL}/><rect x="104" y="760" width="90" height="70" rx="26" fill="#5a6a38" ${OL}/><path d="M90,1130 H250" stroke="#8a9a5a" stroke-width="8"/><path d="M164,1150 v50" stroke="${C.ink}" stroke-width="12"/></g>`;
-  const panel = `<g><path d="M300,1200 V1010 H560 V1200Z" fill="#252b1a" ${OL}/><path d="M280,1010 L580,1010 L560,760 L330,760 Z" fill="#2f3a24" ${OL}/><path d="M330,760 L560,760 L548,690 L342,690Z" fill="#1d2a1c" ${OL}/>
+
+  /* ---- интерьер: проводка, аптечка, огнетушитель, ремни, ящик ---- */
+  const wire = `<g fill="none" stroke-linecap="round"><path d="M-40,372 C120,420 260,392 420,402 S700,430 860,396 S1080,404 1200,380" stroke="${C.ink}" stroke-width="16"/><path d="M-40,372 C120,420 260,392 420,402 S700,430 860,396 S1080,404 1200,380" stroke="#6a5a3a" stroke-width="7"/>
+    <path d="M-40,392 C140,446 300,414 450,424 S720,452 880,418 S1090,428 1200,402" stroke="${C.ink}" stroke-width="10"/><path d="M-40,392 C140,446 300,414 450,424 S720,452 880,418 S1090,428 1200,402" stroke="${C.red}" stroke-width="4"/>
+    <path d="M360,760 C340,640 300,520 330,420" stroke="${C.ink}" stroke-width="12"/><path d="M360,760 C340,640 300,520 330,420" stroke="#3a6a8a" stroke-width="5"/><path d="M420,760 C430,620 480,500 520,424" stroke="${C.ink}" stroke-width="10"/><path d="M420,760 C430,620 480,500 520,424" stroke="#d9a23a" stroke-width="4"/></g>
+    ${[120, 330, 520, 700, 860, 1030].map((x) => `<rect x="${x - 8}" y="${392 + Math.sin(x) * 6}" width="16" height="26" rx="4" fill="#8a9a5a" ${OL4}/>`).join('')}
+    <g><path d="M540,368 v22" stroke="${C.ink}" stroke-width="6"/><circle cx="540" cy="404" r="16" fill="#ffe29a" ${OL4}/><path d="M540,420 L470,520 H610Z" fill="#ffe29a" opacity=".1"/></g>`;
+  const wall = `<g><rect x="478" y="500" width="104" height="96" rx="10" fill="#efe2bd" ${OL}/><rect x="486" y="508" width="88" height="80" rx="6" fill="none" stroke="#c8b888" stroke-width="3"/><path d="M530,524 v48 M506,548 h48" stroke="${C.red}" stroke-width="16" stroke-linecap="round"/><rect x="514" y="490" width="32" height="12" rx="4" fill="#8a9a5a" ${OL4}/>
+    <g transform="translate(1012 700)"><rect x="-26" y="0" width="52" height="170" rx="22" fill="#c8362a" ${OL}/><rect x="-12" y="-26" width="24" height="30" rx="6" fill="#2b1a12"/><path d="M12,-14 C46,-14 40,40 30,60" stroke="${C.ink}" stroke-width="9" fill="none"/><rect x="-26" y="60" width="52" height="30" fill="#efe2bd" opacity=".85"/><path d="M-26,100 v50" stroke="#fff" stroke-width="6" opacity=".35"/></g>
+    <g transform="translate(40 560)"><rect x="-10" y="0" width="20" height="86" rx="6" fill="#1a1f12" ${OL4}/><path d="M-30,24 h60" stroke="#8a9a5a" stroke-width="6"/><circle cx="0" cy="-8" r="10" fill="#e23b2e" ${OL4}/></g></g>`;
+  const crate = `<g transform="translate(550 1200)"><ellipse cx="0" cy="4" rx="64" ry="9" fill="#000" opacity=".3"/><rect x="-48" y="-92" width="96" height="92" rx="5" fill="#8a7a3a" ${OL}/><path d="M-48,-62 h96 M-48,-30 h96" stroke="#5a4a1a" stroke-width="6"/><path d="M-48,-92 L48,0 M48,-92 L-48,0" stroke="#5a4a1a" stroke-width="8"/><rect x="-30" y="-80" width="60" height="22" fill="#efe2bd" opacity=".85"/><text x="0" y="-63" text-anchor="middle" font-family="Russo One" font-size="17" fill="${C.ink}">ХРУПКО</text><path d="M-60,-48 H60" stroke="#c89a3a" stroke-width="12" stroke-linecap="round" opacity=".9"/><path d="M-60,-48 H60" stroke="${C.ink}" stroke-width="3"/></g>`;
+  paint('mid', wire + wall + crate);
+  // ремни на потолке (качаются от вибрации)
+  const straps = [660, 780, 900, 1020].map((x) => `<g class="st" data-x="${x}"><path d="M${x},372 V560" stroke="${C.ink}" stroke-width="22" stroke-linecap="round"/><path d="M${x},372 V560" stroke="#b9a05a" stroke-width="12" stroke-linecap="round"/><rect x="${x - 15}" y="552" width="30" height="34" rx="6" fill="#9aa0a0" ${OL4}/><rect x="${x - 6}" y="560" width="12" height="18" fill="#2b1a12"/></g>`).join('');
+  const strapEl = paint('mid', straps); const strapNodes = Array.from(strapEl.querySelectorAll('.st'));
+
+  /* ---- кресло пилота, пульт с табличкой, лавка ---- */
+  const seat = `<g transform="translate(-60 0)"><path d="M70,1200 V1130 H260 V1200Z" fill="#2a351f" ${OL}/><path d="M80,1130 C70,1030 82,900 120,820 C150,790 200,800 200,830 C190,930 200,1030 230,1130Z" fill="#4f5a2e" ${OL}/><rect x="104" y="760" width="90" height="70" rx="26" fill="#5a6a38" ${OL}/><path d="M90,1130 H250" stroke="#8a9a5a" stroke-width="8"/><path d="M164,1150 v50" stroke="${C.ink}" stroke-width="12"/><path d="M92,950 C130,980 170,1040 160,1110" stroke="#b9a05a" stroke-width="10" fill="none"/></g>`;
+  const panel = `<g transform="translate(-65 0)"><path d="M300,1200 V1010 H560 V1200Z" fill="#252b1a" ${OL}/><path d="M280,1010 L580,1010 L560,760 L330,760 Z" fill="#2f3a24" ${OL}/><path d="M330,760 L560,760 L548,690 L342,690Z" fill="#1d2a1c" ${OL}/>
    ${[[380, 840], [450, 840], [520, 840]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="26" fill="#efe2bd" ${OL4}/><path d="M${x},${y} l${i % 2 ? 14 : -12},-14" stroke="${C.red}" stroke-width="5" stroke-linecap="round"/>`).join('')}
    <rect x="350" y="900" width="190" height="34" rx="6" fill="#0d2a12" ${OL4}/><rect x="358" y="908" width="${60}" height="18" fill="${C.green}" opacity=".7"/><circle cx="470" cy="917" r="7" fill="${C.red}"/><circle cx="500" cy="917" r="7" fill="${C.yellow}"/>
    <rect x="326" y="946" width="240" height="78" rx="8" fill="#d9a23a" ${OL}/><rect x="334" y="954" width="224" height="62" rx="5" fill="#f4c95a" stroke="#8a5a1a" stroke-width="3"/>
    <text x="446" y="982" text-anchor="middle" font-family="Russo One" font-size="25" fill="${C.ink}">ЧАЕВЫЕ —</text><text x="446" y="1008" text-anchor="middle" font-family="Russo One" font-size="25" fill="${C.ink}">ЭТО УВАЖЕНИЕ</text>
-   <circle cx="337" cy="958" r="4" fill="#5a3a10"/><circle cx="555" cy="958" r="4" fill="#5a3a10"/><circle cx="337" cy="1012" r="4" fill="#5a3a10"/><circle cx="555" cy="1012" r="4" fill="#5a3a10"/></g>`;
-  const bench = `<g><path d="M650,1200 V1100 H1070 V1200Z" fill="#2a351f" ${OL}/><rect x="650" y="1080" width="420" height="40" rx="14" fill="#6b7340" ${OL}/><path d="M650,1080 C650,1030 660,1010 700,1000 H1070 V1080Z" fill="#4f5a2e" ${OL} opacity="0"/><path d="M700,1150 h320" stroke="#1a0f08" stroke-width="5" opacity=".5"/><path d="M680,1160 V1200 M1040,1160 V1200" stroke="${C.ink}" stroke-width="10"/></g>`;
+   <circle cx="337" cy="958" r="4" fill="#5a3a10"/><circle cx="555" cy="958" r="4" fill="#5a3a10"/><circle cx="337" cy="1012" r="4" fill="#5a3a10"/><circle cx="555" cy="1012" r="4" fill="#5a3a10"/>
+   <path d="M300,1070 h260 M300,1130 h260" stroke="#3a4a2a" stroke-width="5"/><rect x="420" y="1090" width="70" height="28" rx="6" fill="#1a1f12" ${OL4}/></g>
+   <g transform="translate(250 1060)"><path d="M0,140 V10" stroke="${C.ink}" stroke-width="22" stroke-linecap="round"/><path d="M0,140 V10" stroke="#7a806f" stroke-width="9" stroke-linecap="round"/><path d="M-46,-4 H46" stroke="${C.ink}" stroke-width="22" stroke-linecap="round"/><path d="M-46,-4 H46" stroke="#2f3a24" stroke-width="10" stroke-linecap="round"/><circle cx="0" cy="-4" r="12" fill="#e23b2e" ${OL4}/></g>`;
+  const bench = `<g><path d="M590,1200 V1100 H1130 V1200Z" fill="#2a351f" ${OL}/><path d="M590,1085 C590,1000 604,950 650,930 H1130 V1085Z" fill="#4f5a2e" ${OL}/><path d="M650,970 H1130 M650,1010 H1130 M650,1050 H1130" stroke="#3a4a28" stroke-width="5" opacity=".7"/><rect x="590" y="1080" width="540" height="40" rx="14" fill="#6b7340" ${OL}/><path d="M640,1150 h440" stroke="#1a0f08" stroke-width="5" opacity=".5"/><path d="M620,1160 V1200 M1100,1160 V1200" stroke="${C.ink}" stroke-width="10"/>
+    <path d="M700,930 C720,1000 760,1040 800,1086 M860,930 C840,1000 810,1040 780,1086 M930,930 C950,1000 990,1040 1030,1086 M1090,930 C1070,1000 1040,1040 1010,1086" stroke="${C.ink}" stroke-width="16" fill="none"/><path d="M700,930 C720,1000 760,1040 800,1086 M860,930 C840,1000 810,1040 780,1086 M930,930 C950,1000 990,1040 1030,1086 M1090,930 C1070,1000 1040,1040 1010,1086" stroke="#b9a05a" stroke-width="8" fill="none"/></g>`;
   paint('mid', seat + panel + bench);
-  // винт сверху (зона y<230 — только фон)
-  const rot = paint('fx', `<g id="rt"><ellipse cx="540" cy="170" rx="700" ry="30" fill="#2b1a12" opacity=".0" class="rs"/><path class="rb" d="" stroke="#2b1a12" stroke-width="22" stroke-linecap="round" opacity=".5"/></g>`);
-  S.onUpdate((t, g) => { const a = g * 2 * Math.PI * 7, x = Math.cos(a) * 640; rot.querySelector('.rb').setAttribute('d', `M${540 - x},${170 - Math.sin(a) * 18} L${540 + x},${170 + Math.sin(a) * 18}`); rot.querySelector('.rs').setAttribute('opacity', .16 + .06 * Math.sin(g * 9)); });
+
+  /* ---- винт: смаз + лопасти; раскрутка с cab.rotor(tl,t0,ramp) ---- */
+  const rot = paint('fx', `<g><path class="rs" d="M-200,170 C200,140 880,140 1280,170 C880,200 200,200 -200,170Z" fill="#2b1a12" opacity="0"/><path class="rb" d="" stroke="#2b1a12" stroke-width="22" stroke-linecap="round" opacity="0" fill="none"/><path class="rb2" d="" stroke="#2b1a12" stroke-width="16" stroke-linecap="round" opacity="0" fill="none"/>
+    <path class="rest" d="M520,178 C400,200 250,230 130,262 M560,178 C680,200 830,230 950,262" stroke="#2b1a12" stroke-width="22" fill="none" stroke-linecap="round"/><circle cx="540" cy="172" r="26" fill="#566640" ${OL}/></g>`);
+  const qs = (k) => rot.querySelector(k);
+  S.onUpdate((t, g) => {
+    const tt = t - c.r0, up = tt > 0, spd = up ? Math.min(1, tt / c.rr) : 0, ph = !up ? 0 : (tt < c.rr ? TAU * 8 * tt * tt / (2 * c.rr) : TAU * 8 * (tt - c.rr / 2)), x = Math.cos(ph) * 660;
+    qs('.rest').setAttribute('opacity', 1 - Math.min(1, spd * 2.2)); qs('.rs').setAttribute('opacity', (.2 * spd + .05 * Math.sin(g * 9) * spd).toFixed(3));
+    qs('.rb').setAttribute('opacity', (.6 * spd).toFixed(3)); qs('.rb2').setAttribute('opacity', (.4 * spd).toFixed(3));
+    qs('.rb').setAttribute('d', `M${f1(540 - x)},${f1(172 - Math.sin(ph) * 20)} L${f1(540 + x)},${f1(172 + Math.sin(ph) * 20)}`);
+    const x2 = Math.cos(ph + 1.57) * 660; qs('.rb2').setAttribute('d', `M${f1(540 - x2)},${f1(172 - Math.sin(ph + 1.57) * 20)} L${f1(540 + x2)},${f1(172 + Math.sin(ph + 1.57) * 20)}`);
+    const sc = c.sc, al = c.alt;
+    wins.forEach((q) => { const P7 = q.P7;
+      q.s.querySelector('.wc').setAttribute('transform', `translate(${f1(-md(sc * .35, P7))},${f1(-al * 20)})`);
+      q.s.querySelector('.wh').setAttribute('transform', `translate(${f1(-md(sc * .8, P7))},${f1(al * 70)})`);
+      q.s.querySelector('.wg').setAttribute('transform', `translate(${f1(-md(sc * 1.8, P7))},${f1(al * 150)})`); });
+    cg.setAttribute('transform', `translate(${f1(-md(sc * .6, 1260))},0)`);
+    gndEl.setAttribute('transform', `translate(${f1(-md(sc * 1.8, P))},${f1(al * 640)})`);
+    hills.setAttribute('transform', `translate(${f1(-md(sc * .6, P2))},${f1(al * 420)})`);
+    ucl.setAttribute('transform', `translate(${f1(-md(sc * 1.1, 2600))},${f1(-al * 60)})`); ucl.setAttribute('opacity', f1(Math.min(1, al * 2.2) * 100) / 100);
+    shadow.setAttribute('transform', `translate(540 ${G0 + 16}) scale(${(1 - al * .45).toFixed(3)} 1) translate(-540 ${-(G0 + 16)}) translate(0 ${f1(al * 640)})`); shadow.setAttribute('opacity', (.32 * Math.max(0, 1 - al * 1.4)).toFixed(3));
+    strapNodes.forEach((n, i) => { const x = +n.dataset.x, a = Math.sin(g * 3.1 + i * 1.7) * (1.5 + c.vib * 2.5) + Math.sin(g * 21 + i) * c.vib * 1.2; n.setAttribute('transform', `rotate(${a.toFixed(2)} ${x} 372)`); });
+  });
   // вибрация салона и пол
-  const nodes = [S.layers.mid, S.layers.actors]; 
-  S.onUpdate((t, g) => { const v = c.vib == null ? 1 : c.vib; nodes.forEach((n, i) => { n.dataset.vib = 1; n.style.translate = `${f1(Math.sin(g * 47) * .8 * v)}px ${f1(Math.sin(g * 39 + 1) * 1.4 * v)}px`; }); });
-  const cab = { floor: 1200, benchX: [700, 1020], benchY: 1085, seatX: 165,
-    /* окна: движение пейзажа. speed — условных px/с */
+  const nodes = [S.layers.mid, S.layers.actors];
+  S.onUpdate((t, g) => { const v = c.vib == null ? 1 : c.vib; nodes.forEach((n) => { n.dataset.vib = 1; n.style.translate = `${f1(Math.sin(g * 47) * .8 * v)}px ${f1(Math.sin(g * 39 + 1) * 1.4 * v)}px`; }); });
+  const cab = { floor: 1200, benchX: [610, 1100], benchY: 1085, seatX: 105, groundY: G0,
+    /* окна и земля: движение пейзажа. speed — условных px/с */
     scroll(tl, t0, t1, speed) { const sp = speed || 600; c.tot = (c.tot || 0) + sp * (t1 - t0); tl.to(c, { sc: c.tot, duration: t1 - t0, ease: 'sine.inOut' }, t0); return t1; },
-    /* высота: h 0 (земля рядом) … 1 (высоко). */
+    /* высота: h 0 (на земле) … 1 (высоко): земля уходит вниз */
     altitude(tl, t, h, dur) { tl.to(c, { alt: h, duration: dur == null ? 2 : dur, ease: 'power2.inOut' }, t); return t + (dur == null ? 2 : dur); },
-    vibe(tl, t, v, dur) { tl.to(c, { vib: v, duration: dur == null ? .5 : dur, ease: 'power2.out' }, t); } };
+    vibe(tl, t, v, dur) { tl.to(c, { vib: v, duration: dur == null ? .5 : dur, ease: 'power2.out' }, t); },
+    /* раскрутка винта с t0 за ramp секунд (до t0 лопасти висят) */
+    rotor(t0, ramp) { c.r0 = t0; c.rr = ramp || 1.6; } };
   c.vib = 1; return cab;
 };
 

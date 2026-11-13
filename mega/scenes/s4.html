@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Сцена 4</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../kit/vendor/fonts.css"><link rel="stylesheet" href="../kit/stage.css">
+</head><body>
+<div id="root" data-duration="20.19">
+  <div id="camera"><div id="float"><div id="shake"><div id="world"></div></div></div></div>
+  <div id="overlay"></div>
+</div>
+<script src="../kit/vendor/gsap.min.js"></script>
+<script src="../kit/lines.js"></script>
+<script src="../kit/rig.js"></script>
+<script src="../kit/sfx.js"></script>
+<script src="../kit/stage.js"></script>
+<script>
+const N = 4;
+const { tl, T } = Stage.init({ scene: N });
+const B = T.beats, DUR = T.duration;
+const bg = Stage.bg.zone();
+const NS = 'http://www.w3.org/2000/svg';
+const svgEl = (html, parent) => {
+  if (!parent) { const g = document.createElementNS(NS, 'g'); g.innerHTML = html; return g; }
+  const v = document.createElementNS(NS, 'svg'); v.setAttribute('width', 1); v.setAttribute('height', 1); v.style.overflow = 'visible'; v.innerHTML = html; parent.appendChild(v); return v; };
+const L = (id) => T.lines.find((l) => l.id === id);
+const rnd = Stage.rng(404);
+const CX = 1400, GY = Stage.GROUND, WY = 1215;      // центр круга, земля, центр эллипса проволоки
+const SCL = 0.72;
+
+/* ---------- проволока: задняя дуга за героями, передняя поверх ---------- */
+const wires = [0, -46, -92].map((dy) => Stage.prop.wire({ x: CX, y: WY + dy, d: 1300 }));
+{ // колья по кругу: задние — в mid (за героями), передние — в fx (поверх)
+  const RX = 650, RY = RX * 0.26;
+  for (let i = 0; i < 16; i++) {
+    const a = i / 16 * Math.PI * 2, x = CX + Math.cos(a) * RX, y = WY + Math.sin(a) * RY, back = Math.sin(a) < 0;
+    const post = svgEl(`<ellipse cx="0" cy="4" rx="22" ry="7" fill="#000" opacity=".3"/><rect x="-9" y="-150" width="18" height="152" rx="4" fill="#6b3a22" stroke="#2b1a12" stroke-width="5"/><path d="M-9,-150 l9,-14 l9,14z" fill="#6b3a22" stroke="#2b1a12" stroke-width="4"/>`, back ? Stage.layers.mid : Stage.layers.fx);
+    gsap.set(post, { x, y });
+  }
+}
+Stage.addLayer('fgrubble', 1.3, 'fg');
+
+/* ---------- декор переднего плана и земли (нижняя треть не пустая) ---------- */
+svgEl(`<ellipse cx="${CX}" cy="1500" rx="1100" ry="150" fill="#6b3a22" opacity=".55"/>
+  <path d="M${CX-1000},1420 C${CX-600},1390 ${CX-200},1450 ${CX+200},1420 S${CX+800},1400 ${CX+1100},1430" fill="none" stroke="#2b1a12" stroke-width="12" opacity=".5"/>
+  <ellipse cx="${CX-520}" cy="1480" rx="120" ry="30" fill="#2b1a12" opacity=".6"/><ellipse cx="${CX+470}" cy="1520" rx="150" ry="34" fill="#2b1a12" opacity=".6"/>
+  ${[[-640,1400],[-420,1560],[-150,1470],[210,1610],[430,1440],[690,1580],[-760,1600]].map(([dx,y],i)=>`<g transform="translate(${CX+dx} ${y}) rotate(${i*17%40-20})"><rect x="-26" y="-10" width="52" height="16" rx="4" fill="#c9a24a" stroke="#2b1a12" stroke-width="4"/><rect x="-26" y="-10" width="14" height="16" rx="3" fill="#8a6a2a"/></g>`).join('')}`, Stage.layers.mid);
+// мешки с песком по краям (передний план)
+const bag = (x, y, w, h, c) => `<path d="M${x},${y} q${w/2},${-h*0.5} ${w},0 v${h} q${-w/2},${h*0.3} ${-w},0z" fill="${c}" stroke="#2b1a12" stroke-width="6"/><path d="M${x+w*0.2},${y+h*0.35} q${w*0.3},${-h*0.2} ${w*0.6},0" fill="none" stroke="#2b1a12" stroke-width="4" opacity=".5"/>`;
+svgEl(`<g>${bag(CX-980,1560,240,90,'#b38a52')}${bag(CX-900,1500,230,90,'#a37c48')}${bag(CX-760,1590,230,90,'#b38a52')}</g>
+  <g>${bag(CX+640,1580,240,90,'#a37c48')}${bag(CX+720,1520,230,90,'#b38a52')}${bag(CX+560,1640,250,90,'#b38a52')}</g>`, Stage.layers.fgrubble);
+// столбики и обломки у проволоки
+[[-420,1300],[420,1290]].forEach(([dx, y]) => Stage.prop.crate({ x: CX + dx + (dx < 0 ? -260 : 260), y: y + 130, w: 150, h: 110, layer: 'mid', rot: dx < 0 ? -4 : 5 }));
+
+/* ---------- персонажи ---------- */
+const mkc = (name, o) => { const c = Rig.create(name, o); Stage.layers.actors.appendChild(c.el); return c; };
+const SP = 210;
+const hoh = mkc('hohotun', { x: CX - 2 * SP, y: GY, scale: SCL, facing: 0 });
+const ustav = mkc('ustav', { x: CX - SP, y: GY, scale: SCL, facing: 0 });
+const gvz = mkc('gvozd', { x: CX, y: GY, scale: SCL, facing: 0 });
+const chk = mkc('chaika', { x: CX + SP, y: GY, scale: SCL, facing: 0 });
+const lad = mkc('ladoshka', { x: CX + 2 * SP + 50, y: GY, scale: SCL, facing: 0 });
+const all = [hoh, ustav, gvz, chk, lad];
+const fx = Stage.layers.fx;
+// молоток в левой руке Гвоздя
+const hammer = svgEl(`<path d="M0,30 L0,-120" stroke="#2b1a12" stroke-width="22" stroke-linecap="round"/><path d="M0,30 L0,-120" stroke="#a8743c" stroke-width="11" stroke-linecap="round"/><rect x="-48" y="-170" width="96" height="48" rx="8" fill="#8a948a" stroke="#2b1a12" stroke-width="6"/><rect x="-48" y="-170" width="20" height="48" rx="6" fill="#4f5a4a" stroke="#2b1a12" stroke-width="5"/>`);
+gvz.give(hammer, 'L', { x: 0, y: 0, rot: 0, scale: 0.85 });
+
+/* ---------- жизнь: idle/blinks до первого падения каждого ---------- */
+const FALL = { // t падения
+  chk1: 8.95, hoh1: 9.5, ustav1: 10.0, gvz: 10.45, chk2: 12.5, ustav2: 13.75, hoh2: 14.55 };
+hoh.idle(tl, 0, FALL.hoh1 - 0.05); hoh.blinks(tl, 0, FALL.hoh1 - 0.1);
+ustav.idle(tl, 0, FALL.ustav1 - 0.05); ustav.blinks(tl, 0, FALL.ustav1 - 0.1);
+gvz.idle(tl, 0, FALL.gvz - 0.05); gvz.blinks(tl, 0, FALL.gvz - 0.1);
+chk.idle(tl, 0, FALL.chk1 - 0.05); chk.blinks(tl, 0, FALL.chk1 - 0.1);
+lad.idle(tl, 0, 8.8); lad.blinks(tl, 0, DUR);
+
+/* ---------- взгляды и реплики ---------- */
+const lk = (c, t, dx, dy, d) => c.look(tl, t, dx, dy || 0, d || 0.35);
+// reveal: Устав оглядывает проволоку
+lk(ustav, 0.9, -0.95, 0.05, 0.4); lk(ustav, 1.35, 0.95, 0.0, 0.45); lk(ustav, 1.8, -0.2, -0.05, 0.3);
+[hoh, chk, lad].forEach((c) => lk(c, 0.7, c === hoh ? 0.4 : -0.4, 0, 0.5));
+lk(gvz, 0.5, 0, -0.1, 0.5);
+{ // L26 «Где выход?»
+  const l = L(26);
+  ustav.talk(tl, l.t, l.dur, { energy: 1.1, gesture: false });
+  lk(ustav, l.t + 0.1, 0.7, 0.0, 0.3); lk(gvz, l.t, -0.6, 0, 0.35);
+  ustav.pose(tl, l.t - 0.1, 'shrug', 0.5);
+}
+{ // L27 Гвоздь гордо
+  const l = L(27);
+  gvz.talk(tl, l.t, l.dur, { energy: 1.0, gesture: false });
+  [hoh, chk, lad].forEach((c) => lk(c, l.t - 0.1, c === hoh ? 0.9 : c === chk ? -0.5 : -0.9, 0, 0.35));
+  lk(ustav, l.t - 0.1, 0.75, 0, 0.35);
+  gvz.pose(tl, l.t - 0.2, { chest: -3, head: -3, brow: 0.5 }, 0.4);
+}
+// похлопывание молотком по ладони (левая рука с молотком, правая — ладонь)
+const patT = [0.55, 0.95, 3.55, 3.95, 4.35];
+gvz.pose(tl, 0.2, { aL1: 14, aL2: 96, aR1: -16, aR2: -80, chest: -3, head: -2, brow: 0.4 }, 0.5);
+patT.forEach((t, i) => {
+  if (i === 2) gvz.pose(tl, 3.3, { aL1: 14, aL2: 96, aR1: -16, aR2: -80, chest: -3, head: -2, brow: 0.4 }, 0.3);
+  gvz.pose(tl, t, { aL1: 14, aL2: 62, aR1: -16, aR2: -80, chest: -3, head: -2, brow: 0.4 }, 0.1);
+  gvz.pose(tl, t + 0.12, { aL1: 14, aL2: 96, aR1: -16, aR2: -80, chest: -3, head: -2, brow: 0.4 }, 0.2);
+});
+{ // L28 Устав
+  const l = L(28);
+  ustav.talk(tl, l.t, l.dur, { energy: 1.15, gesture: false });
+  lk(ustav, l.t - 0.1, -0.3, 0.1, 0.3); lk(ustav, l.t + 0.5, 0.7, 0.0, 0.3);
+  [hoh, chk, lad].forEach((c) => lk(c, l.t - 0.1, c === hoh ? -0.2 : c === chk ? -0.8 : -0.9, 0, 0.35));
+  lk(gvz, l.t - 0.1, -0.7, 0, 0.35);
+}
+// think: Гвоздь задумался
+gvz.pose(tl, B.think.t - 0.1, 'think', 0.5);
+lk(gvz, B.think.t + 0.1, 0.2, -0.95, 0.4);
+[hoh, ustav].forEach((c) => lk(c, B.think.t, 0.9, 0, 0.4));
+[chk, lad].forEach((c) => lk(c, B.think.t, -0.9, 0, 0.4));
+{ // L29
+  const l = L(29);
+  gvz.talk(tl, l.t, l.dur, { energy: 0.8, gesture: false });
+  lk(gvz, l.t - 0.05, 0, 0.1, 0.3);
+  gvz.pose(tl, l.t + l.dur + 0.15, 'stand', 0.5);
+}
+
+/* ---------- ПЕРЕСТРЕЛКА ---------- */
+const snd = { shots: [], bursts: [], dirt: [], ric: [], bodies: [], dust: [], twang: [], zap: [], rub: [], stamp: [], whoosh: [], paper: [] };
+const edgeL = CX - 780, edgeR = CX + 780;
+const IMPACT = { knees: [0.75, 1.25], back: [0.6, 1.1], face: [0.55, 1.05], sit: [0.6], blast: [0.9, 1.4] };
+const DIST = { knees: 120, back: 210, face: 150, sit: 70, blast: 240 };
+const doFall = (c, t, style, dir, label) => {
+  const x0 = c.m.x;
+  c.fall(tl, t, { style, dir });
+  const fromX = dir > 0 ? edgeL : edgeR;
+  Stage.tracer(tl, t - 0.14, fromX, 1000 + rnd() * 120, x0 - dir * 20, GY - 240 + rnd() * 50, { dur: 0.14, hit: false });
+  Stage.sparks(tl, t, x0 - dir * 24, GY - 240, { n: 6, ang: dir > 0 ? [100, 260] : [-80, 80] });
+  snd.shots.push([t - 0.2, dir > 0 ? -0.8 : 0.8, label === 0 ? 'mid' : 'far']);
+  const xe = x0 + dir * DIST[style];
+  IMPACT[style].forEach((dt, i) => {
+    const xi = x0 + dir * DIST[style] * (i ? 1 : 0.6);
+    snd.bodies.push([t + dt, 0.6, xi]);
+    Stage.dust(tl, t + dt, xi, GY + 12, { n: i ? 7 : 5, size: i ? 80 : 60, spread: 120 });
+  });
+  Stage.shake(tl, t + IMPACT[style][0], 5, 0.3);
+  return xe;
+};
+const stampFly = (t, from, n) => {
+  const e = document.createElement('div');
+  e.style.cssText = "position:absolute;left:0;top:0;font:400 38px/1 'Russo One',sans-serif;color:#e23b2e;border:6px solid #e23b2e;border-radius:12px;padding:8px 16px 6px;white-space:nowrap;letter-spacing:2px;background:rgba(239,226,189,.35)";
+  e.textContent = 'ШТАМП ' + n; Stage.el.titles.appendChild(e);
+  gsap.set(e, { x: 880 + from, y: 560 + 420, xPercent: -50, yPercent: -50, opacity: 0, scale: 2.2, rotation: -25 });
+  tl.to(e, { opacity: 1, duration: 0.04 }, t - 0.3);
+  tl.to(e, { x: 880, y: 560, scale: 1, rotation: -9, duration: 0.3, ease: 'power3.in' }, t - 0.3);
+  tl.to(e, { scale: 1.12, duration: 0.06, ease: 'power2.out' }, t).to(e, { scale: 1, duration: 0.2, ease: 'elastic.out(1,.5)' }, t + 0.06);
+  tl.to(e, { opacity: 0, duration: 0.4, ease: 'power2.in' }, t + 1.0);
+  snd.stamp.push(t);
+};
+const counter = Stage.counter(tl, B.firefight.t - 0.2, { label: 'ШТАМПЫ', value: 0, x: 880, y: 400, digits: 2 });
+const zapAt = (t, x) => { Stage.sparks(tl, t, x, GY - 230, { n: 14 }); Stage.flash(tl, t, { peak: 0.1, dur: 0.12 }); snd.zap.push(t); };
+
+// удары 4 первых
+const xChk1 = doFall(chk, FALL.chk1, 'knees', 1, 0);
+const xHoh1 = doFall(hoh, FALL.hoh1, 'back', -1, 0);
+const xUst1 = doFall(ustav, FALL.ustav1, 'face', -1, 0);
+const xGvz = doFall(gvz, FALL.gvz, 'knees', -1, 0);
+
+// Ладошка: пригнулась, перебегает, оживляет по очереди
+lad.pose(tl, 8.85, 'cower', 0.3);
+lk(lad, 9.0, -0.8, 0.2, 0.3);
+let e = 9.95; lad.pose(tl, e, 'stand', 0.15);
+e = lad.walkTo(tl, 10.05, CX + 435, 0.5, { face: -0.85 });          // к Чайке
+lad.turn(tl, e, 0, 0.2); lad.loop(tl, 'rubHands', e + 0.1, e + 0.6); snd.rub.push([e + 0.1, 0.5]);
+zapAt(e + 0.6, CX + 400); stampFly(e + 0.66, 300, 1); counter.set(tl, e + 0.72, 1);
+chk.getUp(tl, e + 0.62, 1.4);                                        // встаёт к ~12.4
+lk(lad, e + 0.62, -0.9, 0, 0.2);
+// ... к Уставу
+let e2 = lad.walkTo(tl, e + 0.7, xUst1 + 95, 0.8, { face: -0.85 });
+lad.turn(tl, e2, 0, 0.2); lad.loop(tl, 'rubHands', e2 + 0.05, e2 + 0.5); snd.rub.push([e2 + 0.05, 0.45]);
+zapAt(e2 + 0.5, xUst1 + 40); stampFly(e2 + 0.55, 200, 2); counter.set(tl, e2 + 0.6, 2);
+ustav.getUp(tl, e2 + 0.52, 1.3);
+// ... к Хохотуну
+let e3 = lad.walkTo(tl, e2 + 0.6, xHoh1 + 95, 0.5, { face: -0.85 });
+lad.turn(tl, e3, 0, 0.2); lad.loop(tl, 'rubHands', e3 + 0.05, e3 + 0.45); snd.rub.push([e3 + 0.05, 0.4]);
+zapAt(e3 + 0.45, xHoh1 + 50); stampFly(e3 + 0.5, 100, 3); counter.set(tl, e3 + 0.55, 3);
+hoh.getUp(tl, e3 + 0.47, 1.2);
+// повторные падения
+const T_c2 = e + 0.62 + 1.4 + 0.05, T_u2 = e2 + 0.52 + 1.3 + 0.05, T_h2 = e3 + 0.47 + 1.2 + 0.05;
+console.log('revive-times', e, e2, e3, T_c2, T_u2, T_h2);
+doFall(chk, T_c2, 'sit', 1, 1);
+doFall(ustav, T_u2, 'knees', -1, 1);
+doFall(hoh, T_h2, 'sit', -1, 1);
+
+/* ---------- фоновая стрельба со всех сторон ---------- */
+const bullets = [];
+{
+  let t = B.firefight.t - 0.15, k = 0;
+  while (t < B.out.t - 0.3) {
+    const p = Math.min(1, (t - B.firefight.t) / B.firefight.dur);
+    const gap = t < B.firefight.t + B.firefight.dur ? 0.3 - 0.19 * Math.max(0, p) : 0.85 + 0.3 * rnd();
+    const side = k % 3 === 1 ? 1 : (k % 3 === 0 ? -1 : (rnd() < 0.5 ? -1 : 1));
+    const kind = rnd();
+    const fromX = side < 0 ? edgeL : edgeR, y1 = 760 + rnd() * 460;
+    if (kind < 0.45) {            // в землю у проволоки
+      const x2 = CX + side * (300 + rnd() * 320) * (rnd() < 0.5 ? 1 : -1), y2 = GY + 20 + rnd() * 110;
+      Stage.tracer(tl, t, fromX, y1, x2, y2, { dur: 0.13, hit: false });
+      Stage.dirtHit(tl, t + 0.13, x2, y2);
+      snd.dirt.push([t + 0.13, (x2 - CX) / 700]);
+    } else if (kind < 0.78) {     // в проволоку
+      const x2 = CX + side * (400 + rnd() * 250) * -1, y2 = WY + (rnd() < 0.5 ? -118 : 120) * (0.5 + rnd() * 0.5);
+      Stage.tracer(tl, t, fromX, y1, x2, y2, { dur: 0.13 });
+      if (rnd() < 0.35) snd.twang.push([t + 0.13, (x2 - CX) / 700]);
+    } else {                      // над головами — в никуда, с рикошетом
+      const x2 = CX - side * 900, y2 = 560 + rnd() * 320;
+      Stage.tracer(tl, t, fromX, y1, x2, y2, { dur: 0.2, hit: false });
+      if (rnd() < 0.5) snd.ric.push(t + 0.1);
+    }
+    snd.shots.push([t - 0.04, side * 0.85, k % 4 === 0 ? 'mid' : 'far']);
+    if (k % 5 === 2 && t < B.firefight.t + B.firefight.dur) snd.bursts.push([t, 4, side * 0.7]);
+    if (t < B.firefight.t + B.firefight.dur && k % 4 === 1) Stage.shake(tl, t + 0.12, 4 + 3 * p, 0.25);
+    t += gap; k++;
+  }
+}
+// пыль в воздухе после перестрелки
+Stage.smoke(tl, B.firefight.t, DUR - 0.5, CX - 700, GY + 40, { n: 6, size: 160, rise: 260, life: 3.2, alpha: 0.35, color: '#7a5a3a', drift: 260 });
+Stage.smoke(tl, B.firefight.t + 1, DUR - 0.5, CX + 700, GY + 40, { n: 6, size: 160, rise: 260, life: 3.2, alpha: 0.3, color: '#7a5a3a', drift: -260 });
+
+/* ---------- L30 карточка, L31 «Ура» ---------- */
+{
+  const l30 = L(30), l31 = L(31);
+  lad.talk(tl, l30.t, l30.dur, { energy: 1.0, gesture: false });
+  const gxFinal = xGvz;
+  // Ладошка идёт к Гвоздю (заканчивает до реплики)
+  const e4 = lad.walkTo(tl, e3 + 0.6, gxFinal + 200, 0.85, { face: 0.85 });
+  lad.turn(tl, e4, -0.3, 0.3);
+  lad.idle(tl, e4 + 0.1, DUR);
+  lk(lad, e4, 0.6, 0.5, 0.3);
+  lad.pose(tl, l30.t - 0.2, { aR1: -30, aR2: -70, chest: -3, head: -2 }, 0.4);
+  // карточка с десятью штампами
+  const card = Stage.prop.card({ x: gxFinal + 170, y: GY - 330, s: 0.5, layer: 'fx', rot: -4 });
+  const st = card.querySelector('.stp');
+  const marks = [];
+  for (let i = 0; i < 10; i++) {
+    const x = -90 + (i % 5) * 42, y = i < 5 ? 14 : 54;
+    st.insertAdjacentHTML('beforebegin', `<g class="m${i}" opacity="${i < 9 ? 1 : 0}"><circle cx="${x}" cy="${y}" r="15" fill="none" stroke="${i % 3 === 0 ? '#e23b2e' : i % 3 === 1 ? '#2a6ad0' : '#2e8a3a'}" stroke-width="4"/><path d="M${x - 7},${y} l5,6 l10,-12" stroke="#2b1a12" stroke-width="4" fill="none"/></g>`);
+  }
+  gsap.set(card, { opacity: 0 });
+  const tc = l30.t - 0.15;
+  tl.fromTo(card, { opacity: 0, scale: 0.2, y: GY - 250 }, { opacity: 1, scale: 1.15, y: GY - 640, duration: 0.45, ease: 'back.out(1.8)', immediateRender: false }, tc);
+  tl.to(card, { rotation: 3, duration: 0.5, ease: 'sine.inOut', yoyo: true, repeat: 3 }, tc + 0.45);
+  snd.paper.push(tc);
+  // десятая — на «за счёт заведения»
+  const tTen = l30.t + 2.75;
+  tl.set(card.querySelector('.m9'), { opacity: 1 }, tTen);
+  tl.to(card, { scale: 1.25, duration: 0.08, ease: 'power2.out' }, tTen).to(card, { scale: 1.15, duration: 0.3, ease: 'elastic.out(1,.5)' }, tTen + 0.08);
+  snd.stamp.push(tTen);
+  Stage.sparks(tl, tTen, gxFinal + 170, GY - 640, { n: 10 });
+  counter.set(tl, tTen + 0.05, 10);
+  tl.to(card, { opacity: 0, scale: 0.4, duration: 0.3, ease: 'power2.in' }, l31.t - 0.2);
+  // «Ура.» лёжа
+  gvz.pose(tl, l31.t - 0.5, 'cheerWeak', 0.6);
+  gvz.talk(tl, l31.t, l31.dur, { energy: 0.5, gesture: false });
+  gvz.pose(tl, l31.t + l31.dur + 0.2, { aR1: -5, aR2: 9, aL1: 5, aL2: -9 }, 0.5);
+  lk(lad, l31.t - 0.2, -0.2, 0.5, 0.3);
+  lad.pose(tl, l31.t + 0.7, { aR1: -5, aR2: 9, chest: 2, head: 3 }, 0.6);
+  snd.lad = e4;
+}
+
+/* ---------- плашка, титры ---------- */
+Stage.tag(tl, 0.3, 'ЗОНА', 2.2);
+Stage.captions(tl, T.lines);
+
+/* ---------- камера ---------- */
+const cam = (t, x, y, s, d, ez) => Stage.cam(tl, t, { x, y, scale: s }, d, ez || 'sine.inOut');
+Stage.camSet({ x: CX, y: 800, scale: 2.4 });
+cam(0.15, CX, 1060, 0.82, 1.9, 'power2.inOut');
+cam(2.0, CX - 110, 1010, 1.45, 1.2);
+cam(3.0, CX + 10, 980, 1.6, 1.0);
+cam(5.4, CX - 130, 1010, 1.5, 0.8);
+cam(B.think.t - 0.1, CX, 880, 1.8, 0.7, 'power2.inOut');
+cam(B.firefight.t - 0.05, CX, 1050, 0.8, 0.7, 'power2.out');
+cam(10.0, CX + 200, 1040, 0.88, 1.2);
+cam(11.4, CX - 100, 1040, 0.88, 1.0);
+cam(12.8, CX - 380, 1040, 0.95, 1.0);
+cam(13.8, xGvz + 60, 1000, 1.15, 0.9, 'power2.inOut');
+cam(L(31).t - 0.6, xGvz + 40, 1070, 1.5, 0.8);
+cam(B.out.t - 0.2, CX, 1050, 0.9, 1.1);
+Stage.blackout(tl, B.out.t + 0.1, 0.8);
+
+/* ---------- звук ---------- */
+window.__sound = (ctx, t0) => {
+  const s = SFX.init(ctx, t0, { partStart: T.partStart, room: 'field' });
+  s.ambience('zone', 0, DUR);
+  s.music('march', 0.3, B.firefight.t - 0.1, { fadeOut: 0.8, gain: 0.6 });
+  s.duckLines(T.lines);
+  s.wireTwang(0.4); s.wireTwang(1.0, { gain: 0.5, pan: 0.3 });
+  s.whoosh(0.3, 0.8, { panTo: 0.2 });
+  patT.forEach((t, i) => s.thud(t + 0.1, { gain: 0.22, pan: -0.1 }));
+  s.cloth(1.4, { pan: -0.3 }); s.cloth(6.9, { pan: 0.1 });
+  [[1.3, 0.2, 'far'], [4.9, -0.7, 'far'], [6.0, 0.8, 'far']].forEach(([t, p, d]) => s.shot(t, { dist: d, pan: p, gain: 0.5 }));
+  s.whoosh(B.think.t - 0.15, 0.7, { panTo: 0 });
+  snd.shots.forEach(([t, p, d]) => s.shot(t, { dist: d, pan: p }));
+  snd.bursts.forEach(([t, n, p]) => s.burst(t, n, { rate: 10, dist: 'far', pan: p }));
+  snd.dirt.forEach(([t, p]) => s.bulletDirt(t, { pan: p }));
+  snd.ric.forEach((t) => s.ricochet(t));
+  snd.twang.forEach(([t, p]) => s.wireTwang(t, { pan: p, gain: 0.5 }));
+  snd.bodies.forEach(([t, w]) => { s.bodyFall(t, { weight: w }); s.dustPuff(t + 0.05, { pan: 0 }); });
+  snd.rub.forEach(([t, d]) => s.rubHands(t, d));
+  snd.zap.forEach((t) => s.zap(t));
+  snd.stamp.forEach((t) => s.stamp(t));
+  snd.paper.forEach((t) => s.paper(t));
+  s.footsteps(10.05, 10.55, { surface: 'dirt', rate: 4 });
+  s.footsteps(10.95, 11.8, { surface: 'dirt', rate: 4 });
+  s.footsteps(12.2, 12.7, { surface: 'dirt', rate: 4 });
+  s.footsteps(13.1, 14.0, { surface: 'dirt', rate: 4 });
+  s.fadeOut(DUR - 0.5, 0.5);
+};
+</script></body></html>

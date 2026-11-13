@@ -23,7 +23,9 @@ const svgEl = (html, parent) => { // без parent — <g> для руки пе�
   if (!parent) { const g = document.createElementNS(NS, 'g'); g.innerHTML = html; return g; }
   const v = document.createElementNS(NS, 'svg'); v.setAttribute('width', 1); v.setAttribute('height', 1); v.style.overflow = 'visible'; v.innerHTML = html; parent.appendChild(v); return v; };
 const L = (id) => T.lines.find((l) => l.id === id);
-Stage.camSet({ x: 540, y: 900, scale: 0.98 });
+Stage.camSet({ x: 435, y: 930, scale: 1.2 }); // кадр 0: все пятеро целиком и крупно
+// обход бага kit: у слоёв двери нет position:absolute
+[bg.door.slab, bg.door.light].forEach((e) => { e.style.position = 'absolute'; });
 
 /* ---------- пол и передний план (нижняя треть не пустая) ---------- */
 const floorDeco = svgEl(`
@@ -44,7 +46,7 @@ svgEl([[300,1300],[340,1318],[470,1296],[690,1310],[760,1290],[860,1316]].map(([
 /* ---------- персонажи ---------- */
 const SIT_Y = 1200 + (window.SY || 0), SC = 0.72;
 const mkc = (name, o) => { const c = Rig.create(name, o); Stage.layers.actors.appendChild(c.el); return c; };
-const ustav = mkc('ustav', { x: 52, y: 1200, scale: 0.86, facing: 0.3 });
+const ustav = mkc('ustav', { x: 115, y: 1200, scale: 0.88, facing: 0.3 });
 const hoh = mkc('hohotun', { x: 262, y: SIT_Y, scale: SC, facing: -0.4 });
 const chk = mkc('chaika', { x: 436, y: SIT_Y, scale: SC, facing: -0.4 });
 const lad = mkc('ladoshka', { x: 606, y: SIT_Y, scale: SC, facing: -0.4 });
@@ -60,13 +62,20 @@ all.forEach((c) => c.blinks(tl, 0, c === gvz ? 30.1 : DUR));
 /* посадка и еда (у каждого свой ритм: разные куски цикла eat) */
 sitters.forEach((c) => c.pose(tl, 0.01, 'sit', 0.05));
 sitters.forEach((c) => { c.prop(tl, 0.02, 'R', 'bowl'); c.prop(tl, 0.02, 'L', 'spoon'); });
-const eat = (c, a, b) => c.pose(tl, a, 'eat', b - a, null, SIT);
+const eat = (c, a, b) => {
+  const r = c.pose(tl, a, 'eat', b - a, null, SIT);
+  if (c === hoh) { // рот-«ухмылка» у Хохотуна открыт в покое: после каждой ложки сжимаем губы
+    for (let tt = a + Math.min(0.7, 0.4 * (b - a)); tt + 2.3 <= b + 0.01; tt += 2.3) hoh.mouth(tl, tt + 0.46, 4);
+    hoh.mouth(tl, b + 0.02, 4);
+  }
+  return r; };
+hoh.set({ mouth: 4 });
 const sit = (c, t, d) => c.pose(tl, t, 'sit', d == null ? 0.5 : d);
 
 /* Устав: блокнот в левой, указка в правой */
 ustav.prop(tl, 0.02, 'R', 'notebook');
 const pointer = svgEl(`<path d="M0,0 L420,0" stroke="#2b1a12" stroke-width="15" stroke-linecap="round"/><path d="M0,0 L420,0" stroke="#d9b27c" stroke-width="7" stroke-linecap="round"/><path d="M370,0 L420,0" stroke="#e23b2e" stroke-width="7" stroke-linecap="round"/>`);
-ustav.give(pointer, 'L', { x: 0, y: 0, rot: -6, scale: 1.2 });
+ustav.give(pointer, 'L', { x: 0, y: 0, rot: -6, scale: 1.45 });
 ustav.to(tl, 0.02, { kL: 0, pL: 1 }, 0.3, 'back.out(2)');
 
 /* взгляды: кто говорит */
@@ -94,8 +103,9 @@ sit(gvz, 5.2, 0.4); eat(gvz, 5.7, 11.4);
   const l = L(2);
   hoh.pose(tl, 7.15, 'wave', 0.5, null, SIT);
   hoh.talk(tl, l.t, l.dur, { gesture: false });
+  hoh.mouth(tl, l.t + l.dur + 0.04, 4);
   lk(ustav, 7.4, 0.55, 0);
-  sit(hoh, 9.3, 0.5); eat(hoh, 10.0, 12.9);
+  sit(hoh, 9.3, 0.5); hoh.mouth(tl, 9.35, 4); eat(hoh, 10.0, 12.9);
 }
 /* ===== L03 Устав ===== */
 {
@@ -109,7 +119,7 @@ sit(gvz, 5.2, 0.4); eat(gvz, 5.7, 11.4);
   hoh.pose(tl, 13.05, 'wave', 0.3, null, SIT);
   hoh.talk(tl, l.t, l.dur, { energy: 1.5, gesture: false });
   hoh.bounce(tl, l.t, 16);
-  hoh.mouth(tl, l.t + l.dur + 0.05, 3);
+  hoh.mouth(tl, l.t + l.dur + 0.04, 3); hoh.mouth(tl, l.t + l.dur + 0.7, 4);
   sit(hoh, 14.7, 0.5); eat(hoh, 15.3, 17.7);
 }
 /* ===== L05 «...минус» — facepalm ===== */
@@ -159,6 +169,7 @@ const formSVG = `<rect x="-34" y="-86" width="68" height="88" rx="4" fill="#efe2
   const l = L(8);
   ustav.pose(tl, B.stare.t, { lid: 0.45, brow: 0.8 }, 0.5);
   [hoh, chk, lad].forEach((c) => lk(c, B.stare.t, -0.2, 0));
+  gvz.flinch(tl, 27.0, { amp: 5 });
   ustav.talk(tl, l.t, l.dur, { energy: 1.25, gesture: false });
   ustav.pose(tl, 28.05, { lid: 0.2, brow: 0 }, 0.6);
 }
@@ -166,7 +177,7 @@ const formSVG = `<rect x="-34" y="-86" width="68" height="88" rx="4" fill="#efe2
 /* ===== бит door ===== */
 const frontDoor = Stage.door({ x: bg.door.x, y: bg.door.y, w: bg.door.w, h: bg.door.h, kind: 'steel', layer: 'front' });
 frontDoor.el.children[0].style.display = 'none'; frontDoor.el.children[1].style.display = 'none';
-const T_OPEN = 29.55, T_SLAM = 30.2;
+const T_OPEN = B.door.t + 1.53, T_SLAM = B.door.t + 2.18;
 {
   gvz.pose(tl, 28.02, 'stand', 0.5);
   gvz.to(tl, 28.02, { y: 1200 }, 0.5, 'power2.out');
@@ -176,7 +187,10 @@ const T_OPEN = 29.55, T_SLAM = 30.2;
   tl.to(frontDoor.slab, { rotationY: -84, duration: 0.55, ease: 'power3.inOut' }, T_OPEN);
   bg.door.slam(tl, T_SLAM, { shake: 24 });
   tl.to(frontDoor.slab, { rotationY: 0, duration: 0.16, ease: 'power4.in' }, T_SLAM);
-  gvz.squash(tl, T_SLAM + 0.1, { axis: 'x', to: 0.3, hold: 6 });
+  tl.set(frontDoor.slab, { opacity: 0 }, T_SLAM + 0.17);       // после удара створка bg открывает приплюснутого Гвоздя
+  gvz.squash(tl, T_SLAM, { axis: 'x', to: 0.2, hold: 0.5 });   // прихлопнут к двери ~0,6 с
+  gvz.to(tl, T_SLAM + 0.62, { y: 1200 + 60 }, 0.35, 'power2.in');
+  tl.to(gvz.el, { opacity: 0, duration: 0.18, ease: 'power1.in' }, T_SLAM + 0.78);
   Stage.punch(tl, T_SLAM + 0.16, 0.05);
   Stage.debris(tl, T_SLAM + 0.16, 975, 1180, { n: 8, power: 0.7 });
   // ботинки из-под двери
@@ -184,14 +198,14 @@ const T_OPEN = 29.55, T_SLAM = 30.2;
     <g transform="translate(-34 0) rotate(-12)"><rect x="-13" y="-34" width="26" height="40" fill="#6b7340" stroke="#2b1a12" stroke-width="5"/><path d="M-18,4 L-18,-6 H12 Q34,-6 34,12 V22 H-22 Q-22,12 -18,4Z" fill="#3a2418" stroke="#2b1a12" stroke-width="5"/><rect x="-22" y="16" width="56" height="8" fill="#1a0f08"/></g>
     <g transform="translate(36 0) rotate(10)"><rect x="-13" y="-34" width="26" height="40" fill="#6b7340" stroke="#2b1a12" stroke-width="5"/><path d="M-14,4 L-14,-6 H8 Q30,-6 30,12 V22 H-22 Q-22,12 -14,4Z" fill="#3a2418" stroke="#2b1a12" stroke-width="5"/><rect x="-22" y="16" width="52" height="8" fill="#1a0f08"/></g>`, Stage.layers.front);
   gsap.set(boots, { x: 962, y: 1203, opacity: 0, scale: 0.4, transformOrigin: '0px 20px' });
-  tl.to(boots, { opacity: 1, scale: 1.45, duration: 0.25, ease: 'back.out(2.2)' }, T_SLAM + 0.3);
-  tl.to(boots, { rotation: 2, duration: 0.12, ease: 'sine.inOut', yoyo: true, repeat: 3 }, T_SLAM + 0.6);
+  tl.to(boots, { opacity: 1, scale: 1.45, duration: 0.25, ease: 'back.out(2.2)' }, T_SLAM + 0.8);
+  tl.to(boots, { rotation: 2, duration: 0.12, ease: 'sine.inOut', yoyo: true, repeat: 3 }, T_SLAM + 1.1);
   // каска: вылетает и докатывается с затуханием
   const helm = svgEl(`<ellipse cx="0" cy="6" rx="82" ry="10" fill="#000" opacity=".28"/><path d="M-82,0 C-82,-96 82,-96 82,0 Q0,16 -82,0Z" fill="#6b7340" stroke="#2b1a12" stroke-width="6"/><path d="M-82,0 Q0,16 82,0 Q0,2 -82,0Z" fill="#4f5a2e" stroke="#2b1a12" stroke-width="5"/><path d="M-50,-52 q22,-26 56,-30" fill="none" stroke="#8d965a" stroke-width="8" stroke-linecap="round"/>`, Stage.layers.front);
-  gsap.set(helm, { x: 940, y: 1090, opacity: 0, scale: 0.5, transformOrigin: '0px -30px', rotation: -30 });
-  const th = T_SLAM + 0.16;
+  gsap.set(helm, { x: 945, y: 930, opacity: 0, scale: 0.5, transformOrigin: '0px -30px', rotation: -30 });
+  const th = T_SLAM + 0.72;
   tl.set(helm, { opacity: 1 }, th);
-  tl.to(helm, { y: 960, duration: 0.3, ease: 'power2.out' }, th).to(helm, { y: 1214, duration: 0.34, ease: 'power2.in' }, th + 0.3);
+  tl.to(helm, { y: 800, duration: 0.26, ease: 'power2.out' }, th).to(helm, { y: 1214, duration: 0.38, ease: 'power2.in' }, th + 0.26);
   tl.to(helm, { y: 1180, duration: 0.14, ease: 'power2.out' }, th + 0.64).to(helm, { y: 1214, duration: 0.14, ease: 'power2.in' }, th + 0.78);
   tl.to(helm, { y: 1206, duration: 0.07, ease: 'power2.out' }, th + 0.92).to(helm, { y: 1214, duration: 0.07, ease: 'power2.in' }, th + 0.99);
   tl.to(helm, { x: 650, duration: 2.1, ease: 'power3.out' }, th);
@@ -229,7 +243,7 @@ Stage.captions(tl, T.lines);
 
 /* ---------- камера ---------- */
 const cam = (t, x, y, s, d, e) => Stage.cam(tl, t, { x, y, scale: s }, d, e || 'sine.inOut');
-cam(0.0, 490, 960, 1.14, 1.0, 'sine.out');
+cam(0.0, 430, 930, 1.26, B.intro.dur, 'sine.out');
 cam(1.0, 330, 900, 1.3, 1.5);
 cam(2.6, 350, 900, 1.38, 3.6, 'sine.inOut');
 cam(6.4, 420, 960, 1.2, 1.0);
@@ -239,15 +253,18 @@ cam(12.7, 320, 1000, 1.9, 0.45, 'power2.inOut');
 cam(13.55, 220, 880, 1.55, 0.7);
 cam(15.0, 170, 740, 2.0, 1.9);
 cam(17.6, 470, 960, 1.15, 0.9);
-cam(18.6, 400, 960, 1.22, 5.4, 'sine.inOut');
+cam(18.6, 450, 960, 1.2, 5.4, 'sine.inOut');
 cam(24.1, 700, 1000, 1.75, 0.8);
-cam(25.7, 160, 740, 2.35, 2.25, 'sine.inOut');
+cam(25.7, 250, 800, 1.7, 0.55, 'power2.inOut');
+cam(26.25, 165, 745, 2.3, 0.65, 'sine.inOut');
+cam(26.95, 760, 1000, 1.9, 0.3, 'power3.inOut');   // короткий ответный план Гвоздя
+cam(27.28, 170, 745, 2.4, 0.3, 'power3.inOut');
 cam(28.0, 640, 960, 1.3, 0.8);
 cam(28.9, 800, 960, 1.45, 1.1, 'sine.inOut');
 cam(30.05, 880, 960, 1.65, 0.45, 'power2.out');
 cam(31.1, 250, 900, 1.5, 1.2);
 cam(32.4, 560, 1020, 1.7, 0.85);
-cam(34.8, 540, 990, 1.32, 1.0, 'sine.inOut');
+cam(B.out.t - 0.35, 440, 970, 1.2, DUR - B.out.t + 0.3, 'sine.inOut');
 
 /* ---------- звук ---------- */
 window.__sound = (ctx, t0) => {
@@ -263,7 +280,7 @@ window.__sound = (ctx, t0) => {
   s.whoosh(29.5, 0.55, { panTo: 0.5 });
   s.doorSlam(T_SLAM + 0.16, { pan: 0.5 }); s.crunch(T_SLAM + 0.19, { pan: 0.5 });
   s.dustPuff(T_SLAM + 0.3, { big: true, pan: 0.5 });
-  s.thud(T_SLAM + 0.5, { pan: 0.2, gain: 0.7 }); s.thud(T_SLAM + 0.84, { pan: 0.1, gain: 0.45 });
+  s.thud(T_SLAM + 0.72 + 0.64, { pan: 0.2, gain: 0.6 }); s.thud(T_SLAM + 0.72 + 0.92, { pan: 0.1, gain: 0.35 });
   s.pencil(31.6, 1.8, { pan: -0.4 });
   s.pencil(33.6, 1.0, { pan: -0.4, gain: 0.8 });
   s.rubHands(32.85, 0.8, { pan: 0.1 });

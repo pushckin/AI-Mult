@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Сцена 2</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../kit/vendor/fonts.css"><link rel="stylesheet" href="../kit/stage.css">
+</head><body>
+<div id="root" data-duration="25.85">
+  <div id="camera"><div id="float"><div id="shake"><div id="world"></div></div></div></div>
+  <div id="overlay"></div>
+</div>
+<script src="../kit/vendor/gsap.min.js"></script>
+<script src="../kit/lines.js"></script>
+<script src="../kit/rig.js"></script>
+<script src="../kit/sfx.js"></script>
+<script src="../kit/stage.js"></script>
+<script>
+const N = 2;
+const { tl, T } = Stage.init({ scene: N });
+const B = T.beats, DUR = T.duration;
+const NS = 'http://www.w3.org/2000/svg';
+const svgEl = (html, parent) => {
+  if (!parent) { const g = document.createElementNS(NS, 'g'); g.innerHTML = html; return g; }
+  const v = document.createElementNS(NS, 'svg'); v.setAttribute('width', 1); v.setAttribute('height', 1); v.style.overflow = 'visible'; v.innerHTML = html; parent.appendChild(v); return v; };
+const L = (id) => T.lines.find((l) => l.id === id);
+const sub = (t, d) => t + d;
+
+/* ======================= КАБИНА ======================= */
+const bg = Stage.bg.heliCabin();
+Stage.camSet({ x: 540, y: 960, scale: 1 });
+const mkc = (name, o, layer) => { const c = Rig.create(name, o); (layer || Stage.layers.actors).appendChild(c.el); return c; };
+const SIT_Y = 1200 + (window.SY || 0), SC = window.SC || 0.5;
+const chk = mkc('chaika', { x: 110, y: 1200 + (window.CY || 0), scale: window.CSC || 0.8, facing: 0.55 });
+const ust = mkc('ustav', { x: 640, y: SIT_Y, scale: SC, facing: -0.35 });
+const gvz = mkc('gvozd', { x: 758, y: SIT_Y, scale: SC, facing: -0.35 });
+const hoh = mkc('hohotun', { x: 876, y: SIT_Y, scale: SC, facing: -0.35 });
+const lad = mkc('ladoshka', { x: 994, y: SIT_Y, scale: SC, facing: -0.35 });
+const sitters = [ust, gvz, hoh, lad];
+const cab = [chk, ...sitters];
+
+/* парашют за креслом пилота */
+const chute = svgEl(`<ellipse cx="0" cy="4" rx="46" ry="8" fill="#000" opacity=".25"/><path d="M-38,0 V-130 Q-38,-150 -16,-150 H16 Q38,-150 38,-130 V0Z" fill="#c9b27a" stroke="#2b1a12" stroke-width="6" stroke-linejoin="round"/><path d="M-38,-70 H38 M0,-150 V0" stroke="#7a6a3a" stroke-width="5"/><path d="M-38,-30 H38" stroke="#7a6a3a" stroke-width="5"/><rect x="-14" y="-92" width="28" height="22" rx="4" fill="#e23b2e" stroke="#2b1a12" stroke-width="4"/><path d="M-40,-140 C-60,-110 -58,-60 -40,-20 M40,-140 C60,-110 58,-60 40,-20" stroke="#2b1a12" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M-40,-140 C-60,-110 -58,-60 -40,-20 M40,-140 C60,-110 58,-60 40,-20" stroke="#b9a05a" stroke-width="6" fill="none" stroke-linecap="round"/>`, Stage.layers.mid);
+gsap.set(chute, { x: 206, y: 1128, transformOrigin: '0px 0px' });
+
+/* карточки Ладошки */
+const cardSVG = (col) => `<rect x="-26" y="-70" width="52" height="70" rx="5" fill="#efe2bd" stroke="#2b1a12" stroke-width="5"/><path d="M-16,-54 H16 M-16,-42 H16" stroke="#2b1a12" stroke-width="4" opacity=".55"/><circle class="stp" cx="6" cy="-18" r="12" fill="none" stroke="${col}" stroke-width="5" opacity="0"/>`;
+const cardR = svgEl(cardSVG('#e23b2e')), cardL = svgEl(cardSVG('#3a6a8a'));
+lad.give(cardR, 'R', { x: 0, y: 0, rot: -10, scale: 0.9 }); lad.give(cardL, 'L', { x: 0, y: 0, rot: 14, scale: 0.9 });
+
+/* жизнь на всю сцену (кабина) */
+const T_HIT = B.landing.t + 0.75, T_CUT = T_HIT + 0.14;
+cab.forEach((c) => c.idle(tl, 0, T_CUT));
+cab.forEach((c) => c.blinks(tl, 0, T_CUT));
+sitters.forEach((c) => c.pose(tl, 0.01, 'sit', 0.05));
+chk.pose(tl, 0.01, 'sit', 0.05);
+const lk = (c, t, dx, dy, d) => c.look(tl, t, dx, dy == null ? 0 : dy, d == null ? 0.35 : d);
+
+/* ---------- винт, вибрация, земля ---------- */
+bg.rotor(0.0, 2.2);
+bg.vibe(tl, 0.01, 0.35, 0.01);
+bg.vibe(tl, 2.0, 0.55, 1.5);
+bg.vibe(tl, B.takeoff.t - 0.3, 1.8, 0.4);
+bg.vibe(tl, B.takeoff.t + 1.4, 0.9, 0.8);
+bg.vibe(tl, T_HIT - 1.0, 1.4, 0.8);
+// взлёт: земля уходит вниз, пейзаж едет
+bg.altitude(tl, B.takeoff.t + 0.1, 0.95, 2.3);
+bg.scroll(tl, B.takeoff.t + 0.4, T_HIT, 900);
+// посадка: снижение, удар
+bg.altitude(tl, 15.2, 0.0, T_HIT - 15.2 + 0.0);
+Stage.shake(tl, B.takeoff.t - 0.2, 9, 1.8);
+Stage.shake(tl, T_HIT - 0.9, 7, 0.9);
+
+/* ---------- Ладошка перебирает карточки ---------- */
+{
+  const stampAt = (card, t) => tl.fromTo(card.querySelector('.stp'), { opacity: 0, scale: 2.2, transformOrigin: '6px -18px' }, { opacity: 0.9, scale: 1, duration: 0.14, ease: 'power3.in' }, t);
+  lad.pose(tl, 0.6, { aR1: -30, aR2: -74, aL1: 8, aL2: -60 }, 0.5, null, { sit: true });
+  for (let i = 0; i < 9; i++) {
+    const t = 0.9 + i * 0.85, a = i % 2 ? cardL : cardR, b = i % 2 ? cardR : cardL;
+    tl.to(a, { y: -16, rotation: (i % 2 ? 24 : -22), duration: 0.22, ease: 'sine.out' }, t).to(a, { y: 0, rotation: i % 2 ? 14 : -10, duration: 0.26, ease: 'sine.inOut' }, t + 0.22);
+    tl.to(b, { y: 6, duration: 0.2, ease: 'sine.inOut', yoyo: true, repeat: 1 }, t + 0.12);
+    if (i % 3 === 1) stampAt(a, t + 0.4);
+  }
+  lad.look(tl, 0.4, 0.1, 0.5, 0.4);
+}
+
+/* ---------- взгляды в диалоге ---------- */
+lk(chk, 0.3, 0.9, 0); lk(ust, 0.3, -0.7, 0); lk(gvz, 0.4, -0.3, 0.1); lk(hoh, 0.6, -0.4, 0);
+
+/* ===== L11 Чайка ===== */
+{
+  const l = L(11);
+  chk.pose(tl, 0.4, 'hold', 0.5);
+  chk.talk(tl, l.t, l.dur, { energy: 1.2, gesture: false });
+  chk.turn(tl, l.t - 0.2, 0.75, 0.45); lk(chk, l.t - 0.2, 0.95, -0.05);
+  [gvz, hoh].forEach((c) => lk(c, l.t, -0.8, 0));
+  lk(ust, l.t, -0.85, 0);
+}
+/* ===== L12 Устав сухо ===== */
+{
+  const l = L(12);
+  ust.talk(tl, l.t, l.dur, { energy: 0.7, gesture: false });
+  lk(ust, l.t - 0.1, -0.9, 0); lk(chk, l.t, 0.95, 0.05);
+}
+/* ===== L13 Чайка ===== */
+{
+  const l = L(13);
+  chk.talk(tl, l.t, l.dur, { energy: 1.3, gesture: false });
+  chk.mouth(tl, l.t + l.dur + 0.05, 3);
+  lk(ust, l.t, -0.6, 0.1); ust.pose(tl, l.t + 0.9, { lid: 0.4 }, 0.4);
+}
+
+/* ===== takeoff: все подпрыгивают вразнобой ===== */
+{
+  const t0 = B.takeoff.t;
+  chk.turn(tl, t0 - 0.2, 0.2, 0.3); lk(chk, t0 - 0.1, 0.3, 0.2);
+  [[chk, 0.0, 26], [ust, 0.14, 14], [gvz, 0.26, 30], [hoh, 0.38, 42], [lad, 0.5, 26]].forEach(([c, d, a]) => {
+    c.bounce(tl, t0 + 0.55 + d, a);
+    c.bounce(tl, t0 + 1.3 + d * 0.8, a * 0.6);
+    if (c !== chk) c.flinch(tl, t0 + 0.1 + d * 0.5, { amp: 6, dir: d > 0.3 ? 1 : -1 });
+    lk(c, t0 + 0.2 + d, c === chk ? 0.3 : -0.2, -0.3);
+  });
+  [ust, gvz, hoh, lad].forEach((c, i) => lk(c, t0 + 1.6 + i * 0.08, -0.6 + i * 0.1, 0.4, 0.5));
+  Stage.dust(tl, t0 + 0.1, 330, 1446, { n: 8, size: 80, spread: 260, layer: 'fg' });
+  Stage.dust(tl, t0 + 0.3, 800, 1446, { n: 8, size: 80, spread: 260, layer: 'fg' });
+}
+
+/* ===== L14 Гвоздь: парашюты? ===== */
+{
+  const l = L(14);
+  gvz.talk(tl, l.t, l.dur, { energy: 1.0, gesture: false });
+  lk(gvz, l.t - 0.1, -0.9, 0.1);
+  lk(ust, l.t - 0.1, 0.5, 0); lk(hoh, l.t - 0.1, 0.1, 0); lk(lad, l.t, -0.3, 0);
+}
+/* ===== L15 Устав: Есть. Один. ===== */
+{
+  const l = L(15);
+  ust.talk(tl, l.t, l.dur, { energy: 0.8, gesture: false });
+  lk(ust, l.t - 0.1, 0.1, 0);
+  lk(gvz, l.t + 0.05, -0.85, 0.05); lk(hoh, l.t + 0.1, -0.85, 0); lk(lad, l.t + 0.12, -0.85, 0); lk(chk, l.t + 0.2, 0.95, 0.05);
+}
+/* ===== L16 Гвоздь: На пятерых? ===== */
+{
+  const l = L(16);
+  gvz.talk(tl, l.t, l.dur, { energy: 1.3, gesture: false });
+  lk(gvz, l.t - 0.15, -0.5, 0.1);
+  lk(ust, l.t - 0.1, 0.85, 0); lk(hoh, l.t - 0.05, -0.85, 0); lk(lad, l.t, -0.85, 0); lk(chk, l.t + 0.1, 0.95, 0);
+  gvz.bounce(tl, l.t + 0.05, 10);
+}
+/* ===== L17 Чайка: На пилота. + хлопок по парашюту ===== */
+{
+  const l = L(17);
+  chk.talk(tl, l.t, l.dur, { energy: 1.4, gesture: false });
+  chk.mouth(tl, l.t + l.dur + 0.05, 3);
+  chk.turn(tl, l.t - 0.1, 0.4, 0.35); lk(chk, l.t - 0.1, 0.7, -0.1);
+  // хлопок ладонью по парашюту за креслом
+  const tS = l.t + l.dur + 0.1;
+  chk.pose(tl, tS - 0.4, 'handOut', 0.35);
+  chk.turn(tl, tS - 0.4, -0.8, 0.35);
+  tl.to(chute, { rotation: -6, scaleY: 0.92, duration: 0.09, ease: 'power3.out', transformOrigin: '0px 0px' }, tS);
+  tl.to(chute, { rotation: 0, scaleY: 1, duration: 0.6, ease: 'elastic.out(1,0.4)' }, tS + 0.09);
+  Stage.dust(tl, tS + 0.02, 206, 1010, { n: 4, size: 30, spread: 70 });
+  tl.to(chute, { rotation: -5, scaleY: 0.93, duration: 0.09, ease: 'power3.out' }, tS + 0.4);
+  tl.to(chute, { rotation: 0, scaleY: 1, duration: 0.5, ease: 'elastic.out(1,0.4)' }, tS + 0.49);
+  // остальные медленно переглядываются
+  lk(ust, l.t + 0.3, 0.3, 0.1, 0.9); lk(gvz, l.t + 0.5, 0.5, 0.05, 0.9); lk(hoh, l.t + 0.4, -0.7, 0, 0.9); lk(lad, l.t + 0.6, -0.5, 0, 0.9);
+  lk(ust, l.t + 0.8, 0.9, 0, 0.7); lk(gvz, l.t + 0.9, -0.3, 0, 0.7); lk(hoh, l.t + 0.95, 0.2, 0, 0.6); lk(lad, l.t + 0.8, 0.6, 0, 0.6);
+}
+
+/* ===== landing: удар, подбрасывает и прижимает ===== */
+{
+  const t = T_HIT;
+  Stage.shake(tl, t, 30, 0.35); Stage.punch(tl, t, 0.06);
+  [[chk, 0.0, 46], [ust, 0.02, 34], [gvz, 0.04, 50], [hoh, 0.0, 58], [lad, 0.03, 44]].forEach(([c, d, a]) => {
+    c.bounce(tl, t - 0.02 + d, a);
+    c.squash(tl, t + 0.3 + d, { axis: 'y', to: 0.9, hold: 0.15 });
+  });
+  Stage.dust(tl, t, 200, 1450, { n: 10, size: 90, spread: 320, layer: 'fg' });
+  Stage.dust(tl, t, 900, 1450, { n: 10, size: 90, spread: 320, layer: 'fg' });
+  Stage.dust(tl, t + 0.04, 550, 1450, { n: 8, size: 90, spread: 320, layer: 'fg' });
+  bg.vibe(tl, t, 3, 0.05);
+}
+
+/* ======================= ПОЛЕ (после склейки) ======================= */
+const snap = () => Object.fromEntries(Object.entries(Stage.layers).map(([k, l]) => [k, l.children.length]));
+const before = snap();
+const fld = Stage.bg.field({ width: 3400 });
+const HX = 520, HS = 1.25, HY = 1198;
+const heli = Stage.prop.heli({ x: HX, y: HY, s: HS, layer: 'mid' });
+const FSC = 0.46, FY = 1200;
+const fmk = (name, x, facing) => mkc(name, { x, y: FY, scale: FSC, facing });
+const f = { chk: fmk('chaika', HX + 60, 0.85), ust: fmk('ustav', HX + 60, 0.85), gvz: fmk('gvozd', HX + 50, 0.85), hoh: fmk('hohotun', HX + 40, 0.85), lad: fmk('ladoshka', HX + 60, 0.85) };
+const fl = Object.values(f);
+// видимость: всё созданное после снимка прячем до склейки, кабину — гасим на склейке
+const fieldNodes = [];
+Object.entries(Stage.layers).forEach(([k, l]) => Array.from(l.children).forEach((n, i) => { if (!(k in before) || i >= before[k]) fieldNodes.push(n); }));
+const cabinNodes = [];
+Object.entries(Stage.layers).forEach(([k, l]) => Array.from(l.children).forEach((n, i) => { if (k in before && i < before[k]) cabinNodes.push(n); }));
+gsap.set(fieldNodes, { visibility: 'hidden' });
+tl.set(cabinNodes, { visibility: 'hidden' }, T_CUT);
+tl.set(fieldNodes, { visibility: 'visible' }, T_CUT);
+bg.vibe(tl, T_CUT, 0, 0.01);
+const hide = (c) => gsap.set(c.el, { opacity: 0 });
+fl.forEach(hide);
+
+/* дымок зоны: уменьшаем плотный столб из фона до тонкой нитки вдали */
+{ const pl = Stage.layers.far.querySelector('g[opacity=".7"]'); if (pl) { pl.setAttribute('transform', 'translate(1060 1040) scale(.22 .5) translate(-880 -1040)'); pl.setAttribute('opacity', '.55'); } }
+/* склейка: камера общим планом */
+
+// (до склейки камера кабины — ниже; на склейке перезадаём)
+Stage.dust(tl, T_CUT, HX + 40, 1205, { n: 12, size: 110, spread: 420, layer: 'fx' });
+Stage.dust(tl, T_CUT + 0.1, HX - 140, 1205, { n: 8, size: 100, spread: 300, layer: 'fx' });
+Stage.dust(tl, T_CUT + 0.2, HX + 260, 1205, { n: 8, size: 100, spread: 300, layer: 'fx' });
+Stage.smoke(tl, 0, DUR, 1010, 1090, { n: 5, size: 34, rise: 330, life: 3.2, alpha: 0.4, color: '#5a4a44', drift: 40, layer: 'far2' });
+Stage.shake(tl, T_CUT + 0.02, 14, 0.5);
+
+// винт останавливается
+{
+  const rest = heli.querySelector('.rest'), sm = heli.querySelector('.smear'), bl = heli.querySelector('.bl'), ts = heli.querySelector('.ts');
+  const D = 4.2, K = 8, TAUc = 6.2832;
+  Stage.onUpdate((t) => {
+    const u = Math.max(0, Math.min(1, (t - T_CUT - 0.3) / D)), ph = t < T_CUT + 0.3 ? TAUc * K * (t - T_CUT - 0.3) : TAUc * K * D * (u - u * u + u * u * u / 3);
+    const spd = Math.pow(1 - u, 1.4), x = Math.cos(ph) * 350;
+    rest.setAttribute('opacity', 1 - Math.min(1, spd * 1.6)); sm.setAttribute('opacity', (0.2 * spd).toFixed(3)); bl.setAttribute('opacity', (0.55 * Math.min(1, spd * 1.6)).toFixed(3));
+    bl.setAttribute('d', `M${(-x).toFixed(1)},${(-316 - Math.sin(ph) * 10).toFixed(1)} L${x.toFixed(1)},${(-316 + Math.sin(ph) * 10).toFixed(1)}`);
+    ts.setAttribute('opacity', 0.25 * spd);
+  });
+}
+
+/* отряд выходит из вертолёта и расходится */
+const exit = (c, t0, x, dur, facing) => {
+  tl.to(c.el, { opacity: 1, duration: 0.15, ease: 'power1.out' }, t0);
+  const e = c.walkTo(tl, t0 + 0.02, x, dur, { face: 0.85 });
+  return e;
+};
+const eCh = exit(f.chk, T_CUT + 0.35, 600, 1.3);
+const eUs = exit(f.ust, T_CUT + 0.75, 800, 1.5);
+const eLa = exit(f.lad, T_CUT + 0.6, 400, 1.1);
+const eGv = exit(f.gvz, T_CUT + 1.0, 990, 1.8);
+const eHo = exit(f.hoh, T_CUT + 1.25, 1170, 2.0);
+[[f.chk, eCh], [f.ust, eUs], [f.lad, eLa], [f.gvz, eGv], [f.hoh, eHo]].forEach(([c, e]) => { c.idle(tl, e + 0.05, DUR); });
+fl.forEach((c) => c.blinks(tl, T_CUT, DUR));
+
+/* ===== L18 Чайка протягивает ладонь ===== */
+{
+  const l = L(18), tp = Math.max(eCh, l.t - 0.35);
+  f.chk.turn(tl, eCh + 0.05, 0.85, 0.01);
+  f.chk.pose(tl, l.t - 0.35, 'handOut', 0.5);
+  f.chk.talk(tl, l.t, l.dur, { energy: 1.15, gesture: false });
+  [f.gvz, f.hoh, f.lad].forEach((c, i) => c.look(tl, eHo + 0.2 + i * 0.1, i === 2 ? 0.9 : -0.9, 0, 0.4));
+  f.ust.look(tl, eUs + 0.1, 0.95, -0.1, 0.4);
+}
+/* ===== L19 Устав смотрит на дым, потом на ладонь ===== */
+{
+  const l = L(19);
+  f.ust.look(tl, L(18).t + 0.2, 0.95, -0.2, 0.5);
+  f.ust.talk(tl, l.t, l.dur, { energy: 0.75, gesture: false });
+  f.ust.turn(tl, l.t - 0.1, 0.85, 0.01);
+  f.ust.look(tl, l.t + l.dur + 0.1, -0.9, 0.35, 0.45);
+  f.ust.turn(tl, l.t + l.dur + 0.1, -0.5, 0.6);
+}
+/* ===== L20 Чайка: Зато живые. Пока. ===== */
+{
+  const l = L(20);
+  f.chk.talk(tl, l.t, l.dur, { energy: 1.2, gesture: false });
+  f.chk.mouth(tl, l.t + l.dur + 0.05, 3);
+  // ладонь висит в воздухе: пальцы шевелятся (лёгкое вращение кисти)
+  const hand = f.chk.hand('R');
+  for (let i = 0; i < 6; i++) tl.to(hand, { rotation: i % 2 ? -7 : 7, duration: 0.32, ease: 'sine.inOut' }, B.out.t + 0.05 + i * 0.32);
+  [f.gvz, f.hoh, f.lad].forEach((c, i) => c.look(tl, l.t + l.dur + 0.1, -0.2 + i * 0.1, 0.1, 0.5));
+}
+
+/* ---------- титры ---------- */
+Stage.tag(tl, 0.3, 'ВЕРТОЛЁТ', 2.4);
+Stage.tag(tl, T_CUT + 0.4, '3 КМ ДО ЗОНЫ', 2.6);
+Stage.captions(tl, T.lines);
+
+/* ---------- камера ---------- */
+const cam = (t, x, y, s, d, e) => Stage.cam(tl, t, { x, y, scale: s }, d, e || 'sine.inOut');
+cam(0.0, 540, 940, 1.0, 0.01);
+cam(0.9, 230, 900, 1.9, 0.9, 'sine.inOut');                       // на Чайку
+cam(3.85, 640, 880, 1.95, 0.7, 'power2.inOut');                   // на Устава
+cam(5.55, 230, 900, 1.9, 0.7, 'power2.inOut');                    // снова на Чайку
+cam(B.takeoff.t - 0.1, 540, 1020, 1.0, 0.7, 'power2.inOut');      // общий: земля уходит
+cam(9.6, 560, 960, 1.0, 0.9, 'sine.inOut');
+cam(9.95, 740, 900, 1.95, 0.8, 'power2.inOut');                   // Гвоздь
+cam(12.1, 660, 900, 1.9, 0.7, 'power2.inOut');                    // Устав
+cam(13.95, 760, 900, 2.0, 0.6, 'power2.inOut');                   // Гвоздь
+cam(15.28, 190, 880, 2.4, 0.28, 'power4.out');                    // резкий наезд на Чайку
+cam(16.1, 330, 940, 1.5, 0.55, 'sine.inOut');                     // откат перед ударом
+cam(T_CUT, 560, 1000, 1.0, 0.01);                                 // общий план поля
+cam(T_CUT + 0.3, 600, 1000, 1.0, 1.0, 'sine.inOut');
+cam(B.landing.t + 2.2, 700, 980, 1.5, 1.1, 'sine.inOut');         // к Чайке и Уставу
+cam(L(19).t - 0.2, 790, 980, 1.9, 0.8, 'sine.inOut');             // Устав
+cam(L(19).t + L(19).dur - 0.1, 700, 980, 1.7, 0.6, 'sine.inOut');
+cam(L(20).t - 0.2, 650, 980, 1.9, 0.6, 'sine.inOut');            // ладонь в воздухе
+cam(B.out.t + 0.3, 700, 980, 1.3, 1.2, 'sine.inOut');
+
+/* ---------- звук ---------- */
+window.__sound = (ctx, t0) => {
+  const s = SFX.init(ctx, t0, { partStart: T.partStart, room: 'cabin' });
+  s.ambience('cabin', 0, T_CUT + 0.1); s.ambience('field', T_CUT, DUR, { fadeIn: 0.05 });
+  s.music('march', 0.2, DUR - 1.0, { gain: 0.7, fadeOut: 1.0 });
+  s.duckLines(T.lines);
+  s.heli(0, B.takeoff.t, { inside: true, rpmFrom: 60, rpmTo: 180, ramp: 2.2, gain: 0.6 });
+  s.heli(B.takeoff.t, T_HIT, { inside: true, rpmFrom: 180, rpmTo: 320, ramp: 2.5, gain: 0.7 });
+  s.heli(T_CUT, T_CUT + 4.4, { rpmFrom: 300, rpmTo: 60, ramp: 4.2, gain: 0.5 });
+  s.cloth(B.takeoff.t + 0.6, { pan: -0.3 }); s.cloth(B.takeoff.t + 0.9, { pan: 0.3 });
+  [0.55, 0.69, 0.81, 0.93, 1.05].forEach((d, i) => s.thud(B.takeoff.t + d, { gain: 0.35, pan: -0.5 + i * 0.25 }));
+  s.paper(1.6, { pan: 0.5 }); s.paper(5.0, { pan: 0.6 }); s.stamp(3.1, { gain: 0.5, pan: 0.6 }); s.stamp(9.0, { gain: 0.5, pan: 0.6 });
+  const lt = L(17); s.thud(lt.t + lt.dur + 0.1, { gain: 0.8, pan: -0.6 }); s.dustPuff(lt.t + lt.dur + 0.12, { pan: -0.6 }); s.thud(lt.t + lt.dur + 0.5, { gain: 0.6, pan: -0.6 });
+  s.heliLand(T_HIT); s.dustPuff(T_HIT + 0.1, { big: true }); [0, 0.03, 0.06, 0.04, 0.02].forEach((d, i) => s.bodyFall(T_HIT + 0.1 + d, { weight: 'light', gear: i === 0, gain: 0.5, pan: -0.5 + i * 0.25 }));
+  s.footsteps(T_CUT + 0.4, T_CUT + 2.4, { surface: 'dirt', rate: 2.2 });
+  s.cloth(T_CUT + 1.8, { pan: 0.2 }); s.cloth(L(18).t - 0.3, { pan: 0.0 });
+  s.fadeOut(DUR - 0.5, 0.5);
+};
+</script></body></html>
