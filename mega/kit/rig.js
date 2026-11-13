@@ -366,12 +366,14 @@
     var end = t + v.duration * (1 + (v.repeat || 0));
     for (k in vars) { if (this._busy[k] > t + 1e-4 && !this._warned) { this._warned = 1; console.warn('Rig[' + this.name + ']: два твина канала «' + k + '» пересекаются около t=' + t.toFixed(2) + ' (см. RIG.md, «нельзя»)'); } if (!(this._busy[k] > end)) this._busy[k] = end; }
     tl.to(this.m, v, t);
+    if (end > (this._end || 0)) this._end = end;
     return this;
   };
   P._clip = function (tl, t, dur, tr, step) {
     var n = 0, k; for (k in tr) { n = tr[k].length; break; }
     for (k in tr) this._busy[k] = t + dur;
     tl.to(this.m, { rigClip: { tr: tr, n: n, dur: dur, step: step || {} }, duration: dur, ease: clock }, t);
+    if (t + dur > (this._end || 0)) this._end = t + dur;
   };
   P._kick = function (tl, t, amp) { // вторичное движение: убор и сумка доигрывают после остановки
     if (this._busy.hatK > t) return; // предыдущий доигрыш ещё идёт
@@ -515,7 +517,7 @@
     dur = cyc ? Math.min(0.7, (total || 2) * 0.4) : (dur == null ? 0.4 : dur);
     ['aL1', 'aL2', 'aR1', 'aR2'].forEach(function (a) { if (a in tgt) tgt[a] = B[a] + wrap(tgt[a] - B[a]); });
     var bigA = 0; ['aL1', 'aL2', 'aR1', 'aR2'].forEach(function (a) { if (a in tgt) bigA = Math.max(bigA, Math.abs(tgt[a] - B[a])); });
-    if (bigA / 300 > dur) dur = bigA / 300; // за кадр сегмент не поворачивается больше ~25°
+    if (bigA / 220 > dur) dur = bigA / 220; // за кадр сегмент не поворачивается больше ~25°
     var g = { b: {}, h: {}, L1: {}, L2: {}, R1: {}, R2: {} }, dly = { b: 0, h: 0.05, L1: 0.03, L2: 0.085, R1: 0.03, R2: 0.085 }, big = 0;
     for (k in tgt) {
       if (DISCRETE[k]) continue;
@@ -1026,6 +1028,18 @@
     o.pelX = F.pel[4]; o.pelY = F.pel[5];
     return o;
   };
+
+  P.loop = function (tl, name, t0, t1) { return this.pose(tl, t0, name, Math.max(0.5, t1 - t0)); }; // цикличные позы: rubHands, write, eat, wave
+  // публичные методы анимации возвращают ВРЕМЯ ОКОНЧАНИЯ (сек) добавленного движения
+  ['idle', 'blinks', 'mouth', 'talk', 'look', 'turn', 'pose', 'flinch', 'bounce', 'jump', 'squash', 'walkTo', 'fall', 'getUp', 'prop'].forEach(function (n) {
+    var f = P[n];
+    P[n] = function (tl, t) { if (typeof tl === 'string') { t = arguments[2]; }
+      var e0 = this._end || 0; this._end = 0;
+      f.apply(this, arguments);
+      var e = Math.max(this._end, t || 0); this._end = Math.max(e0, e);
+      return e;
+    };
+  });
 
   window.Rig = {
     create: function (name, o) { return new Char(name, o); },
