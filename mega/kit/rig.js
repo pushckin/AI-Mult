@@ -512,8 +512,10 @@
       tgt = {};
       for (k in pose) { if (k === 'handL' || k === 'handR') add(tgt, this._arm(k.charAt(4), pose[k][0], pose[k][1], pose[k][2])); else tgt[k] = pose[k]; }
     }
-    dur = cyc ? Math.min(0.35, (total || 2) * 0.4) : (dur == null ? 0.4 : dur);
+    dur = cyc ? Math.min(0.7, (total || 2) * 0.4) : (dur == null ? 0.4 : dur);
     ['aL1', 'aL2', 'aR1', 'aR2'].forEach(function (a) { if (a in tgt) tgt[a] = B[a] + wrap(tgt[a] - B[a]); });
+    var bigA = 0; ['aL1', 'aL2', 'aR1', 'aR2'].forEach(function (a) { if (a in tgt) bigA = Math.max(bigA, Math.abs(tgt[a] - B[a])); });
+    if (bigA / 300 > dur) dur = bigA / 300; // за кадр сегмент не поворачивается больше ~25°
     var g = { b: {}, h: {}, L1: {}, L2: {}, R1: {}, R2: {} }, dly = { b: 0, h: 0.05, L1: 0.03, L2: 0.085, R1: 0.03, R2: 0.085 }, big = 0;
     for (k in tgt) {
       if (DISCRETE[k]) continue;
@@ -563,7 +565,7 @@
     v[a1] = up; v[a2] = r > 0 ? 34 : -34; this._to(tl, t, v, 0.5, 'power2.out');
     v = {}; v[a1] = up + (r > 0 ? -12 : 12); this._to(tl, t + 0.5, v, 0.18, 'sine.inOut', { repeat: Math.max(1, 2 * Math.round((dur - 1) / 0.36) + 1), yoyo: true });
     var te = t + 0.5 + 0.18 * (Math.max(1, 2 * Math.round((dur - 1) / 0.36) + 1) + 1);
-    this._to(tl, te, base, 0.42, 'bounce.out');
+    this._to(tl, te, base, 0.8, 'power2.inOut');
     return this;
   };
 
@@ -828,7 +830,7 @@
       var c = (-rad - pv[1]) / L, th = W[name], tn = wrap(th), nw;
       if (!up) { if (c >= 1) return; if (c <= -1) return; if (Math.cos(tn * RAD) <= c) return; nw = (tn >= 0 ? 1 : -1) * Math.acos(c) / RAD; }
       else { c = -c; if (c <= -1) return; if (c >= 1) return; if (Math.cos(tn * RAD) >= c) return; nw = (tn >= 0 ? 1 : -1) * Math.acos(c) / RAD; }
-      var dlt = nw - tn; W[name] = th + dlt;
+      var dlt = wrap(nw - tn); if (dlt > 7) dlt = 7; else if (dlt < -7) dlt = -7; W[name] = th + dlt;
       if (V[name] * dlt < 0) V[name] *= -0.28; V[name] *= 0.9;
     }
     var ACCN = ['waist', 'neck', 'shL', 'shR', 'elL', 'elR', 'hipL', 'hipR', 'knL', 'knR'], pos1 = {}, pos2 = {}, acc = {};

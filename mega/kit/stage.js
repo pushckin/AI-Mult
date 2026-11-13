@@ -343,7 +343,7 @@ function makeDoor(o) {
   const light = div('', box, `left:0;top:0;width:${w}px;height:${h}px;opacity:0;background:linear-gradient(90deg,#ffd27a 0,#f0a04a 55%,#b96a2c 100%)`);
   const sil = svg(`<path d="M${w * .1},${h} L${w * .25},${h * .7} L${w * .6},${h * .66} L${w * .9},${h * .78} L${w},${h} Z" fill="#8a4a24" opacity=".9"/><circle cx="${w * .6}" cy="${h * .36}" r="${w * .2}" fill="#fff1c0" opacity=".85"/>`, light);
   sil.style.cssText = 'position:absolute;left:0;top:0;overflow:visible';
-  const slab = div('', box, `left:0;top:0;width:${w}px;height:${h}px;transform-origin:0% 50%`); slab.innerHTML = slabSvg(o.kind, w, h);
+  const slab = div('', box, `left:0;top:0;width:${w}px;height:${h}px;transform-origin:0% 50%`); slab.innerHTML = slabSvg(o.kind, w, h); slab.firstChild.style.cssText = 'position:absolute;left:0;top:0;overflow:visible';
   gsap.set(slab, { transformPerspective: 900, rotationY: 0, transformOrigin: '0% 50%' });
   const D = { el: box, slab, light, x: o.x, y: o.y, w, h, cx: o.x + w / 2,
     open(tl, t, oo) { oo = oo || {}; const d = oo.dur || .9; tl.to(light, { opacity: 1, duration: d * .6, ease: 'power2.out' }, t);
@@ -423,7 +423,7 @@ S.bg.heliCabin = function () {
   const skyClouds = paint('sky', ''), skyG = []; 
   skyClouds.innerHTML = sk + `<g id="${gs}"></g>`;
   const cg = skyClouds.querySelector('#' + gs); let cs = ''; for (let i = 0; i < 6; i++) cs += cl(i * 420 - 300, 130 + r() * 1500, .8 + r() * .8); cg.innerHTML = cs;
-  const farGround = paint('sky', `<g id="${gw}"><path d="M-500,1900 L-500,1700 C-100,1650 300,1720 700,1670 S1300,1690 1600,1660 L1600,1900Z" fill="#8a4a24" opacity=".5"/></g>`);
+  const farGround = paint('sky', `<g id="${gw}"><path d="M-500,2300 L-500,1620 C-100,1560 300,1640 700,1590 S1300,1610 1600,1570 L1600,2300Z" fill="#a8683a" opacity=".8"/><path d="M-500,2300 L-500,1780 C-100,1730 300,1800 700,1750 S1300,1770 1600,1740 L1600,2300Z" fill="#7a6a2e" opacity=".9"/><path d="M-500,1900 h2100 M-500,2020 h2100" stroke="#5a3018" stroke-width="6" opacity=".4"/></g>`);
   // корпус
   let m = `<path d="M-100,330 C200,250 880,250 1180,330 L1180,1200 L-100,1200Z" fill="#37442a" ${OL}/><rect x="-100" y="330" width="1280" height="870" fill="#3f4d30"/>`;
   for (let x = -60; x < 1180; x += 150) m += `<path d="M${x},330 V1200" stroke="#2a351f" stroke-width="12"/><path d="M${x + 6},330 V1200" stroke="#566640" stroke-width="3"/>`;
