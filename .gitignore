@@ -1,4 +1,13 @@
 mega/out/
+sudny-den/video/out/
+sudny-den/video/build/
+sudny-den/video/public/audio/
+sudny-den/audio/*master.wav
+sudny-den/*.mp4
+sudny-den/preview_*.png
+.agents/
+.env
+.env.*
 node_modules/
 __pycache__/
 .step-*/
