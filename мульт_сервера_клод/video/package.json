@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "remotion studio",
     "build": "remotion bundle",
-    "render": "remotion render ClaudeServersShorts out/servera_kloda_shorts.mp4 --gl=angle"
+    "render": "remotion render ClaudeServersShorts ../сервера_клода_shorts.mp4 --gl=angle --overwrite",
+    "render:censored": "remotion render ClaudeServersShortsCensored ../сервера_клода_shorts_censored.mp4 --gl=angle --overwrite"
   },
   "dependencies": {
     "@react-three/fiber": "^9.8.2",

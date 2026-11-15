@@ -1,4 +1,4 @@
-// Сведение: голоса (AI Studio TTS) + SFX + музыка (Lyria) -> audio/master.wav
+// Сведение: голоса (AI Studio TTS) + SFX + музыка (Lyria) -> audio/master.wav + audio/master_censored.wav
 // и генерация таймлайна для Remotion (video/src/data/timeline.ts).
 // Запуск: node mix.mjs
 import fs from 'node:fs';
@@ -116,6 +116,58 @@ function chunkText(text) {
   return chunks;
 }
 
+// ---------- цензура (пики 1000 Гц и маскировка субтитров) ----------
+// Интервалы в секундах относительно сжатых реплик voices[id].
+const CENSOR_SPANS = {
+  a_coder1: [[0.01, 0.63]],
+  a_coder2: [[3.24, 3.83]],
+  c_boss1: [[0.575, 1.12], [1.70, 2.04], [3.35, 3.77]],
+  c_w418: [[0.02, 0.58]],
+  c_boss2: [[0.99, 1.52]],
+  d_coder3: [[3.36, 3.85]],
+  e_w418: [[0.02, 1.285]],
+  f_coder4: [[0.02, 0.575]],
+};
+const SUB_CENSOR_RULES = [
+  [/(?<!\p{L})ЕБАЛ Я В РОТ(?!\p{L})/gu, 'Е*** Я В ***'],
+  [/(?<!\p{L})Ебать(?!\p{L})/gu, 'Е***ь'],
+  [/(?<!\p{L})хуйню(?!\p{L})/gu, 'х***ю'],
+  [/(?<!\p{L})БЛЯДЬ(?!\p{L})/gu, 'Б***Ь'],
+  [/(?<!\p{L})Блядь(?!\p{L})/gu, 'Б***ь'],
+  [/(?<!\p{L})хуй(?!\p{L})/gu, 'х*й'],
+  [/(?<!\p{L})говнокода(?!\p{L})/gu, 'г****кода'],
+  [/(?<!\p{L})сука(?!\p{L})/gu, 'с**а'],
+  [/(?<!\p{L})ёпта(?!\p{L})/gu, 'ё**а'],
+];
+function censorSubtitle(str) {
+  let out = str;
+  for (const [re, rep] of SUB_CENSOR_RULES) out = out.replace(re, rep);
+  return out;
+}
+function applyCensor(bus, beeps) {
+  const out = new Float32Array(bus);
+  const fadeVoice = Math.round(0.015 * SR);
+  const fadeBeep = Math.round(0.012 * SR);
+  for (const { start, end } of beeps) {
+    const s0 = Math.max(0, Math.round(start * SR));
+    const s1 = Math.min(out.length, Math.round(end * SR));
+    for (let j = 0; j < fadeVoice; j++) {
+      const idx = s0 - fadeVoice + j;
+      if (idx >= 0 && idx < out.length) out[idx] *= 0.5 * (1 + Math.cos((Math.PI * (j + 1)) / fadeVoice));
+    }
+    for (let i = s0; i < s1; i++) out[i] = 0;
+    for (let j = 0; j < fadeVoice; j++) {
+      const idx = s1 + j;
+      if (idx >= 0 && idx < out.length) out[idx] *= 0.5 * (1 - Math.cos((Math.PI * (j + 1)) / fadeVoice));
+    }
+    for (let i = s0; i < s1; i++) {
+      const env = Math.min(1, (i - s0) / fadeBeep, (s1 - 1 - i) / fadeBeep);
+      out[i] += 0.26 * env * Math.sin(2 * Math.PI * 1000 * (i / SR));
+    }
+  }
+  return out;
+}
+
 // ---------- раскладка реплик ----------
 const voices = {};
 const cues = {};
@@ -203,15 +255,31 @@ if (musicFile) {
   console.log('music:', musicFile);
 } else console.log('music: нет файла, сводим без музыки');
 
-const master = new Float32Array(N);
-for (let i = 0; i < N; i++) master[i] = voiceBus[i] + sfxBus[i] + musicBus[i];
-let peak = 0;
-for (let i = 0; i < N; i++) peak = Math.max(peak, Math.abs(master[i]));
-const k = 0.95 / Math.max(peak, 1e-6);
-for (let i = 0; i < N; i++) master[i] *= Math.min(k, 1.25);
+const censorBeeps = Object.entries(CENSOR_SPANS)
+  .flatMap(([id, spans]) => spans.map(([s, e]) => ({
+    start: +(cues[id].start + s).toFixed(3),
+    end: +(cues[id].start + e).toFixed(3),
+  })))
+  .sort((a, b) => a.start - b.start);
+const voiceBusCensored = applyCensor(voiceBus, censorBeeps);
+
+function mixBus(vBus, sBus, mBus) {
+  const out = new Float32Array(N);
+  for (let i = 0; i < N; i++) out[i] = vBus[i] + sBus[i] + mBus[i];
+  let peak = 0;
+  for (let i = 0; i < N; i++) peak = Math.max(peak, Math.abs(out[i]));
+  const k = 0.95 / Math.max(peak, 1e-6);
+  for (let i = 0; i < N; i++) out[i] *= Math.min(k, 1.25);
+  return out;
+}
+
+const master = mixBus(voiceBus, sfxBus, musicBus);
+const masterCensored = mixBus(voiceBusCensored, sfxBus, musicBus);
 
 writeWav(path.join(__dirname, 'audio', 'master.wav'), master);
 writeWav(path.join(__dirname, 'video', 'public', 'audio', 'master.wav'), master);
+writeWav(path.join(__dirname, 'audio', 'master_censored.wav'), masterCensored);
+writeWav(path.join(__dirname, 'video', 'public', 'audio', 'master_censored.wav'), masterCensored);
 
 // ---------- таймлайн для Remotion ----------
 const subs = [];
@@ -227,6 +295,7 @@ for (const l of LINES) {
     s += d;
   }
 }
+const subsCensored = subs.map((s) => ({ ...s, text: censorSubtitle(s.text) }));
 const mouth = {};
 for (const [id, v] of Object.entries(voices)) mouth[id] = envelope(v);
 const lineWho = Object.fromEntries(LINES.filter((l) => l.who).map((l) => [l.id, l.who]));
@@ -239,6 +308,8 @@ export type Who = "coder" | "claude" | "boss" | "w418";
 export const CUES: Record<string, { start: number; end: number }> = ${JSON.stringify(cues, null, 2)};
 export const LINE_WHO: Record<string, Who> = ${JSON.stringify(lineWho)};
 export const SUBS: { who: Who; text: string; start: number; end: number }[] = ${JSON.stringify(subs, null, 2)};
+export const SUBS_CENSORED: { who: Who; text: string; start: number; end: number }[] = ${JSON.stringify(subsCensored, null, 2)};
+export const CENSOR_BEEPS: { start: number; end: number }[] = ${JSON.stringify(censorBeeps)};
 export const MOUTH: Record<string, number[]> = ${JSON.stringify(mouth)};
 export const SFX_EVENTS = ${JSON.stringify(SFX_EVENTS)};
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { CUES, FPS, SUBS, Who } from "../data/timeline";
+import { CENSOR_BEEPS, CUES, FPS, SUBS, SUBS_CENSORED, Who } from "../data/timeline";
 
 const WHO_LABELS: Record<Who, { label: string; color: string }> = {
   coder: { label: "КОДЕР", color: "#6366f1" },
@@ -18,7 +18,10 @@ const T_CODER_3_START = Number((CUES.f_claude2.start - 0.4).toFixed(2)); // 52.4
 const T_INDIA_3_START = Number(((CUES.f_coder4.end + CUES.g_boss3.start) / 2).toFixed(2)); // 60.89
 const T_FINAL_PUNCH = CUES.g_end.start; // 66.41
 
-export const ShortsOverlays: React.FC<{ timeOffsetSec?: number }> = ({ timeOffsetSec = 0 }) => {
+export const ShortsOverlays: React.FC<{ timeOffsetSec?: number; censored?: boolean }> = ({
+  timeOffsetSec = 0,
+  censored = false,
+}) => {
   const frame = useCurrentFrame();
   const videoConfig = useVideoConfig();
   const fps = videoConfig.fps || FPS;
@@ -184,8 +187,10 @@ export const ShortsOverlays: React.FC<{ timeOffsetSec?: number }> = ({ timeOffse
     : 0;
 
   // 5. Активная реплика субтитров
-  const active = SUBS.find((item) => t >= item.start && t < item.end);
+  const subSource = censored ? SUBS_CENSORED : SUBS;
+  const active = subSource.find((item) => t >= item.start && t < item.end);
   const progress = active ? (t - active.start) / Math.max(0.01, active.end - active.start) : 0;
+  const isBeeping = censored && CENSOR_BEEPS.some((b) => t >= b.start && t <= b.end);
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none", fontFamily: '"Arial Black", "Montserrat", sans-serif' }}>
@@ -406,19 +411,43 @@ export const ShortsOverlays: React.FC<{ timeOffsetSec?: number }> = ({ timeOffse
             gap: 12,
           }}
         >
-          <div
-            style={{
-              backgroundColor: WHO_LABELS[active.who]?.color ?? "#f59e0b",
-              color: "#ffffff",
-              border: "4px solid #09090b",
-              borderRadius: 10,
-              padding: "4px 20px",
-              fontSize: 26,
-              textShadow: "0 2px 0 #09090b",
-              boxShadow: "0 5px 0 rgba(0,0,0,0.6)",
-            }}
-          >
-            {WHO_LABELS[active.who]?.label ?? active.who.toUpperCase()}
+          <div style={{ position: "relative", display: "inline-flex", justifyContent: "center" }}>
+            {isBeeping && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "calc(100% + 8px)",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  backgroundColor: "#dc2626",
+                  color: "#ffffff",
+                  border: "3px solid #09090b",
+                  borderRadius: 999,
+                  padding: "3px 14px",
+                  fontSize: 18,
+                  letterSpacing: 1,
+                  whiteSpace: "nowrap",
+                  textShadow: "0 2px 0 #09090b",
+                  boxShadow: "0 4px 0 rgba(0,0,0,0.65)",
+                }}
+              >
+                [ПИИП • ЦЕНЗУРА]
+              </div>
+            )}
+            <div
+              style={{
+                backgroundColor: WHO_LABELS[active.who]?.color ?? "#f59e0b",
+                color: "#ffffff",
+                border: "4px solid #09090b",
+                borderRadius: 10,
+                padding: "4px 20px",
+                fontSize: 26,
+                textShadow: "0 2px 0 #09090b",
+                boxShadow: "0 5px 0 rgba(0,0,0,0.6)",
+              }}
+            >
+              {WHO_LABELS[active.who]?.label ?? active.who.toUpperCase()}
+            </div>
           </div>
 
           <div
@@ -435,20 +464,26 @@ export const ShortsOverlays: React.FC<{ timeOffsetSec?: number }> = ({ timeOffse
             {(() => {
               const words = active.text.split(/\s+/).filter(Boolean);
               const activeIdx = Math.min(words.length - 1, Math.floor(progress * words.length * 1.05));
-              return words.map((word, idx) => (
-                <span
-                  key={idx}
-                  style={{
-                    color: idx <= activeIdx ? "#facc15" : "#ffffff",
-                    fontSize: 40,
-                    textShadow: "0 4px 0 #09090b",
-                    marginRight: idx < words.length - 1 ? 10 : 0,
-                    display: "inline-block",
-                  }}
-                >
-                  {word}
-                </span>
-              ));
+              return words.map((word, idx) => {
+                const isCensoredWord = censored && word.includes("*");
+                return (
+                  <span
+                    key={idx}
+                    style={{
+                      color: isCensoredWord ? "#ffffff" : idx <= activeIdx ? "#facc15" : "#ffffff",
+                      backgroundColor: isCensoredWord ? "#dc2626" : undefined,
+                      padding: isCensoredWord ? "2px 10px" : undefined,
+                      borderRadius: isCensoredWord ? 8 : undefined,
+                      fontSize: 40,
+                      textShadow: "0 4px 0 #09090b",
+                      marginRight: idx < words.length - 1 ? 10 : 0,
+                      display: "inline-block",
+                    }}
+                  >
+                    {word}
+                  </span>
+                );
+              });
             })()}
           </div>
         </div>
