@@ -10,7 +10,6 @@ sudny-den/preview_*.png
 мульт_сервера_клод/video/public/audio/
 мульт_сервера_клод/audio/tmp/
 мульт_сервера_клод/audio/*master.wav
-мульт_сервера_клод/*.mp4
 .agents/
 .env
 .env.*
