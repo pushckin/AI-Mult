@@ -1,0 +1,15 @@
+{
+  "name": "mult-servera-claude",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tts": "node tts.mjs",
+    "music": "node music.mjs",
+    "sfx": "node sfx.mjs",
+    "mix": "node mix.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^3.3.0"
+  }
+}
