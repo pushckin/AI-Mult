@@ -201,7 +201,7 @@ export const EMOTIONS: Record<Emotion, EV> = {
   },
   gasp: {
     ...NEUTRAL, bi: -22, bo: -30, bl: -34, arch: 0.9, lid: 0, pup: 0.5, es: 1.25,
-    mw: 27, mc: 0, mo: 0.9, pallor: 0.2, tilt: 0, mouthDy: 6,
+    mw: 40, mc: 0, mo: 0.9, pallor: 0.2, tilt: 0, mouthDy: 6,
   },
 };
 
@@ -672,7 +672,7 @@ const PhoneItem: React.FC<{ x: number; y: number; rot: number; light: string; vi
 );
 
 const BottleItem: React.FC<{ b: ReturnType<typeof bottleXf> }> = ({ b }) => (
-  <g transform={`translate(${b.mx} ${b.my}) rotate(${b.r}) translate(0 150)`}>
+  <g transform={`translate(${b.mx} ${b.my}) rotate(${b.r}) scale(1.25) translate(0 150)`}>
     <path d="M -17 -150 L 17 -150 L 17 -118 L 20 -64 Q 46 -44 46 -12 L 46 112 Q 46 128 30 128 L -30 128 Q -46 128 -46 112 L -46 -12 Q -46 -44 -20 -64 L -17 -118 Z" fill="#3f7a4b" stroke={C.inkSoft} strokeWidth={4} strokeLinejoin="round" />
     <path d="M -46 70 L 46 70 L 46 112 Q 46 128 30 128 L -30 128 Q -46 128 -46 112 Z" fill="#7b2f3a" opacity={0.9} />
     <rect x={-46} y={-4} width={92} height={52} fill="#f1e6c8" stroke={C.inkSoft} strokeWidth={3} />
@@ -788,7 +788,7 @@ const Head: React.FC<{ rig: Rig; view: "front" | "side" }> = ({ rig, view }) => 
         {tintOp > 0.01 && <rect x={hc.x - R} y={hc.y - R} width={R * 2} height={R * 2} fill={tintColor} opacity={tintOp} />}
         {sootA > 0.01 && (
           <g fill="#17110e">
-            <ellipse cx={hc.x + (side ? 40 : 0)} cy={hc.y - 150} rx={170} ry={60} opacity={sootA * 0.45} />
+            <ellipse cx={hc.x + (side ? 40 : 0)} cy={hc.y - 150} rx={170} ry={60} opacity={sootA * 0.55} />
             <ellipse cx={hc.x + (side ? 60 : -130)} cy={eyeY + 110} rx={70} ry={42} opacity={sootA * 0.5} />
             <ellipse cx={hc.x + (side ? 170 : 130)} cy={eyeY + 110} rx={70} ry={42} opacity={sootA * 0.5} />
             <ellipse cx={hc.x + (side ? 100 : 0)} cy={hc.y + 215} rx={120} ry={50} opacity={sootA * 0.55} />

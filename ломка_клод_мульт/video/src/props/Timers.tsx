@@ -31,42 +31,40 @@ const Timer: React.FC<{ frame: number; x: number; label: string; total: number; 
   const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
   const str = `${h}${String(m).padStart(2, "0")}${String(s).padStart(2, "0")}`;
   const colon = Math.floor(frame / 12) % 2 === 0;
-  const dx = [0, 100, 150, 250, 300];
   return (
     <g transform={`translate(${x} 0) rotate(${tilt} 220 480)`} style={{ filter: "drop-shadow(0 10px 12px rgba(0,0,0,.45))" }}>
       <path d="M 60 560 L 380 560 L 400 610 L 40 610 Z" fill="#6a4a30" stroke={INK} strokeWidth={5} strokeLinejoin="round" />
       <rect x={0} y={250} width={440} height={310} rx={26} fill="#2b2a2e" stroke={INK} strokeWidth={6} />
       <rect x={24} y={274} width={392} height={190} rx={14} fill="#120606" stroke={INK} strokeWidth={4} />
-      <g transform="translate(36 316) scale(0.98)">
-        <Digit x={dx[0]} d={str[0]} />
-        <g opacity={colon ? 1 : 0.15}><circle cx={74} cy={34} r={7} fill="#ff2a1f" /><circle cx={74} cy={76} r={7} fill="#ff2a1f" /></g>
-        <Digit x={dx[1] - 14} d={str[1]} />
-        <Digit x={dx[2] + 34} d={str[2]} />
-        <g opacity={colon ? 1 : 0.15}><circle cx={208} cy={34} r={7} fill="#ff2a1f" /><circle cx={208} cy={76} r={7} fill="#ff2a1f" /></g>
+      <g transform="translate(32 316)">
+        <Digit x={0} d={str[0]} />
+        <g opacity={colon ? 1 : 0.15}><circle cx={75} cy={34} r={7} fill="#ff2a1f" /><circle cx={75} cy={76} r={7} fill="#ff2a1f" /></g>
+        <Digit x={92} d={str[1]} />
+        <Digit x={160} d={str[2]} />
+        <g opacity={colon ? 1 : 0.15}><circle cx={237} cy={34} r={7} fill="#ff2a1f" /><circle cx={237} cy={76} r={7} fill="#ff2a1f" /></g>
+        <Digit x={254} d={str[3]} />
+        <Digit x={322} d={str[4]} />
       </g>
       <text x={220} y={530} textAnchor="middle" fontFamily="Arial Black, Impact, sans-serif" fontSize={58} fill="#f3ead2" stroke={INK} strokeWidth={2}>{label}</text>
-      <circle cx={400} cy={480} r={0} />
     </g>
   );
 };
 
 export const Timers: React.FC<TimersProps> = ({ frame, startSeconds = 4 * 3600 + 55 * 60 }) => (
-  <svg width={1080} height={700} viewBox="0 0 1080 700" style={{ position: "absolute", left: 0, top: 0 }}>
-    <defs>
-      <linearGradient id="tm-table" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#a9713f" />
-        <stop offset="1" stopColor="#7a4c27" />
-      </linearGradient>
-    </defs>
-    <rect y={560} width={1080} height={140} fill="url(#tm-table)" stroke={INK} strokeWidth={5} />
-    <g transform="translate(0 -20)">
-      <Timer frame={frame} x={70} label="АРТЁМ" total={startSeconds} tilt={-2} />
-      <Timer frame={frame} x={570} label="КАТЯ" total={startSeconds} tilt={2} />
-    </g>
-    <foreignObject x={0} y={0} width={1080} height={700}>
-      <div style={{ position: "relative", width: 1080, height: 700 }}>
-        <Smoke frame={frame} density={0.55} width={1080} height={700} />
-      </div>
-    </foreignObject>
-  </svg>
+  <div style={{ position: "absolute", left: 0, top: 0, width: 1080, height: 700 }}>
+    <svg width={1080} height={700} viewBox="0 0 1080 700" style={{ position: "absolute", left: 0, top: 0 }}>
+      <defs>
+        <linearGradient id="tm-table" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#a9713f" />
+          <stop offset="1" stopColor="#7a4c27" />
+        </linearGradient>
+      </defs>
+      <rect y={560} width={1080} height={140} fill="url(#tm-table)" stroke={INK} strokeWidth={5} />
+      <g transform="translate(0 -20)">
+        <Timer frame={frame} x={70} label="АРТЁМ" total={startSeconds} tilt={-2} />
+        <Timer frame={frame} x={570} label="КАТЯ" total={startSeconds} tilt={2} />
+      </g>
+    </svg>
+    <Smoke frame={frame} density={0.55} width={1080} height={700} />
+  </div>
 );
