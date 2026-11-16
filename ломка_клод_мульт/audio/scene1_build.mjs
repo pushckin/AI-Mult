@@ -13,7 +13,7 @@ const TEMPO={a1:1.0,k1:1.0,a2:1.0,a3:1.0,k2:1.0,a4a:1.0,a4b:1.0};
 if(fs.existsSync(path.join(root,'audio/scene1_tempo.json'))) Object.assign(TEMPO,JSON.parse(fs.readFileSync(path.join(root,'audio/scene1_tempo.json'),'utf8')));
 const TARGET_RMS={a1:-21,k1:-21,a2:-21,a3:-24,k2:-21,a4a:-23,a4b:-17};
 function decode(id){
-  const t=TEMPO[id]; const af=`silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.03,areverse,silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.05,areverse`+(t!==1?`,atempo=${t}`:'');
+  const t=TEMPO[id]; const af=`silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.03,areverse,silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.05,areverse,silenceremove=stop_periods=-1:stop_duration=0.3:stop_threshold=-38dB:stop_silence=0.2`+(t!==1?`,atempo=${t}`:'');
   const b=execFileSync('ffmpeg',['-v','error','-i',path.join(raw,id+'.wav'),'-af',af,'-ar',String(SR),'-ac','1','-f','f32le','-'],{maxBuffer:1<<28});
   const f=new Float32Array(b.buffer,b.byteOffset,b.length/4); const x=Float32Array.from(f);
   let e=0;for(const v of x)e+=v*v; const rms=Math.sqrt(e/x.length)||1e-6; const g=Math.pow(10,TARGET_RMS[id]/20)/rms;
@@ -27,12 +27,12 @@ const A4=cat(V.a4a,new Float32Array(Math.round(0.45*SR)),V.a4b); V.a4=A4;
 // ---- раскладка ----
 const GAP=(a)=>a; const T={};
 let t=0.9; // немного скрипки перед началом
-T.a1=t; t+=dur(V.a1)+0.45;
-T.k1=t; t+=dur(V.k1)+0.4;
-T.a2=t; t+=dur(V.a2)+0.45;
+T.a1=t; t+=dur(V.a1)+0.35;
+T.k1=t; t+=dur(V.k1)+0.3;
+T.a2=t; t+=dur(V.a2)+0.35;
 T.a3=t; t+=dur(V.a3);
 const a3End=t, sendTap=a3End+0.25, zapT=sendTap+0.5;
-T.k2=zapT+1.9; t=T.k2+dur(V.k2)+0.45;
+T.k2=zapT+1.6; t=T.k2+dur(V.k2)+0.35;
 T.a4=t; const a4End=t+dur(A4);
 const waxDrop=a4End+1.3, DUR=a4End+2.5;
 // ---- микс ----
