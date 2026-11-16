@@ -144,4 +144,99 @@ const cfg: CharacterCfg = {
     ),
 };
 
-export const Katya: React.FC<CharacterProps> = (props) => <CharacterShell p={props} cfg={cfg} />;
+/* ---------------- халат + полотенце-тюрбан (outfit="robe") ---------------- */
+const ROBE = "#f1ece2";
+const ROBE_DARK = "#cfc6b4";
+const TOWEL = "#5fb7bd";
+const TOWEL_DARK = "#3f8f97";
+
+const terry = (x0: number, x1: number, y0: number, y1: number, n: number) => {
+  const out: React.ReactNode[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = Math.sin(i * 12.9898) * 43758.5453, b = Math.sin(i * 78.233) * 12345.678;
+    const u = a - Math.floor(a), v = b - Math.floor(b);
+    const x = x0 + u * (x1 - x0), y = y0 + v * (y1 - y0);
+    out.push(<path key={i} d={`M ${x} ${y} q 8 -10 16 0`} stroke={ROBE_DARK} strokeWidth={4} fill="none" strokeLinecap="round" opacity={0.7} />);
+  }
+  return out;
+};
+
+const robeBody = (_r: Rig, view: "front" | "side") => {
+  if (view === "front") {
+    return (
+      <g>
+        <path d="M 250 800 Q 246 690 372 676 L 628 676 Q 754 690 750 800 L 800 1350 Q 802 1394 754 1394 L 246 1394 Q 198 1394 200 1350 Z" fill={ROBE} {...edge} strokeWidth={4} />
+        <path d="M 300 920 q 20 130 -10 380 M 700 920 q -20 130 10 380" stroke={ROBE_DARK} strokeWidth={8} fill="none" strokeLinecap="round" opacity={0.8} />
+        {terry(290, 700, 900, 1360, 26)}
+        <rect x={440} y={600} width={120} height={120} fill={C.skinShade} {...edge} />
+        <path d="M 392 678 L 608 678 L 500 900 Z" fill={C.skin} stroke={C.inkSoft} strokeWidth={4} strokeLinejoin="round" />
+        <ellipse cx={500} cy={690} rx={96} ry={22} fill={C.ink} opacity={0.18} />
+        {/* шалевый воротник */}
+        <path d="M 392 672 L 530 1062" stroke={C.inkSoft} strokeWidth={58} strokeLinecap="round" fill="none" />
+        <path d="M 608 672 L 470 1062" stroke={C.inkSoft} strokeWidth={58} strokeLinecap="round" fill="none" />
+        <path d="M 392 672 L 530 1062" stroke="#fffaf0" strokeWidth={52} strokeLinecap="round" fill="none" />
+        <path d="M 608 672 L 470 1062" stroke="#fffaf0" strokeWidth={52} strokeLinecap="round" fill="none" />
+        <path d="M 404 700 L 520 1020 M 596 700 L 480 1020" stroke={ROBE_DARK} strokeWidth={6} fill="none" strokeLinecap="round" />
+        {/* пояс */}
+        <rect x={224} y={1050} width={552} height={40} fill={ROBE_DARK} {...edge} />
+        <ellipse cx={500} cy={1072} rx={42} ry={34} fill={ROBE_DARK} {...edge} />
+        <path d="M 480 1086 q -30 80 -50 130 M 520 1086 q 20 90 36 134" stroke={C.inkSoft} strokeWidth={30} strokeLinecap="round" fill="none" />
+        <path d="M 480 1086 q -30 80 -50 130 M 520 1086 q 20 90 36 134" stroke={ROBE_DARK} strokeWidth={24} strokeLinecap="round" fill="none" />
+        {/* карманы */}
+        <path d="M 270 1160 h 110 v 110 h -110 Z M 620 1160 h 110 v 110 h -110 Z" fill="none" stroke={ROBE_DARK} strokeWidth={6} />
+        <ellipse cx={410} cy={1394} rx={70} ry={22} fill={C.ink} />
+        <ellipse cx={590} cy={1394} rx={70} ry={22} fill={C.ink} />
+      </g>
+    );
+  }
+  const cx = 460;
+  return (
+    <g>
+      <path d={`M ${cx - 200} 800 Q ${cx - 220} 690 ${cx - 90} 676 L ${cx + 100} 676 Q ${cx + 200} 700 ${cx + 190} 800 L ${cx + 230} 1350 Q ${cx + 230} 1394 ${cx + 180} 1394 L ${cx - 210} 1394 Q ${cx - 260} 1394 ${cx - 255} 1350 Z`} fill={ROBE} {...edge} strokeWidth={4} />
+      {terry(cx - 200, cx + 170, 900, 1360, 20)}
+      <rect x={cx - 50} y={600} width={110} height={120} fill={C.skinShade} {...edge} />
+      <path d={`M ${cx - 60} 678 L ${cx + 100} 690 L ${cx + 80} 820 Z`} fill={C.skin} stroke={C.inkSoft} strokeWidth={4} strokeLinejoin="round" />
+      <path d={`M ${cx - 60} 676 L ${cx + 100} 1062`} stroke={C.inkSoft} strokeWidth={56} strokeLinecap="round" fill="none" />
+      <path d={`M ${cx - 60} 676 L ${cx + 100} 1062`} stroke="#fffaf0" strokeWidth={50} strokeLinecap="round" fill="none" />
+      <ellipse cx={cx} cy={685} rx={110} ry={26} fill={C.ink} opacity={0.18} />
+      <rect x={cx - 240} y={1050} width={460} height={40} fill={ROBE_DARK} {...edge} />
+      <ellipse cx={cx + 100} cy={1072} rx={34} ry={30} fill={ROBE_DARK} {...edge} />
+      <ellipse cx={cx + 20} cy={1394} rx={110} ry={22} fill={C.ink} />
+    </g>
+  );
+};
+
+const towel = (view: "front" | "side") => {
+  const o = view === "front" ? 0 : -30;
+  const wrap = (d: string, i: number) => <path key={i} d={d} stroke={TOWEL_DARK} strokeWidth={9} fill="none" strokeLinecap="round" opacity={0.8} />;
+  return (
+    <g>
+      <path
+        d={`M ${250 + o} 410 C ${226 + o} 250 ${290 + o} 110 ${500 + o} 100 C ${700 + o} 110 ${770 + o} 250 ${748 + o} 410 C ${700 + o} 330 ${600 + o} 276 ${500 + o} 274 C ${400 + o} 276 ${300 + o} 330 ${250 + o} 410 Z`}
+        fill={TOWEL} stroke={C.inkSoft} strokeWidth={4} strokeLinejoin="round"
+      />
+      {/* навитый ком сверху */}
+      <path d={`M ${300 + o} 170 C ${290 + o} 40 ${420 + o} -20 ${540 + o} -10 C ${690 + o} 0 ${730 + o} 100 ${700 + o} 180 C ${620 + o} 130 ${400 + o} 130 ${300 + o} 170 Z`} fill={TOWEL} stroke={C.inkSoft} strokeWidth={4} strokeLinejoin="round" />
+      {[
+        `M ${280 + o} 330 C ${360 + o} 230 ${560 + o} 200 ${730 + o} 330`,
+        `M ${270 + o} 270 C ${380 + o} 170 ${580 + o} 150 ${740 + o} 270`,
+        `M ${340 + o} 110 C ${420 + o} 60 ${560 + o} 50 ${650 + o} 120`,
+        `M ${330 + o} 60 C ${400 + o} 10 ${520 + o} 0 ${620 + o} 50`,
+      ].map(wrap)}
+      <path d={`M ${300 + o} 150 C ${400 + o} 110 ${600 + o} 110 ${700 + o} 160`} stroke={TOWEL_DARK} strokeWidth={9} fill="none" strokeLinecap="round" opacity={0.8} />
+    </g>
+  );
+};
+
+const robeCfg: CharacterCfg = {
+  ...cfg,
+  sleeve: ROBE,
+  sleeveDark: ROBE_DARK,
+  hairBack: () => null,
+  body: robeBody,
+  hairFront: (_r: Rig, view) => towel(view),
+};
+
+export const Katya: React.FC<CharacterProps> = (props) => (
+  <CharacterShell p={props} cfg={props.outfit === "robe" ? robeCfg : cfg} />
+);
