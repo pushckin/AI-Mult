@@ -10,8 +10,8 @@ export const PHONE_CRACK = 10;
 const START = { x: 150, y: 1180 };
 const WALL = { x: 880, y: 700 };
 const FLOOR = { x: 800, y: 1780 };
-const PW = 200;
-const PH = 400;
+const PW = 260;
+const PH = 520;
 
 export const PhoneFlight: React.FC<PhoneFlightProps> = ({ frame, startFrame }) => {
   const t = frame - startFrame;

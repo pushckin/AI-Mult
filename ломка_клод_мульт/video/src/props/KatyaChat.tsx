@@ -17,7 +17,7 @@ export const KATYA_LIMIT_IN = 10;
 const FONT = "Arial Black, Impact, sans-serif";
 const FS = 50;
 const LH = 64;
-const MAXC = 24;
+const MAXC = 29;
 
 const wrap = (text: string): string[] => {
   const words = text.split(" ");

@@ -34,7 +34,7 @@ export const BathroomDoor: React.FC<BathroomDoorProps> = ({ frame, view = "front
     }
   }
   if (latchFrame !== undefined && frame >= latchFrame) {
-    open = 0.13 * easeOut((frame - latchFrame - 3) / DOOR_LATCH_FRAMES);
+    open = 0.2 * easeOut((frame - latchFrame - 3) / DOOR_LATCH_FRAMES);
   }
   const sinceSlam = slamFrame !== undefined ? frame - slamFrame : -1;
   const shake = sinceSlam >= DOOR_SLAM_FRAMES - 1 && sinceSlam < 20 ? Math.sin(sinceSlam * 2.6) * 14 * (1 - (sinceSlam - 4) / 16) : 0;
