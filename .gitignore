@@ -17,3 +17,6 @@ node_modules/
 __pycache__/
 .step-*/
 *.raw*.wav
+ломка_клод_мульт/video/out/
+ломка_клод_мульт/video/build/
+ломка_клод_мульт/*.mp4

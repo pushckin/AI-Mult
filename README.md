@@ -32,3 +32,8 @@ cd video
 npm install
 npx remotion studio
 ```
+
+## ломка_клод_мульт/ — «Ломка Клод мульт»
+Вертикальный (1080×1920, 24 FPS) 3D-мультфильм на Remotion + Three.js. Пока только заготовка проекта.
+
+- `ломка_клод_мульт/video/src/` — композиция `LomkaClaudeMult`
