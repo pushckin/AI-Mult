@@ -31,8 +31,8 @@
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
-    "render": "remotion render LomkaClaudeMult ../ломка_клод_мульт.mp4 --gl=angle --overwrite",
-    "render:cpu": "remotion render LomkaClaudeMult ../ломка_клод_мульт.mp4 --gl=swangle --overwrite"
+    "render": "remotion render Scene1 ../сцена1.mp4 --gl=angle --overwrite",
+    "render:cpu": "remotion render Scene1 ../сцена1.mp4 --gl=swangle --overwrite"
   },
   "allowScripts": {
     "esbuild": false

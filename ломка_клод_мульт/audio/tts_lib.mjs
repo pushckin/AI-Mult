@@ -28,8 +28,8 @@ export function wavFromPcm(pcm, rate=24000){
 export async function tts({text, voice, out, modelIdx=0}){
   const key=process.env.GEMINI_API_KEY; if(!key) throw new Error('no key');
   let lastErr;
-  for (let attempt=0; attempt<8; attempt++){
-    const model = MODELS[Math.min(modelIdx + (attempt>=4?1:0), MODELS.length-1)];
+  for (let attempt=0; attempt<24; attempt++){
+    const model = MODELS[(modelIdx + attempt) % MODELS.length];
     try{
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
         method:'POST',headers:{'x-goog-api-key':key,'content-type':'application/json'},
@@ -42,7 +42,7 @@ export async function tts({text, voice, out, modelIdx=0}){
       const pcm = buf.toString('latin1',0,4)==='RIFF'? pcmFromWav(buf) : buf;
       fs.writeFileSync(out, wavFromPcm(pcm,24000));
       return {model, bytes:pcm.length};
-    }catch(e){ lastErr=e; console.error('tts retry',attempt,String(e.message).slice(0,150)); await new Promise(r=>setTimeout(r,3000*(attempt+1))); }
+    }catch(e){ lastErr=e; console.error('tts retry',attempt,String(e.message).slice(0,150)); if(attempt%MODELS.length===MODELS.length-1) await new Promise(r=>setTimeout(r,20000)); }
   }
   throw lastErr;
 }

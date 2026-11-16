@@ -210,7 +210,7 @@ export function armGeom(
         a.hx += jit(1.9, 10); a.hy += jit(3.1, 9);
         return a;
       }
-      case "pointing": return g(345, 830, 405, 545, 1, 1);
+      case "pointing": return g(330, 800, 470, 690, 1, 1);
       case "handsOnHead": return g(405, 520, 215, 190, 0, 1);
       case "slap": {
         const ph = (frame % 14) / 14;
@@ -236,7 +236,7 @@ export function armGeom(
       a.hx += jit(1.9, 10); a.hy += jit(3.1, 9);
       return a;
     }
-    case "pointing": return g(625, 810, 835, 655, 1, 1);
+    case "pointing": return g(620, 800, 850, 710, 1, 1);
     case "handsOnHead": return g(570, 565, 440, 195, 0, 1);
     case "slap": {
       const ph = (frame % 14) / 14;
@@ -568,7 +568,7 @@ export const Arm: React.FC<{ g: ArmGeom; rig: Rig; s: number; fingerBase?: numbe
         <ellipse cx={thumbSide * 46} cy={26} rx={20} ry={32} transform={`rotate(${thumbSide * -28} ${thumbSide * 46} 26)`} fill={cfg.skin} {...EDGE} />
         {/* указательный */}
         {g.point > 0.02 && (
-          <rect x={-15} y={20} width={30} height={90 * g.point} rx={15} fill={cfg.skin} {...EDGE} />
+          <rect x={-15} y={20} width={30} height={100 * g.point} rx={15} fill={cfg.skin} {...EDGE} />
         )}
         <ellipse cx={0} cy={34} rx={47} ry={50} fill={cfg.skin} {...EDGE} />
         <path d="M -30 54 q 10 8 22 0 M 2 58 q 10 8 22 0" stroke={C.inkSoft} strokeWidth={3} fill="none" strokeLinecap="round" opacity={g.point > 0.5 ? 0.9 : 0.35} />
@@ -724,7 +724,7 @@ export const CharacterShell: React.FC<{ p: CharacterProps; cfg: CharacterCfg }> 
   const squash = 1 + rig.breath * 0.012;
   const slapDip = p.armL === "slap" || p.armR === "slap" ? Math.max(0, Math.sin(((f % 14) / 14) * Math.PI * 2)) * 0 : 0;
 
-  const clipH = p.upperBodyOnly ? 1130 : 1500;
+  const clipH = p.upperBodyOnly ? 1170 : 1500;
 
   const armFront = (g: ArmGeom, s: number) => <Arm g={g} rig={rig} s={s} />;
   const aL = rig.armL, aR = rig.armR;
