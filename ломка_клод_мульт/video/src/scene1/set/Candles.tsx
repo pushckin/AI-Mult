@@ -77,7 +77,6 @@ const OneCandle: React.FC<OneProps> = ({ frame, cx, h, ph, melt, drop }) => {
     const falling = frame >= drop && frame < drop + CANDLE_FALL_FRAMES;
     const landT = frame - (drop + CANDLE_FALL_FRAMES);
     const trailEnd = frame >= drop - 14 ? yBot : beadY;
-    const dropX = cx + edgeX + 2;
     const fallY0 = -STICK_H + 10;
     const groundY = 10;
     dropEls = (
@@ -86,27 +85,27 @@ const OneCandle: React.FC<OneProps> = ({ frame, cx, h, ph, melt, drop }) => {
           <rect
             x={edgeX - 4}
             y={yTop - 2}
-            width={9}
+            width={11}
             height={Math.max(0, trailEnd - yTop + 2)}
             rx={4.5}
             fill="#fffaf0"
-            stroke={WAX_SHADE}
+            stroke={"#b39f66"}
             strokeWidth={1}
           />
         )}
         {sliding && (
-          <ellipse cx={edgeX} cy={beadY} rx={7 + 1.5 * te} ry={9 + 3 * te} fill="#fffdf5" stroke={WAX_SHADE} strokeWidth={1} />
+          <ellipse cx={edgeX} cy={beadY} rx={9.5 + 2 * te} ry={12 + 4 * te} fill="#fffdf5" stroke={"#b39f66"} strokeWidth={1} />
         )}
         {hang && (
           <g>
             {(() => {
               const k = (frame - (drop - 14)) / 14;
-              const stretch = 4 + 14 * k * k;
+              const stretch = 6 + 18 * k * k;
               return (
                 <path
                   d={`M ${edgeX - 6} ${yBot - 6} C ${edgeX - 9} ${yBot + stretch} ${edgeX + 9} ${yBot + stretch} ${edgeX + 6} ${yBot - 6}Z`}
                   fill="#fffdf5"
-                  stroke={WAX_SHADE}
+                  stroke={"#b39f66"}
                   strokeWidth={1}
                 />
               );
@@ -121,10 +120,10 @@ const OneCandle: React.FC<OneProps> = ({ frame, cx, h, ph, melt, drop }) => {
             <ellipse
               cx={edgeX}
               cy={y}
-              rx={7 / Math.sqrt(stretch)}
-              ry={9 * stretch}
+              rx={10 / Math.sqrt(stretch)}
+              ry={12 * stretch}
               fill="#fffdf5"
-              stroke={WAX_SHADE}
+              stroke={"#b39f66"}
               strokeWidth={1}
             />
           );
@@ -137,10 +136,10 @@ const OneCandle: React.FC<OneProps> = ({ frame, cx, h, ph, melt, drop }) => {
               <ellipse
                 cx={edgeX}
                 cy={groundY + 2}
-                rx={4 + 20 * (1 - Math.pow(1 - g, 3))}
-                ry={2 + 6 * (1 - Math.pow(1 - g, 3))}
+                rx={5 + 28 * (1 - Math.pow(1 - g, 3))}
+                ry={3 + 8 * (1 - Math.pow(1 - g, 3))}
                 fill="#fffdf5"
-                stroke={WAX_SHADE}
+                stroke={"#b39f66"}
                 strokeWidth={1}
               />
               <ellipse cx={edgeX + 26} cy={groundY + 4} rx={3 * g} ry={1.6 * g} fill="#fffdf5" />
@@ -152,7 +151,7 @@ const OneCandle: React.FC<OneProps> = ({ frame, cx, h, ph, melt, drop }) => {
                   const px = edgeX + vx * tt;
                   const py = groundY + vy * tt + 40 * tt * tt;
                   return (
-                    <circle key={i} cx={px} cy={py} r={Math.max(0.5, (3.4 - (i % 3) * 0.7) * (1 - tt * 0.5))} fill="#fffdf5" opacity={1 - tt * tt} />
+                    <circle key={i} cx={px} cy={py} r={Math.max(0.5, (4.6 - (i % 3) * 0.9) * (1 - tt * 0.5))} fill="#fffdf5" opacity={1 - tt * tt} />
                   );
                 })}
               {landT < 18 && (
