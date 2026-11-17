@@ -64,6 +64,13 @@ S.resetSeed(777);
 BUS=1;
 const normVoice=(x)=>{let e=0,c=0;for(let i=0;i<x.length;i++){if(Math.abs(x[i])>0.02){e+=x[i]*x[i];c++;}}const rms=Math.sqrt(e/(c||1))||1;const g=Math.min(6,0.14/rms);return Float32Array.from(x,v=>v*g);};
 for(const id of Object.keys(V))V[id]=normVoice(V[id]);
+
+if(process.env.CENSOR==='1'){ // цензурная версия: мат заменён пиком 1 кГц
+  const CW=(JSON.parse(fs.readFileSync(path.join(root,'audio/censor_windows.json'),'utf8'))[String(1)])||{};
+  for(const id of Object.keys(CW)){ const x=V[id]; if(!x)continue; const f=Math.round(0.004*SR);
+    for(const [s,e] of CW[id]){ const i0=Math.max(0,Math.round(s*SR)), i1=Math.min(x.length,Math.round(e*SR));
+      for(let i=i0;i<i1;i++){ const g=Math.min(1,(i-i0)/f,(i1-1-i)/f); x[i]=0.22*Math.sin(2*Math.PI*1000*i/SR)*Math.max(0,g); } } }
+}
 const place={a1:T.a1,k1:T.k1,a2:T.a2,a3:T.a3,k2:T.k2,a4:T.a4};
 const pans={a1:-0.2,k1:0.2,a2:-0.2,a3:-0.1,k2:0.2,a4:-0.1};
 for(const id of Object.keys(place))add(V[id],place[id],1,pans[id]);

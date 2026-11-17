@@ -83,6 +83,13 @@ const whoOf=Object.fromEntries(CLIPS[N_].map(c=>[c.id,c.who])); whoOf.mk='katya'
 // выравниваем громкость каждой реплики (активный RMS ≈ -17 dBFS), чтобы голос всегда был слышен поверх музыки и SFX
 const normVoice=(x)=>{let e=0,c=0;for(let i=0;i<x.length;i++){if(Math.abs(x[i])>0.02){e+=x[i]*x[i];c++;}}const rms=Math.sqrt(e/(c||1))||1;const g=Math.min(6,0.14/rms);return Float32Array.from(x,v=>v*g);};
 for(const id of voiceIds)V[id]=normVoice(V[id]);
+
+if(process.env.CENSOR==='1'){ // цензурная версия: мат заменён пиком 1 кГц
+  const CW=(JSON.parse(fs.readFileSync(path.join(root,'audio/censor_windows.json'),'utf8'))[String(N_)])||{};
+  for(const id of Object.keys(CW)){ const x=V[id]; if(!x)continue; const f=Math.round(0.004*SR);
+    for(const [s,e] of CW[id]){ const i0=Math.max(0,Math.round(s*SR)), i1=Math.min(x.length,Math.round(e*SR));
+      for(let i=i0;i<i1;i++){ const g=Math.min(1,(i-i0)/f,(i1-1-i)/f); x[i]=0.22*Math.sin(2*Math.PI*1000*i/SR)*Math.max(0,g); } } }
+}
 for(const id of voiceIds){ const gain=(id==='mk'||id==='ma')?0.75:1; add(V[id],T[id],gain,PAN[whoOf[id]]); }
 // мягкий лимитер
 for(let i=0;i<N;i++){for(const A of [L,R]){const v=A[i];A[i]=Math.abs(v)>0.6?Math.sign(v)*(0.6+0.4*Math.tanh((Math.abs(v)-0.6)/0.4)):v;}}
