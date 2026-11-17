@@ -141,11 +141,19 @@ export const prog = (f: number, a: number, b: number) =>
   interpolate(f, [a, b], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
 /** значение огибающей рта (24 значения/с) в момент t (сек) */
-export const mouthAt = (env: number[] | undefined, tSec: number, gain = 1.25) => {
+export const mouthAt = (env: number[] | undefined, tSec: number, gain = 1.0) => {
   if (!env || env.length === 0 || tSec < 0) return 0;
   const i = tSec * 24;
   const i0 = Math.floor(i);
   if (i0 >= env.length - 1) return 0;
   const v = env[i0] + (env[i0 + 1] - env[i0]) * (i - i0);
   return Math.min(1, v * gain);
+};
+
+/** ширина рта по гласным (0 = «о/у», 1 = «и/э»); по умолчанию нейтральная */
+export const vowelAt = (env: number[] | undefined, tSec: number) => {
+  if (!env || env.length < 2 || tSec < 0) return 0.5;
+  const i = tSec * 24;
+  const i0 = Math.min(env.length - 2, Math.floor(i));
+  return env[i0] + (env[i0 + 1] - env[i0]) * Math.min(1, i - i0);
 };

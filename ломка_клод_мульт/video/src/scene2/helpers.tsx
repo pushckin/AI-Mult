@@ -1,6 +1,6 @@
 import React from "react";
 import { interpolate } from "remotion";
-import { mouthAt, prog } from "../scene1/CameraRig";
+import { mouthAt, prog, vowelAt } from "../scene1/CameraRig";
 import type { Punch } from "../scene1/CameraRig";
 import { Artyom, Katya } from "../scene1/characters";
 import type { Emotion, CharacterProps } from "../scene1/characters";
@@ -9,7 +9,7 @@ export const FPS = 24;
 export const fr = (s: number) => Math.round(s * FPS);
 export { prog };
 
-export type Line = { id: string; who: string; text: string; startSec: number; endSec: number; mouth: number[] };
+export type Line = { id: string; who: string; text: string; startSec: number; endSec: number; mouth: number[]; vowel?: number[] };
 export const mkLines = (arr: unknown) => Object.fromEntries((arr as Line[]).map((l) => [l.id, l])) as Record<string, Line>;
 export const mkCues = (arr: unknown) => Object.fromEntries((arr as { id: string; sec: number }[]).map((c) => [c.id, c.sec])) as Record<string, number>;
 
@@ -24,6 +24,11 @@ export const mouthFor = (lines: Line[], gf: number) => {
   const t = gf / FPS;
   for (const l of lines) if (t >= l.startSec && t <= l.endSec + 0.1) return mouthAt(l.mouth, t - l.startSec);
   return 0;
+};
+export const vowelFor = (lines: Line[], gf: number) => {
+  const t = gf / FPS;
+  for (const l of lines) if (t >= l.startSec && t <= l.endSec + 0.1) return vowelAt(l.vowel, t - l.startSec);
+  return 0.5;
 };
 
 export type Place = { x: number; y: number; s: number };
@@ -49,7 +54,7 @@ export const Char: React.FC<Place & CharProps> = ({ who, gf, x, y, s, emoTrack, 
   const C = who === "a" ? Artyom : Katya;
   return (
     <div style={{ position: "absolute", left: 0, top: 0, width: 1000, height: 1400, transform: `translate(${x}px,${y}px) scale(${flipX ? -s : s},${s})`, transformOrigin: "0 0" }}>
-      <C frame={gf} view={view} mouth={mouthFor(lines, gf)} emotion={emo ?? e.cur} prevEmotion={emo ? undefined : e.prev} emotionSince={e.since} {...(rest as object)} />
+      <C frame={gf} view={view} mouth={mouthFor(lines, gf)} vowel={vowelFor(lines, gf)} emotion={emo ?? e.cur} prevEmotion={emo ? undefined : e.prev} emotionSince={e.since} {...(rest as object)} />
     </div>
   );
 };

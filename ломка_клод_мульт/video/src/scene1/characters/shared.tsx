@@ -33,6 +33,8 @@ export type CharacterProps = {
   view: "front" | "side";
   facing?: "left" | "right";
   mouth: number;
+  /** ширина/округлость рта по гласным: 0 = «о/у» (узко, круглее), 1 = «и/э» (широко) */
+  vowel?: number;
   emotion: Emotion;
   look?: { x: number; y: number };
   blink?: boolean;
@@ -411,6 +413,8 @@ export function computeRig(p: CharacterProps, cfg: CharacterCfg, id: string): Ri
   const cph = (f % 34) / 34;
   const cough = smokeA > 0.001 ? smokeA * (cph < 0.32 ? Math.sin((cph / 0.32) * Math.PI) : 0) : 0;
   const m = clamp(p.mouth, 0, 1);
+  // говорит — стиснутые зубы (ярость) разжимаются, рот реально открывается
+  if (ev.grit > 0) ev = { ...ev, grit: ev.grit * (1 - clamp(m * 2.4, 0, 1)) };
   const mouthOpen = clamp(
     ev.mo + m * (1 - ev.grit * 0.75) * (1 - ev.mo * 0.35) + cough * 0.5 + cryA * 0.14 * Math.sin(f * 1.7),
     0, 1,
@@ -541,12 +545,14 @@ export const Mouth: React.FC<{ cx: number; cy: number; wScale?: number; rig: Rig
   cx, cy, wScale = 1, rig, uid,
 }) => {
   const { ev, cfg } = rig;
-  const w = ev.mw * wScale * (1 + rig.mouthOpen * 0.0);
+  const w = ev.mw * wScale * (1 + ((rig.p.vowel ?? 0.5) - 0.5) * 0.7 * clamp(rig.p.mouth * 2, 0, 1));
   const kc = -ev.mc * 32;
   const kL = kc - ev.skew * 14, kR = kc + ev.skew * 14;
   const ym = ev.mc * 16 - rig.mouthOpen * 6;
   const o = rig.mouthOpen;
-  const thick = 6 + o * 70 * (1 - ev.dead * 0.8);
+  const talkA = clamp(rig.p.mouth * 2, 0, 1);
+  const vw = rig.p.vowel ?? 0.5;
+  const thick = (6 + o * 82 * (1 - ev.dead * 0.35)) * (1 + (0.5 - vw) * 0.45 * talkA);
   const avg = (kL + kR) / 2;
   const open = 1 - ev.grit;
   const upper = `M ${-w} ${kL} Q 0 ${2 * ym - avg} ${w} ${kR}`;
@@ -984,9 +990,9 @@ export const CharacterShell: React.FC<{ p: CharacterProps; cfg: CharacterCfg }> 
   const shDY = Math.abs(Math.sin(f * 1.45)) * cry * 9 - cough * 8;
   const armDY = crouchDY + shDY;
   const headDX = Math.sin(f / 31 + cfg.seed) * 3 + Math.sin(f * 7.3) * shake * 4 + Math.sin(f * 1.9) * cry * 7;
-  const headDY = rig.breath * -3 - talk * 3 + Math.cos(f * 9.1) * shake * 3 + crouchDY + Math.abs(Math.sin(f * 1.45)) * cry * 12
+  const headDY = rig.breath * -3 - talk * 7 + Math.cos(f * 9.1) * shake * 3 + crouchDY + Math.abs(Math.sin(f * 1.45)) * cry * 12
     + cough * 16 + (p.view === "front" ? lean * 18 : 0);
-  const headRot = Math.sin(f / 47 + cfg.seed * 2) * 1.3 + ev.tilt + Math.sin(f * 5.7) * shake * 1.2
+  const headRot = Math.sin(f / 47 + cfg.seed * 2) * 1.3 + Math.sin(f * 0.8 + cfg.seed) * talk * 1.8 + ev.tilt + Math.sin(f * 5.7) * shake * 1.2
     + Math.sin(f * 1.1) * cry * 3.5 + cough * 7 + (p.view === "side" ? lean * 5 : 0);
   const pivotX = view === "front" ? 500 : 470;
 

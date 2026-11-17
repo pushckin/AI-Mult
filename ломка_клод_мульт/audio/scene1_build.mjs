@@ -37,19 +37,21 @@ T.a4=t; const a4End=t+dur(A4);
 const waxDrop=a4End+1.3, DUR=a4End+2.5;
 // ---- микс ----
 const N=Math.round(DUR*SR); const L=new Float32Array(N), R=new Float32Array(N);
-const add=(x,at,g=1,pan=0)=>{const n0=Math.round(at*SR);const gl=g*Math.cos((pan+1)*Math.PI/4),gr=g*Math.sin((pan+1)*Math.PI/4);
+let BUS=0.32; // музыка/SFX тише голоса (голоса переключают на 1)
+const add=(x,at,g=1,pan=0)=>{const n0=Math.round(at*SR);const gl=g*BUS*Math.cos((pan+1)*Math.PI/4),gr=g*BUS*Math.sin((pan+1)*Math.PI/4);
   for(let i=0;i<x.length&&n0+i<N;i++){if(n0+i<0)continue;L[n0+i]+=x[i]*gl*1.414;R[n0+i]+=x[i]*gr*1.414;}};
 // скрипка до zap
 const vio=S.violin(zapT); const fade=Math.round(0.03*SR);
 for(let i=0;i<fade;i++)vio[vio.length-1-i]*=i/fade;
 { // дуcking: музыка тише под голосом
   const env=new Float32Array(vio.length).fill(1);
-  const duck=(s,e)=>{for(let i=Math.round(s*SR);i<Math.round(e*SR)&&i<env.length;i++)env[i]=0.38;};
+  const duck=(s,e)=>{for(let i=Math.round(s*SR);i<Math.round(e*SR)&&i<env.length;i++)env[i]=0.18;};
   for(const id of ['a1','k1','a2','a3'])duck(T[id]-0.05,T[id]+dur(V[id])+0.05);
   let y=1;for(let i=0;i<env.length;i++){y+= (env[i]<y?0.0015:0.00025)*(env[i]-y);env[i]=y;}
   for(let i=0;i<vio.length;i++)vio[i]*=env[i]*0.55;
   const k=Math.round(0.011*SR); add(vio,0,1,-0.15); add(cat(new Float32Array(k),vio),0,0.8,0.25);
 }
+BUS=0.4;
 add(S.screech(0.7),zapT,0.55,0); add(S.zap(0.75),zapT,0.8,0);
 // клавиши: щелчки во время a3 (и тап отправки)
 { const ts=[];let c=T.a3+0.1;while(c<a3End){ts.push(c-T.a3);c+=0.07+0.11*Math.abs(Math.sin(c*13.7));} add(S.keyClicks(ts),T.a3,0.28,0.4); add(S.keyClicks([0]),sendTap,0.5,0.4); }
@@ -59,6 +61,9 @@ add(S.hiss(1.1),waxDrop-0.02,0.35,-0.2); add(S.plip(),waxDrop-0.05,0.5,-0.2);
 { const tail=a4End+0.1; const rt=S.roomTone(DUR-tail+0.0); add(rt,tail,0.5,0); // room tone в тишине
   const rt2=S.roomTone(zapT); add(rt2,0,0.12,0); }
 S.resetSeed(777);
+BUS=1;
+const normVoice=(x)=>{let e=0,c=0;for(let i=0;i<x.length;i++){if(Math.abs(x[i])>0.02){e+=x[i]*x[i];c++;}}const rms=Math.sqrt(e/(c||1))||1;const g=Math.min(6,0.14/rms);return Float32Array.from(x,v=>v*g);};
+for(const id of Object.keys(V))V[id]=normVoice(V[id]);
 const place={a1:T.a1,k1:T.k1,a2:T.a2,a3:T.a3,k2:T.k2,a4:T.a4};
 const pans={a1:-0.2,k1:0.2,a2:-0.2,a3:-0.1,k2:0.2,a4:-0.1};
 for(const id of Object.keys(place))add(V[id],place[id],1,pans[id]);

@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import timing from "./timing.json";
-import { Camera, CamKey, Punch, mouthAt, prog } from "./CameraRig";
+import { Camera, CamKey, Punch, mouthAt, prog, vowelAt } from "./CameraRig";
 import { Artyom, Katya } from "./characters";
 import type { Emotion, ArmPose } from "./characters";
 import { Kitchen } from "./set";
@@ -10,7 +10,7 @@ import { PhoneScreen, UsageLimit } from "./overlays";
 export const FPS = 24;
 const fr = (s: number) => Math.round(s * FPS);
 
-type Line = { id: string; who: string; text: string; startSec: number; endSec: number; mouth: number[] };
+type Line = { id: string; who: string; text: string; startSec: number; endSec: number; mouth: number[]; vowel?: number[] };
 const LINES = Object.fromEntries((timing.lines as Line[]).map((l) => [l.id, l])) as Record<string, Line>;
 const CUES = Object.fromEntries((timing.cues as { id: string; sec: number }[]).map((c) => [c.id, c.sec])) as Record<string, number>;
 
@@ -53,6 +53,12 @@ const mouthFor = (who: "a" | "k", gf: number) => {
   for (const l of ids) if (t >= l.startSec && t <= l.endSec + 0.1) return mouthAt(l.mouth, t - l.startSec);
   return 0;
 };
+const vowelFor = (who: "a" | "k", gf: number) => {
+  const t = gf / FPS;
+  const ids = who === "a" ? [A, A2, A3, A4] : [K1, K2];
+  for (const l of ids) if (t >= l.startSec && t <= l.endSec + 0.1) return vowelAt(l.vowel, t - l.startSec);
+  return 0.5;
+};
 
 /* ---------- персонаж в мире ---------- */
 type Place = { x: number; y: number; s: number };
@@ -79,7 +85,7 @@ const Char: React.FC<
     <div style={{ position: "absolute", left: 0, top: 0, width: 1000, height: 1400, transform: `translate(${x}px,${y}px) scale(${s})`, transformOrigin: "0 0" }}>
       <C
         frame={gf}
-        mouth={mouthFor(who, gf)}
+        mouth={mouthFor(who, gf)} vowel={vowelFor(who, gf)}
         emotion={emo ?? e.cur}
         prevEmotion={emo ? undefined : e.prev}
         emotionSince={e.since}

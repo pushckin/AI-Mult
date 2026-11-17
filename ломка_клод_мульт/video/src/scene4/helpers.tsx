@@ -2,13 +2,13 @@ import React from "react";
 import { interpolate } from "remotion";
 import { Artyom, Katya } from "../scene1/characters";
 import type { Emotion, ArmPose } from "../scene1/characters";
-import { mouthAt } from "../scene1/CameraRig";
+import { mouthAt, vowelAt } from "../scene1/CameraRig";
 import type { Punch } from "../scene1/CameraRig";
 
 export const FPS = 24;
 export const fr = (s: number) => Math.round(s * FPS);
 
-export type Line = { id: string; who: string; text: string; startSec: number; endSec: number; mouth: number[] };
+export type Line = { id: string; who: string; text: string; startSec: number; endSec: number; mouth: number[]; vowel?: number[] };
 export type Seg<T> = [number, T][];
 export const track = <T,>(segs: Seg<T>, t: number) => {
   let i = 0;
@@ -49,6 +49,11 @@ export const makeChar = (emoA: Seg<Emotion>, emoK: Seg<Emotion>, linesA: Line[],
     for (const l of who === "a" ? linesA : linesK) if (t >= l.startSec && t <= l.endSec + 0.1) return mouthAt(l.mouth, t - l.startSec);
     return 0;
   };
+  const vowelFor = (who: "a" | "k", gf: number) => {
+    const t = gf / FPS;
+    for (const l of who === "a" ? linesA : linesK) if (t >= l.startSec && t <= l.endSec + 0.1) return vowelAt(l.vowel, t - l.startSec);
+    return 0.5;
+  };
   const Char: React.FC<CharProps> = ({ who, gf, x, y, s, emo, ...rest }) => {
     const e = track(who === "a" ? emoA : emoK, gf / FPS);
     const C = (who === "a" ? Artyom : Katya) as React.FC<any>;
@@ -56,7 +61,7 @@ export const makeChar = (emoA: Seg<Emotion>, emoK: Seg<Emotion>, linesA: Line[],
       <div style={{ position: "absolute", left: 0, top: 0, width: 1000, height: 1400, transform: `translate(${x}px,${y}px) scale(${s})`, transformOrigin: "0 0" }}>
         <C
           frame={gf}
-          mouth={mouthFor(who, gf)}
+          mouth={mouthFor(who, gf)} vowel={vowelFor(who, gf)}
           emotion={emo ?? e.cur}
           prevEmotion={emo ? undefined : e.prev}
           emotionSince={e.since}

@@ -64,19 +64,26 @@ if(N_===5){
 }
 // ---------------- микс ----------------
 const N=Math.round(DUR*SR); const L=new Float32Array(N), R=new Float32Array(N);
-const add=(x,at,g=1,pan=0)=>{if(!x||!g)return;const n0=Math.round(at*SR);const gl=g*Math.cos((pan+1)*Math.PI/4)*1.414,gr=g*Math.sin((pan+1)*Math.PI/4)*1.414;for(let i=0;i<x.length&&n0+i<N;i++){if(n0+i<0)continue;L[n0+i]+=x[i]*gl;R[n0+i]+=x[i]*gr;}};
+let BUS=1; // общий множитель шины: музыка/SFX тише голоса
+const add=(x,at,g=1,pan=0)=>{if(!x||!g)return;const n0=Math.round(at*SR);const gl=g*BUS*Math.cos((pan+1)*Math.PI/4)*1.414,gr=g*BUS*Math.sin((pan+1)*Math.PI/4)*1.414;for(let i=0;i<x.length&&n0+i<N;i++){if(n0+i<0)continue;L[n0+i]+=x[i]*gl;R[n0+i]+=x[i]*gr;}};
 const voiceIds=Object.keys(T).filter(k=>V[k]);
+BUS=0.32;
 if(music){ const m=music[0](DUR); const env=new Float32Array(N).fill(1);
   const duck=(s,e,lv)=>{for(let i=Math.max(0,Math.round(s*SR));i<Math.min(N,Math.round(e*SR));i++)env[i]=Math.min(env[i],lv);};
-  for(const id of voiceIds)duck(T[id]-0.05,T[id]+d(id)+0.05,0.4); for(const [s,e,lv] of duckList)duck(s,e,lv);
+  for(const id of voiceIds)duck(T[id]-0.05,T[id]+d(id)+0.05,0.18); for(const [s,e,lv] of duckList)duck(s,e,lv);
   let y=1;for(let i=0;i<N;i++){y+=(env[i]<y?0.002:0.0004)*(env[i]-y);env[i]=y;}
   const fo=Math.round(1.5*SR); for(let i=0;i<m.length;i++){m[i]*=env[i]*music[1]*(i>m.length-fo?(m.length-i)/fo:1);}
   add(m,0,1,-0.1); add(cat(new Float32Array(Math.round(0.012*SR)),m),0,0.6,0.3); }
 // sfx — приглушаем под голосом слегка не нужно (короткие); общий список
+BUS=0.4;
 for(const f of plan) f(add);
+BUS=1;
 const PAN={artyom:-0.15,katya:0.2,wolf:0.05};
 const whoOf=Object.fromEntries(CLIPS[N_].map(c=>[c.id,c.who])); whoOf.mk='katya'; whoOf.ma='artyom';
-for(const id of voiceIds){ const gain=(id==='mk'||id==='ma')?0.7:1; add(V[id],T[id],gain,PAN[whoOf[id]]); }
+// выравниваем громкость каждой реплики (активный RMS ≈ -17 dBFS), чтобы голос всегда был слышен поверх музыки и SFX
+const normVoice=(x)=>{let e=0,c=0;for(let i=0;i<x.length;i++){if(Math.abs(x[i])>0.02){e+=x[i]*x[i];c++;}}const rms=Math.sqrt(e/(c||1))||1;const g=Math.min(6,0.14/rms);return Float32Array.from(x,v=>v*g);};
+for(const id of voiceIds)V[id]=normVoice(V[id]);
+for(const id of voiceIds){ const gain=(id==='mk'||id==='ma')?0.75:1; add(V[id],T[id],gain,PAN[whoOf[id]]); }
 // мягкий лимитер
 for(let i=0;i<N;i++){for(const A of [L,R]){const v=A[i];A[i]=Math.abs(v)>0.6?Math.sign(v)*(0.6+0.4*Math.tanh((Math.abs(v)-0.6)/0.4)):v;}}
 let pk=0;for(let i=0;i<N;i++)pk=Math.max(pk,Math.abs(L[i]),Math.abs(R[i]));
