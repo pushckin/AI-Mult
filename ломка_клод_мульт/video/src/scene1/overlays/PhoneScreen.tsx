@@ -1,4 +1,5 @@
 import React from "react";
+import { maskProfanity } from "../../censor";
 import { interpolate, spring, Easing } from "remotion";
 
 export const DEFAULT_PHONE_TEXT =
@@ -81,7 +82,7 @@ export const PhoneScreen: React.FC<PhoneScreenProps> = ({
   const ty = Math.cos(frame * 1.1) * 3 + Math.sin(frame * 2.9) * 1.5;
   const tr = Math.sin(frame * 0.7) * 0.5 + Math.sin(frame * 1.9) * 0.25;
 
-  const lines = wrap(text);
+  const lines = wrap(maskProfanity(text));
   const typed = Math.max(0, Math.floor(((frame - startFrame) * CPS) / FPS));
   const totalChars = text.length;
   const shown = Math.min(typed, totalChars);

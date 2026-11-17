@@ -1,4 +1,5 @@
 import React from "react";
+import { maskProfanity } from "../censor";
 import { clamp, easeOut, INK } from "./util";
 
 export const KATYA_TEXT =
@@ -39,7 +40,7 @@ export const KatyaChat: React.FC<KatyaChatProps> = ({ frame, startFrame, limitFr
   const t = frame - startFrame;
   const typeFrames = Math.ceil(KATYA_TEXT.length / KATYA_CPF);
   const lf = limitFrame ?? startFrame + typeFrames + 20;
-  const lines = wrap(KATYA_TEXT);
+  const lines = wrap(maskProfanity(KATYA_TEXT));
   const n = Math.max(0, Math.floor(t * KATYA_CPF));
   let acc = 0;
   const shown = lines.map((l) => {
