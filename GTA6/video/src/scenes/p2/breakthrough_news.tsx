@@ -90,7 +90,13 @@ const Desk: React.FC = () => (
   <group position={[0.3, 0, 0.35]}>
     <mesh position={[0, 0.45, 0]} material={paper("#33529a")}><boxGeometry args={[2.2, 0.9, 0.8]} /></mesh>
     <mesh position={[0, 0.91, 0]} material={paper("#d8dee9")}><boxGeometry args={[2.3, 0.04, 0.9]} /></mesh>
-    {[0.2, 0.62].map((y, i) => <mesh key={i} position={[0, y, 0.41]} material={paper(i ? "#c62828" : "#25407a")}><planeGeometry args={[2.2, i ? 0.06 : 0.04]} /></mesh>)}
+    <CanvasPlane texKey="bt_desk2" w={2.2} h={0.9} px={512} position={[0, 0.45, 0.405]} glowing={false} draw={(g, W, H) => {
+      g.fillStyle = "#33529a"; g.fillRect(0, 0, W, H);
+      for (let i = -4; i < 14; i++) { g.fillStyle = i % 2 ? "#3d62b3" : "#2c4888"; g.beginPath(); g.moveTo(i * 50, H); g.lineTo(i * 50 + 120, 0); g.lineTo(i * 50 + 145, 0); g.lineTo(i * 50 + 25, H); g.fill(); }
+      g.fillStyle = "#c62828"; g.fillRect(0, H * 0.12, W, H * 0.07);
+      g.fillStyle = "#f2f2f2"; g.fillRect(0, H * 0.2, W, H * 0.02);
+      g.fillStyle = "#ffd23f"; for (let x = 20; x < W; x += 60) { g.beginPath(); g.arc(x, H * 0.85, 6, 0, 7); g.fill(); }
+    }} />
     {/* бумаги и кружка */}
     <mesh position={[0.75, 0.97, 0.15]} geometry={geo.rrect(0.16, 0.14, 0.03, 0.12)} material={paper("#e8e8e8")} />
   </group>
@@ -120,8 +126,8 @@ function drawLoot(g: CanvasRenderingContext2D, W: number, H: number) {
   g.fillStyle = "#fff"; g.font = `900 ${H * 0.2}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("-70%", W * 0.78, H * 0.31);
   g.fillStyle = "#111"; g.font = `900 ${H * 0.16}px ${FONT}`; g.fillText("4K  85\"", W * 0.35, H * 0.78);
 }
-const LootTv: React.FC<{ oneHand?: boolean }> = ({ oneHand }) => (
-  <group position={[oneHand ? -0.3 : 0, 0.5, 0.28]} rotation={[0, 0, oneHand ? 0.12 : 0]}>
+const LootTv: React.FC<{ oneHand?: boolean; up?: boolean }> = ({ oneHand, up }) => (
+  <group position={up ? [-0.6, 1.95, 0.1] : [oneHand ? -0.3 : 0, 0.5, 0.28]} rotation={[0, 0, up ? 0.15 : oneHand ? 0.12 : 0]}>
     <mesh geometry={geo.rrect(1.4, 0.86, 0.04, 0.06)} material={paper("#1a1a1a")} />
     <CanvasPlane texKey="bt_loot" w={1.3} h={0.76} px={400} position={[0, 0, 0.05]} draw={drawLoot} />
     {(oneHand ? [-1] : [-1, 1]).map((s) => <mesh key={s} position={[s * 0.72, -0.05, 0.08]} geometry={geo.ellipse(0.1, 0.1, 0.04)} material={paper("#eab48c")} />)}
@@ -133,8 +139,8 @@ const PlasmaGuy: React.FC<{ t: number; pose: "fly" | "walk" | "stare" | "yank"; 
   <Character outfit="tshirt" color="#2f9e57" color2="#3b3f5c" hat="curly" hairColor="#2a1a12" adult stubble sweat={1} skin="#eab48c"
     eyes={pose === "fly" ? "crazy" : pose === "stare" ? "squint" : "crazy"} mouth={pose === "fly" ? "scream" : "grin"} mouthOpen={1}
     lookX={pose === "stare" ? 0 : 0.3} legs={pose === "walk" || pose === "fly" ? "run" : "stand"} legPhase={legPhase}
-    armL={0.35} armR={arm}
-    front={<LootTv oneHand={pose === "yank" || pose === "stare"} />}
+    armL={pose === "fly" ? 0.35 : 2.75} armR={arm}
+    front={<LootTv oneHand={pose === "yank" || pose === "stare"} up={pose !== "fly"} />}
     back={<BackGear kind={1} />} />
 );
 
@@ -176,7 +182,7 @@ export const NewsWide: React.FC<{ t: number }> = ({ t }) => {
     } else {
       const u = easeInOut(prog(t, walk0, walk1));
       const walking = t > walk0 && t < walk1;
-      guy = <group position={[lerp(-0.7, -0.45, u), walking ? Math.abs(Math.sin(tq * 9)) * 0.05 : 0, lerp(1.1, 2.3, u)]}><PlasmaGuy t={t} pose={t > walk1 ? "stare" : "walk"} arm={t > walk1 ? 0.15 : 0.4} legPhase={walking ? tq * 14 : 0} /></group>;
+      guy = <group position={[lerp(-0.7, -0.45, u), walking ? Math.abs(Math.sin(tq * 9)) * 0.05 : 0, lerp(1.1, 1.7, u)]}><PlasmaGuy t={t} pose={t > walk1 ? "stare" : "walk"} arm={t > walk1 ? 0.15 : 0.4} legPhase={walking ? tq * 14 : 0} /></group>;
     }
   }
   const anchorLook = t > ca + 0.1 && t < ca + 0.9 ? -0.9 : 0;

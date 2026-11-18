@@ -19,11 +19,11 @@ const SLAB_W = 2.4, SLAB_H = 9, SLAB_D = 0.7;
 const SLAB_COLORS = ["#9b9a94", "#8e8f8a", "#a6a59e", "#93928b"];
 const slabFall = (i: number, t: number) => {
   const o = O();
-  const start: Record<number, number> = { [-1]: o + 0.95, 0: o + 0.8, 1: o + 1.05, [-2]: o + 1.45, 2: o + 1.6 };
+  const start: Record<number, number> = { [-1]: o + 0.85, 0: o + 0.7, 1: o + 0.95, [-2]: o + 1.35, 2: o + 1.5 };
   const s = start[i];
   if (s === undefined) return 0;
   const max = Math.abs(i) === 2 ? 1.53 : 1.53;
-  return easeIn(prog(t, s, s + 0.6)) * max;
+  return Math.pow(prog(t, s, s + 0.95), 2.2) * max;
 };
 
 const BarbedWire: React.FC<{ w: number }> = ({ w }) => (
@@ -99,9 +99,9 @@ export const WallShot: React.FC<{ t: number }> = ({ t }) => {
   const o = O();
   const tq = twos(t);
   const k = prog(t, o, OPEN_CUT1());
-  const [sx, sy] = shake(t, o + 1.15, 0.45, 0.9);
+  const [sx, sy] = shake(t, o + 1.6, 0.45, 0.9);
   const [sx0, sy0] = shake(t, o + 0.1, 0.08, 1.0, 20);
-  const breach = o + 1.05; // толпа пошла в пролом
+  const breach = o + 1.45; // толпа пошла в пролом
   const crowdAdv = Math.max(0, t - breach);
   const front = -1.5 + crowdAdv * 11;
   const members = WALL_CROWD.map((m) => {
@@ -124,8 +124,8 @@ export const WallShot: React.FC<{ t: number }> = ({ t }) => {
       <Crowd members={members} t={t} bounce={0.12} size={1.15} />
       {climbers.length > 0 && <Crowd members={climbers} t={t} bounce={0.05} size={1.15} />}
       {/* пыль */}
-      {t > o + 1.2 && [-3, -1, 1, 3, -2, 2].map((x, j) => {
-        const kk = prog(t, o + 1.2 + j * 0.05, o + 2.4);
+      {t > o + 1.75 && [-3, -1, 1, 3, -2, 2].map((x, j) => {
+        const kk = prog(t, o + 1.75 + j * 0.05, o + 2.6);
         return <Puff key={j} position={[x * 1.3, 0.6 + kk * 2.5 + (j % 2) * 0.8, 1 + kk * 3 + (j % 3)]} scale={1.2 + kk * 2.5} color="#c9c4b8" opacity={0.92} />;
       })}
       {/* танк — будет раздавлен плитой */}

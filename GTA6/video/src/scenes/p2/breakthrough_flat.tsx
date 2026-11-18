@@ -14,9 +14,9 @@ const DED = () => cue("p2", "p2_ded");
 const G2 = () => cue("p2", "p2_gamer2");
 export const FLAT_START = () => cue("p2", "p2_news2").end;
 export const DOOR_HIT = () => DOOR().start + 0.35;          // дверь слетает с петель
-export const FRIDGE_OFF = () => DOOR().start + 1.25;
-export const VENT_OFF = () => DOOR().start + 1.5;
-export const CLOSE_IN = () => Math.min(DOOR().start + 1.95, DED().start - 1.2); // крупный: тройники
+export const FRIDGE_OFF = () => DOOR().start + 1.65;
+export const VENT_OFF = () => DOOR().start + 1.85;
+export const CLOSE_IN = () => Math.min(DOOR().start + 2.3, DED().start - 1.2); // крупный: тройники
 export const DED_IN = () => DED().start - 0.05;
 export const G2_IN = () => DED().end + 0.12;
 export const HDMI_AT = () => G2().start + 0.45;
@@ -126,7 +126,7 @@ const HeartClutch: React.FC<{ t: number; skin: string }> = ({ t, skin }) => {
   );
 };
 const Tube: React.FC<{ off?: number }> = ({ off = 0 }) => (
-  <Cable pts={[[GRANDPA_P[0] + off * 0.34, 0.95 - off * 0.27, GRANDPA_P[2] + 0.3], [GRANDPA_P[0] + 0.45, 0.6, GRANDPA_P[2] + 0.12], [GRANDPA_P[0] + 0.6, 0.55, GRANDPA_P[2] - 0.6], [VENT_P[0] - 0.05, 0.7, VENT_P[2] + 0.4], [VENT_P[0], 0.8, VENT_P[2] + 0.1]]} r={0.035} color="#9fd0e8" />
+  <Cable pts={[[GRANDPA_P[0] + off * 0.28, 0.98 - off * 0.224, GRANDPA_P[2] + 0.27], [GRANDPA_P[0] + 0.45, 0.6, GRANDPA_P[2] + 0.12], [GRANDPA_P[0] + 0.6, 0.55, GRANDPA_P[2] - 0.6], [VENT_P[0] - 0.05, 0.7, VENT_P[2] + 0.4], [VENT_P[0], 0.8, VENT_P[2] + 0.1]]} r={0.035} color="#9fd0e8" />
 );
 
 const Family: React.FC<{ t: number; grandpaMood: "calm" | "shock" | "yell" | "blue"; panic: boolean; noMom?: boolean }> = ({ t, grandpaMood, panic, noMom }) => {
@@ -158,7 +158,7 @@ const MEN = (() => {
 })();
 
 const Men: React.FC<{ t: number; backOnly?: boolean }> = ({ t, backOnly }) => {
-  const t0 = DOOR_HIT() + 0.2;
+  const t0 = DOOR_HIT() + 0.1;
   const tq = twos(t);
   return (
     <>
@@ -215,7 +215,7 @@ export const FlatWide: React.FC<{ t: number }> = ({ t }) => {
   const z = easeOut(prog(t, h + 0.05, h + 0.35));
   return (
     <>
-      <Cam pos={[sx + sx2, lerp(3.1, 4.7, z) + sy + sy2, lerp(4.0, lerp(5.6, 5.1, easeInOut(k)), z)]} look={[0, lerp(1.25, 1.05, z), lerp(-1.3, -1.6, z)]} fov={lerp(44, 50, z)} />
+      <Cam pos={[sx + sx2 + lerp(0.25, 0, z), lerp(3.1, 4.7, z) + sy + sy2, lerp(4.5, lerp(5.6, 5.1, easeInOut(k)), z)]} look={[lerp(0.25, 0, z), lerp(1.25, 1.05, z), lerp(-1.3, -1.6, z)]} fov={lerp(44, 50, z)} />
       <Room t={t} />
       <Men t={t} />
       <Family t={t} grandpaMood={t > VENT_OFF() ? "shock" : panic ? "shock" : "calm"} panic={panic} />
@@ -392,7 +392,7 @@ export const ReactShot: React.FC<{ t: number }> = ({ t }) => {
   const k = prog(t, REACT_IN(), FLAT_END());
   return (
     <>
-      <Cam pos={[GRANDPA_P[0] + 0.12, 1.6, lerp(2.5, 2.1, easeOut(k))]} look={[GRANDPA_P[0] + 0.1, 1.0, GRANDPA_P[2]]} fov={40} />
+      <Cam pos={[GRANDPA_P[0] + 0.12, 1.5, lerp(2.6, 2.2, easeOut(k))]} look={[GRANDPA_P[0] + 0.1, 0.84, GRANDPA_P[2]]} fov={40} />
       <Room t={t} />
       <Men t={t + 10} backOnly />
       <Family t={t} grandpaMood="blue" panic noMom />
@@ -402,7 +402,7 @@ export const ReactShot: React.FC<{ t: number }> = ({ t }) => {
 };
 
 // ============ D2: врезка — выдёргивают холодильник и ИВЛ деда ============
-export const UNPLUG_IN = () => DOOR().start + 1.0;
+export const UNPLUG_IN = () => DOOR().start + 1.45;
 const Tag: React.FC<{ text: string; position: V3; rot?: number; color?: string }> = ({ text, position, rot = 0, color = "#fff6d5" }) => (
   <group position={position} rotation={[0, 0, rot]}>
     <mesh geometry={geo.rrect(0.52, 0.15, 0.03, 0.02)} material={paper("#222")} />

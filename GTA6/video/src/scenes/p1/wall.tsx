@@ -501,12 +501,12 @@ const RUNNERS = [
   { x: 2.4, ph: 0.55, look: { outfit: "hoodie" as const, color: "#16a085", hat: "beanie" as const, hatColor: "#f1c40f" }, gear: 3 },
 ];
 function shotTrample(t: number) {
-  const a = S().start + 2.2, lt = t - a, k = prog(t, a, a + 0.9);
+  const a = S().start + 2.0, lt = t - a, k = prog(t, a, a + 1.2);
   const tw = twos(t);
   const crowd = beachState(t).filter((m) => !(Math.abs(m.x) < 4.5 && m.z > 1.5 && m.z < 11));
   return (
     <>
-      <Cam pos={[0.6, 1.5, 10.5 - k * 0.6]} look={[0.4, 1.1, 2]} fov={50} />
+      <Cam pos={[0.6, 1.9, 9.8 - k * 0.4]} look={[0.4, 1.9, 2.5]} fov={54} />
       <World t={t} x0={-20} x1={20} crowd={crowd} fog={[25, 70, "#2b2632"]} />
       {TRAMPLE_BODIES.map((b, i) => (
         <group key={i} position={[b.x, 0.5, b.z]} rotation={[0, 0, b.rz]}>
@@ -514,7 +514,7 @@ function shotTrample(t: number) {
         </group>
       ))}
       {RUNNERS.map((r, i) => {
-        const z = 6.2 - (lt + r.ph) * 4.5;
+        const z = 6.4 - (lt + r.ph * 0.8) * 3.6;
         const over = Math.max(0, 1 - Math.abs(z - 3.4) / 1.2);
         const hop = Math.sin(over * Math.PI / 2) * 1.1 + Math.abs(Math.sin(tw * 12 + i)) * 0.12;
         return <Character key={i} {...r.look} adult position={[r.x, hop, z]} rotationY={Math.PI} legs="run" legPhase={tw * 16 + i} armL={2.4} armR={2.6} back={<Gear3D kind={r.gear} />} bodyTilt={(i % 2 ? 0.1 : -0.1)} />;
@@ -527,9 +527,9 @@ function shotTrample(t: number) {
 // C3a: катапульта крупно — геймер с консолью улетает через стену
 const CP: V3 = [5, 0, 13];
 function shotCatapult(t: number) {
-  const a = S().start + 3.1, lt = t - a, k = prog(t, a, a + 1.0);
+  const a = S().start + 3.2, lt = t - a, k = prog(t, a, a + 0.9);
   const tw = twos(t);
-  const L = 0.3;
+  const L = 0.25;
   const ang = lt < L ? 1.0 : lerp(1.0, -0.9, easeOut(Math.min(1, (lt - L) / 0.12)));
   const bucket = (an: number): V3 => {
     const lx = -2.8 * Math.cos(an) - 0.25 * Math.sin(an), ly = 2.5 - 2.8 * Math.sin(an) + 0.25 * Math.cos(an);
@@ -569,9 +569,9 @@ export const SCENES: SceneDef[] = [
   { id: "p1_wall_cmd_back", from: C1().start + 4.6, to: C1().end - 1.3, bg: SKY, render3d: shotCmdBack },
   { id: "p1_wall_cmd_tight", from: C1().end - 1.3, to: S().start, bg: SKY, render3d: (t) => shotCmdFront(t, true) },
   { id: "p1_wall_fire", from: S().start, to: S().start + 1.3, bg: SKY, render3d: (t) => shotFire(t), overlay: (t) => <MuzzleFlashOverlay t={t} a={S().start} b={S().start + 1.3} /> },
-  { id: "p1_wall_mow", from: S().start + 1.3, to: S().start + 2.2, bg: SKY, render3d: shotMow },
-  { id: "p1_wall_trample", from: S().start + 2.2, to: S().start + 3.1, bg: SKY, render3d: shotTrample },
-  { id: "p1_wall_catapult", from: S().start + 3.1, to: S().start + 4.1, bg: SKY, render3d: shotCatapult },
+  { id: "p1_wall_mow", from: S().start + 1.3, to: S().start + 2.0, bg: SKY, render3d: shotMow },
+  { id: "p1_wall_trample", from: S().start + 2.0, to: S().start + 3.2, bg: SKY, render3d: shotTrample },
+  { id: "p1_wall_catapult", from: S().start + 3.2, to: S().start + 4.1, bg: SKY, render3d: shotCatapult },
   { id: "p1_wall_pyramid", from: S().start + 4.1, to: S().start + 5.0, bg: SKY, render3d: shotPyramid },
   { id: "p1_wall_wire", from: S().start + 5.0, to: CH().start, bg: SKY, render3d: shotWire },
   { id: "p1_wall_chant", from: CH().start, to: G().start, bg: SKY, render3d: shotChant, overlay: (t) => <ChantOverlay t={t} /> },

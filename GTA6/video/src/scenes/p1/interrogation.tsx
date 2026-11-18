@@ -75,7 +75,7 @@ const InnerSet: React.FC<{ t: number; crumble?: number }> = ({ t, crumble = 0 })
       <group position={[0, 0, WZ]}>
         {Array.from({ length: 13 }, (_, i) => -24 + i * 4).map((x, i) => <WallSeg key={x} x={x} k={1} seed={40 + i} parapet={false} />)}
       </group>
-      <CanvasPlane texKey="nz_stencil2" w={5.6} h={1.7} px={1024} glowing={false} transparent draw={drawStencil} position={[-0.2, 4.5, WZ + 0.31]} />
+      <CanvasPlane texKey="nz_stencil2" w={5.6} h={1.7} px={1024} glowing={false} transparent draw={drawStencil} position={[-0.2, 3.1, WZ + 0.31]} />
       <CanvasPlane texKey="nz_graffiti" w={3.0} h={1.7} px={768} glowing={false} transparent draw={drawGraffiti} position={[-3.6, 1.7, WZ + 0.31]} />
       {/* «верёвочная лестница» из удлинителей, свисающая со стены */}
       <group position={[3.9, 0, WZ + 0.42]}>
@@ -146,6 +146,13 @@ const Gamer: React.FC<{ s: GamerState; t: number }> = ({ s, t }) => {
       <mesh geometry={geo.ellipse(0.5, 0.44, 0.03)} material={paper("#3a2414")} position={[0, 1.47, -0.075]} />
       <mesh geometry={geo.arc(0.42, 0.24, 0, Math.PI, 0.03)} material={paper("#6b7280")} position={[0, 0.98, -0.085]} />
       <mesh geometry={geo.ellipse(0.12, 0.1, 0.02)} material={paper("#a50f18")} position={[-0.52, 1.4, -0.08]} />
+      {/* PS5, примотанная к спине (видна в обратных планах) */}
+      <group position={[0.05, 0.62, -0.13]} rotation={[0, 0, 0.08]}>
+        <mesh geometry={geo.poly("ps5back", [[-0.27, -0.42], [0.27, -0.42], [0.31, 0.12], [0.2, 0.45], [-0.2, 0.45], [-0.31, 0.12]], 0.06, 0.06)} material={paper("#f6f6f3")} />
+        <mesh geometry={geo.rrect(0.12, 0.82, 0.02, 0.02)} material={paper("#151515")} position={[0, 0.01, -0.035]} />
+        <mesh geometry={geo.rrect(0.025, 0.7, 0.01, 0.01)} material={glow("#3f7dff")} position={[0, 0.01, -0.05]} />
+        {[0.22, -0.22].map((y) => <mesh key={y} geometry={geo.rrect(0.85, 0.09, 0.02, 0.02)} material={paper("#d9b866")} position={[0, y, -0.06]} rotation={[0, 0, y > 0 ? 0.12 : -0.1]} />)}
+      </group>
     </group>
   );
 };
@@ -191,7 +198,7 @@ const Holders: React.FC<{ t: number; releaseR?: number; onlyL?: boolean; noCrouc
     <>
       <SWAT x={-1.2} z={-0.2} armR={1.25 + Math.sin(tw * 7) * 0.05} armL={0.5} tilt={0.08} />
       {!onlyL && <SWAT x={1.2} z={-0.2} armL={lerp(1.25 + Math.sin(tw * 7 + 1) * 0.05, 0.25, releaseR)} armR={0.5} tilt={lerp(-0.08, 0, releaseR)} eyes={releaseR > 0.5 ? "wide" : "angry"} />}
-      {!onlyL && !noCrouch && <group position={[-0.95, -0.62, 0.4]}><SWAT x={0} z={0} armL={0.9} armR={1.7 + Math.sin(tw * 9) * 0.08} tilt={-0.25} /></group>}
+      {!onlyL && !noCrouch && <group position={[-1.3, -0.62, 0.5]}><SWAT x={0} z={0} armL={0.9} armR={1.7 + Math.sin(tw * 9) * 0.08} tilt={-0.25} /></group>}
     </>
   );
 };
@@ -516,7 +523,7 @@ const CrackFlash: React.FC<{ t: number }> = ({ t }) => {
 
 const Title: React.FC<{ t: number }> = ({ t }) => {
   const c = TT(), lt = t - c.start;
-  const k1 = 1.25 - 0.25 * easeOutBack(prog(lt, 0, 0.3)), k2 = easeOutBack(prog(lt, 0.3, 0.7));
+  const k1 = 0.6 + 0.4 * easeOutBack(prog(lt, 0, 0.3)), k2 = easeOutBack(prog(lt, 0.3, 0.7));
   const dots = Math.min(3, Math.floor(prog(lt, 0.9, 1.8) * 4));
   const wob = (Math.floor(lt * 6) % 2 ? 1 : -1) * 0.6;
   const fadeIn = 1;
