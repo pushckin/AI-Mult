@@ -22,7 +22,8 @@ const q_3 = subT("p1_pm2", "Третья"), q_wall = subT("p1_pm2", "Строи�
 const T_REL = O.start + 2.0;          // кружка выскальзывает
 const T_HIT = O.end - 0.05;           // удар об пол
 const T_SLAM = lerp(q_wall.start, q_wall.end, 0.5); // кулак об стол (на «стену»)
-const T_DOOR = AI.start + 0.12;       // дверь распахивается
+const T_DOOR = AI.start + 0.12;
+const WW3_CUT = lerp(q_3.start, q_wall.start, 0.55); // врезка экрана со штампом       // дверь распахивается
 
 const pmMouth = (t: number) => mouthFor("p1", ["p1_pm1", "p1_pm2"], t);
 const defMouth = (t: number) => mouthFor("p1", ["p1_def1"], t);
@@ -155,10 +156,10 @@ shots.push({
   id: "bk_pm_mug", from: O.start + 1.9, to: O.end - 0.22, bg: "#0b0d0c",
   r: (t) => {
     const k = prog(t, O.start + 1.9, O.end - 0.22);
-    const a = 2.25;
+    const a = 1.55;
     const [hx, hy] = handPos(1, a);
     return <>
-      <Cam pos={[0.3, 1.75, lerp(-0.2, -0.6, k)]} look={[0.25, 1.12, -3.55]} fov={40} />
+      <Cam pos={[0.42, 1.75, lerp(-0.2, -0.6, k)]} look={[0.38, 1.1, -3.55]} fov={40} />
       <Room t={t} hide={["old", "slick"]}
         pm={{ eyes: "wide", lookY: 0.9, mouth: "o", brow: 1, armR: a, armL: 0.2, sweat: t > T_REL ? 0.5 : 0, handR: t < T_REL ? <group position={[0.02, 0.06, 0.08]} rotation={[0, 0, -2.25 + 2.25]}><Mug /></group> : undefined }}
         mug={<MugCrash x={PM_POS[0] + hx + 0.02} y0={hy + 0.06} z={PM_POS[2] + 0.12} tRelease={T_REL} tHit={T_HIT} t={t} />} />
@@ -170,11 +171,11 @@ shots.push({
 shots.push({
   id: "bk_crash", from: O.end - 0.22, to: P1.start, bg: "#0b0d0c",
   r: (t) => {
-    const [hx, hy] = handPos(1, 2.25);
+    const [hx, hy] = handPos(1, 1.55);
     const [sx, sy] = camShake(t, [[T_HIT, 0.03]]);
     return <>
       <Cam pos={[1.15 + sx, 0.5 + sy, -2.55]} look={[0.45, 0.25, -3.5]} fov={42} />
-      <Room t={t} pm={{ eyes: "wide", armR: 2.25 }} mug={<MugCrash x={PM_POS[0] + hx + 0.02} y0={hy + 0.06} z={PM_POS[2] + 0.12} tRelease={T_REL} tHit={T_HIT} t={t} />} />
+      <Room t={t} pm={{ eyes: "wide", armR: 1.55 }} mug={<MugCrash x={PM_POS[0] + hx + 0.02} y0={hy + 0.06} z={PM_POS[2] + 0.12} tRelease={T_REL} tHit={T_HIT} t={t} />} />
     </>;
   },
   o: (t) => <><Vignette />{badge(t)}<Bam t={t} at={T_HIT} text="ДЗЫНЬ!" y={640} /></>,
@@ -366,7 +367,7 @@ shots.push({
   r: (t) => {
     const k = easeInOut(prog(t, a_15.start, a_out.start));
     return <>
-      <Cam pos={[lerp(0.4, 0.15, k), 1.55, lerp(3.4, 2.6, k)]} look={[0.05, 1.0, -0.4]} fov={40} />
+      <Cam pos={[lerp(0.4, 0.15, k), 1.45, lerp(3.6, 2.9, k)]} look={[0.05, 0.62, -0.4]} fov={40} />
       <BarnInterior t={t} men={17} />
     </>;
   },
@@ -390,7 +391,7 @@ shots.push({
   r: (t) => {
     const k = easeInOut(prog(t, a_st.start, AGRI_BACK));
     return <>
-      <Cam pos={[lerp(-0.5, 0.5, k), 1.4, 3.3]} look={[0, 0.8, -1.2]} fov={42} />
+      <Cam pos={[lerp(-0.6, 0.4, k), 3.1, 3.6]} look={[0, 0.55, -1.2]} fov={42} />
       <BarnInterior t={t} men={11} sheep={false} lying />
       <Sheep position={[2.0, 0, 0.6]} t={t} s={0.9} flip eyes="sad" />
     </>;
@@ -420,15 +421,28 @@ shots.push({
 });
 // 22. «Началась Третья мировая!» — сверхкрупно, глаза
 shots.push({
-  id: "bk_pm_ww3", from: q_3.start, to: q_wall.start, bg: "#050605",
+  id: "bk_pm_ww3", from: q_3.start, to: WW3_CUT, bg: "#050605",
   r: (t) => {
-    const k = easeOut(prog(t, q_3.start, q_wall.start));
+    const k = easeOut(prog(t, q_3.start, WW3_CUT));
     return <>
-      <Cam pos={[0, 1.62, lerp(-1.25, -1.55, k)]} look={[0, 1.25, -3.55]} fov={36} roll={lerp(0, -0.08, k)} />
+      <Cam pos={[0, 1.65, lerp(-0.7, -1.5, k)]} look={[0, 1.22, -3.55]} fov={36} roll={lerp(0, -0.08, k)} />
       <Room t={t} dark={1} pm={{ eyes: "angry", mouth: "talk", mouthOpen: pmMouth(t), sweat: 1 }} />
     </>;
   },
   o: () => <Vignette k={0.8} color="40,0,0" />,
+});
+// 22b. Экран: на карте штамп «ВТОРЖЕНИЕ»
+shots.push({
+  id: "bk_stamp", from: WW3_CUT, to: q_wall.start, bg: "#050605",
+  r: (t) => {
+    const k = easeOut(prog(t, WW3_CUT, q_wall.start));
+    const [sx, sy] = camShake(t, [[WW3_CUT + 0.1, 0.12]]);
+    return <>
+      <Cam pos={[-0.3 + sx, 2.3 + sy, lerp(-4.7, -3.9, k)]} look={[0.1, 2.5, 5]} fov={30} roll={0.05} />
+      <Room t={t} dark={1} backView stamp={t > WW3_CUT + 0.1} />
+    </>;
+  },
+  o: (t) => <><Vignette k={0.8} color="40,0,0" /><Bam t={t} at={WW3_CUT + 0.1} text="ШЛЁП!" x={540} y={420} color="#ff6b6b" /></>,
 });
 // 23. «Строим стену!» — кулак об стол, тревога
 shots.push({

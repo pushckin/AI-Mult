@@ -424,9 +424,17 @@ export const BarnInterior: React.FC<{ t: number; men: number; sheep?: boolean; l
         <Piece g={geo.arc(0.3, 0.2, 0, Math.PI, 0.05)} c="#333" />
         <Piece g={geo.ellipse(0.08, 0.07, 0.04)} c="#fff" m={glow("#fff1b0")} p={[0, -0.03, 0.03]} />
       </group>
+      {lying && <>
+        <pointLight position={[0, 1.2, 2]} intensity={4} distance={6} color="#7fd0ff" />
+        {[-1.6, 0, 1.6].map((x, i) => <group key={i} position={[x, 0, 1.3]}>
+          <Piece g={geo.rrect(0.9, 0.5, 0.05, 0.5)} c="#d8b24a" p={[0, 0.25, 0]} />
+          <group position={[0, 0.85, 0]} rotation={[0, Math.PI, 0]}><Gear kind={2} s={0.9} /></group>
+          <mesh position={[0, 0.85, 0.03]} rotation={[0, Math.PI, 0]} material={glow(i % 2 ? "#7fd0ff" : "#ff7fd8", 0.9)}><planeGeometry args={[0.75, 0.42]} /></mesh>
+        </group>)}
+      </>}
       {sheep && <Sheep position={[-0.35, 0, 0.35]} t={t} s={1.1} eyes="wide" />}
       {spots.slice(0, men).map((p, i) => (
-        <Man key={i} i={i} t={t} position={p} extra={lying ? { legs: "sit", position: [p[0], 0.0, p[2]] } : undefined} />
+        <Man key={i} i={i} t={t} position={p} extra={lying ? { legs: "sit", position: [p[0], 0.0, p[2]], eyes: "tiny", mouth: i % 2 ? "grin" : "o", armL: 1.1, armR: 1.1, handR: <group position={[-0.05, 0.05, 0.1]}><Pad /></group> } : undefined} />
       ))}
     </group>
   );

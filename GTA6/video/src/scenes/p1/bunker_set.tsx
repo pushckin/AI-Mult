@@ -95,8 +95,8 @@ export const Flag: React.FC<{ position: [number, number, number]; t: number; see
 };
 
 // ---------- карта Новой Зеландии и счётчик ----------
-const NI: [number, number][] = [[0.47, 0.03], [0.52, 0.09], [0.56, 0.16], [0.6, 0.22], [0.66, 0.27], [0.73, 0.29], [0.81, 0.28], [0.88, 0.31], [0.85, 0.38], [0.8, 0.42], [0.76, 0.48], [0.7, 0.54], [0.64, 0.58], [0.6, 0.53], [0.57, 0.47], [0.51, 0.43], [0.54, 0.38], [0.58, 0.35], [0.55, 0.28], [0.5, 0.2], [0.45, 0.11], [0.42, 0.06]];
-const SI: [number, number][] = [[0.57, 0.6], [0.63, 0.62], [0.6, 0.68], [0.55, 0.75], [0.49, 0.82], [0.42, 0.88], [0.34, 0.93], [0.25, 0.93], [0.21, 0.88], [0.27, 0.81], [0.35, 0.74], [0.43, 0.68], [0.5, 0.63]];
+const NI: [number, number][] = [[0.512, 0.058], [0.532, 0.058], [0.612, 0.146], [0.648, 0.22], [0.684, 0.2], [0.728, 0.282], [0.868, 0.282], [0.836, 0.35], [0.832, 0.392], [0.77, 0.404], [0.672, 0.548], [0.642, 0.527], [0.666, 0.472], [0.652, 0.432], [0.58, 0.392], [0.598, 0.37], [0.642, 0.31], [0.623, 0.234], [0.598, 0.194], [0.548, 0.132]];
+const SI: [number, number][] = [[0.512, 0.472], [0.548, 0.527], [0.604, 0.499], [0.61, 0.554], [0.574, 0.602], [0.537, 0.698], [0.488, 0.704], [0.426, 0.738], [0.39, 0.841], [0.334, 0.875], [0.242, 0.888], [0.137, 0.862], [0.155, 0.8], [0.217, 0.752], [0.285, 0.704], [0.402, 0.622], [0.444, 0.554], [0.476, 0.494]];
 function islandPath(g: CanvasRenderingContext2D, pts: [number, number][], W: number, H: number, ox: number, oy: number, sx: number, sy: number) {
   g.beginPath();
   pts.forEach(([x, y], i) => { const X = ox + x * sx, Y = oy + y * sy; if (i) g.lineTo(X, Y); else g.moveTo(X, Y); });
@@ -128,12 +128,13 @@ export function drawMap(n: number, alarm: number, stamp: boolean) {
     g.strokeStyle = alarm > 0.5 ? "rgba(255,90,90,0.25)" : "rgba(120,220,255,0.18)"; g.lineWidth = 2;
     for (let x = 0; x < W; x += W / 12) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
     for (let y = 0; y < H; y += W / 12) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
-    const sx = W * 1.0, sy = H * 0.98, ox = -W * 0.04, oy = H * 0.01;
+    const sx = W, sy = H, ox = 0, oy = 0;
     for (const pts of [NI, SI]) {
       islandPath(g, pts, W, H, ox + 8, oy + 10, sx, sy); g.fillStyle = "rgba(0,0,0,0.45)"; g.fill();
       islandPath(g, pts, W, H, ox, oy, sx, sy); g.fillStyle = alarm > 0.5 ? "#b23a2e" : "#5fae4e"; g.fill();
       g.lineWidth = 6; g.strokeStyle = alarm > 0.5 ? "#ffb3a0" : "#c9f2a8"; g.stroke();
     }
+    g.fillStyle = alarm > 0.5 ? "#b23a2e" : "#5fae4e"; g.beginPath(); g.ellipse(ox + 0.217 * sx, oy + 0.916 * sy, W * 0.03, H * 0.02, 0, 0, 7); g.fill();
     // люди
     const d = dots();
     for (let i = 0; i < Math.min(n, d.length); i++) {
@@ -142,7 +143,7 @@ export function drawMap(n: number, alarm: number, stamp: boolean) {
       g.beginPath(); g.arc(ox + x * sx, oy + y * sy, W * 0.011, 0, 7); g.fill();
     }
     // Веллингтон
-    const wx = ox + 0.63 * sx, wy = oy + 0.565 * sy;
+    const wx = ox + 0.642 * sx, wy = oy + 0.527 * sy;
     g.fillStyle = "#fff"; g.beginPath(); g.arc(wx, wy, W * 0.022, 0, 7); g.fill();
     g.fillStyle = "#e53935"; g.beginPath(); g.arc(wx, wy, W * 0.013, 0, 7); g.fill();
     g.font = `800 ${Math.floor(W * 0.045)}px ${FONT}`; g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "middle";
@@ -441,6 +442,7 @@ export interface RoomState {
   extras?: Record<string, Partial<CharacterProps>>;
   tableJump?: number;     // подскок вещей на столе
   mug?: React.ReactNode;  // падающая кружка (мировые координаты)
+  stamp?: boolean;        // штамп «ВТОРЖЕНИЕ» на карте
 }
 
 export const PM_POS: [number, number, number] = [0, 0, -3.55];
@@ -496,7 +498,7 @@ export const Room: React.FC<RoomState> = (s) => {
       <Beacon position={[2.05, 2.75, -4.9]} t={t + 0.13} on={alarmOn} />
       {/* огромный экран на передней стене */}
       <group position={[0, 2.75, 5.12]} rotation={[0, Math.PI, 0]}>
-        <BigScreen t={t} alarm={alarmOn ? 1 : 0} stamp={!!s.alarm} />
+        <BigScreen t={t} alarm={alarmOn ? 1 : 0} stamp={!!s.alarm || !!s.stamp} />
       </group>
 
       {/* стол */}

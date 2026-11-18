@@ -232,14 +232,14 @@ function shotCmdFront(t: number, tight = false) {
 function shotCmdBack(t: number) {
   const c = C1(), a = c.start + 2.0, k = prog(t, a, c.end - 1.3);
   const m = mouthFor(P, ["p1_cmd1"], t);
-  const pos: V3 = [CMD_POS[0] - 1.0, CMD_POS[1] + 3.4 - k * 0.3, CMD_POS[2] - 2.4 + k * 0.4];
-  const look: V3 = [CMD_POS[0] + 2, 0, 12];
+  const pos: V3 = [CMD_POS[0] + 3.5 - k * 1.5, WH - 6 + k * 1.5, 15 - k * 3];
+  const look: V3 = [CMD_POS[0], WH - 0.5, -1];
   return (
     <>
-      <Cam pos={pos} look={look} fov={58 - k * 6} />
-      <World t={t} x0={-24} x1={30} crowd={beachState(t)} fog={[60, 140, "#2b2632"]} />
+      <Cam pos={pos} look={look} fov={60 - k * 8} />
+      <World t={t} x0={-24} x1={30} crowd={beachState(t, { armsAll: true })} fog={[60, 140, "#2b2632"]} />
       <Commander t={t} open={m} />
-      <Waves t={t} o={[CMD_POS[0] + 1.2, CMD_POS[1] + 1.1, CMD_POS[2] + 0.6]} dir={[0.25, -0.5, 1]} s={2.2} />
+      <Waves t={t} o={[CMD_POS[0] + 1.2, CMD_POS[1] + 1.1, CMD_POS[2] + 0.6]} dir={[0.3, -0.45, 1]} s={1.6} />
     </>
   );
 }
@@ -442,20 +442,20 @@ function shotChant(t: number) {
   const cams: [V3, V3, number][] = [
     [[0, 10.5, 0.4], [0, 0.8, 15], 54],
     [[0.4, 3.2, 2.0], [0, 1.0, 12], 46],
-    [[0.2, 1.75, 4.2], [0.05, 2.0, 8.5], 48],
-    [[7, 5, 31], [0, 11, 0], 56],
+    [[0.2, 2.0, 4.0], [0.05, 1.25, 8.5], 50],
+    [[4, 3.2, 21], [0, 9.5, 0], 62],
     [[-7, 4.5, 2.5], [2, 1.2, 12], 50],
-    [[-1.1, 1.95, 6.3], [-1.55, 1.75, 8.1], 42],
+    [[-1.45, 2.0, 5.3], [-1.75, 1.55, 8.1], 46],
     [[0, 0.9, 5.2], [0, 3.6, 20], 62],
-    [[0.2, 1.8, 5.0], [0.1, 1.9, 8.3], 44],
-    [[0.62, 2.0, 6.8], [0.62, 1.85, 8.05], 40],
+    [[0.2, 2.0, 4.9], [0.1, 1.3, 8.3], 46],
+    [[0.62, 2.05, 6.0], [0.62, 1.55, 8.05], 44],
   ];
   const sylDur = (c.end - c.start) / 9;
   const perSyl = sylDur > 0.8;           // длинный хор: смена плана на каждый слог
   const ci = perSyl ? syl : grp;
   const lk = perSyl ? prog(t, sylT, sylT + sylDur) : gk;
   const [p0, l0, fov] = cams[ci];
-  const pos: V3 = [p0[0] + sx, p0[1] + sy - lk * 0.25, p0[2] + lk * (ci === 3 ? -3 : 0.5)];
+  const pos: V3 = [p0[0] + sx, p0[1] + sy - lk * 0.15, p0[2] + lk * (ci === 3 ? -2 : 0.35)];
   const up = t > c.end || f < 0.7;
   const m = mouthFor(P, ["p1_chant"], t);
   return (
