@@ -402,7 +402,7 @@ shots.push({
     const k = easeInOut(prog(t, a_st.start, AGRI_BACK));
     return <>
       <Cam pos={[lerp(-0.5, 0.3, k), 3.1, 4.4]} look={[0, 0.65, -1.2]} fov={44} />
-      <BarnInterior t={t} men={9} sheep={false} lying board={false} />
+      <BarnInterior t={t} men={9} sheep={false} lying board={false} sign />
       <Sheep position={[2.0, 0, 0.6]} t={t} s={0.9} flip eyes="sad" />
     </>;
   },

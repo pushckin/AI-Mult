@@ -392,7 +392,7 @@ export const Man: React.FC<{ i: number; position: [number, number, number]; t: n
   );
 };
 
-export const BarnInterior: React.FC<{ t: number; men: number; sheep?: boolean; lying?: boolean; board?: boolean }> = ({ t, men, sheep = true, lying, board = true }) => {
+export const BarnInterior: React.FC<{ t: number; men: number; sheep?: boolean; lying?: boolean; board?: boolean; sign?: boolean }> = ({ t, men, sheep = true, lying, board = true, sign = false }) => {
   // ряды мужиков за овцой, каждый на своей глубине (без взаимопроникновения)
   const rows: [number, number[]][] = [[0.1, [-1.55, 1.0]], [-0.55, [-1.05, 0.05, 1.1]], [-1.15, [-1.6, -0.5, 0.55, 1.6]], [-1.75, [-1.05, 0.05, 1.1]], [-2.35, [-1.6, -0.5, 0.55, 1.6]]];
   const spots: [number, number, number][] = [];
@@ -402,7 +402,7 @@ export const BarnInterior: React.FC<{ t: number; men: number; sheep?: boolean; l
       <ambientLight intensity={1.05} color="#ffe9c4" />
       <directionalLight position={[2, 6, 6]} intensity={1.2} color="#ffe2b0" />
       <pointLight position={[0, 3, 1]} intensity={3} distance={8} color="#ffcf80" />
-      <CanvasPlane texKey={board ? "barnBack" : "barnBackSign"} w={10} h={5} px={1024} glowing={false} draw={drawPlanks("#8b3a24", 4, board ? undefined : "СТОЙЛО №3 · ОВЦЫ", 0.4)} position={[0, 2.5, -3.6]} />
+      <CanvasPlane texKey={sign ? "barnBackSign" : "barnBack"} w={10} h={5} px={1024} glowing={false} draw={drawPlanks("#8b3a24", 4, sign ? "СТОЙЛО №3 · ОВЦЫ" : undefined, 0.4)} position={[0, 2.5, -3.6]} />
       <CanvasPlane texKey="barnL" w={10} h={5} px={1024} glowing={false} draw={drawPlanks("#7a3220", 5)} position={[-3.6, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} />
       <CanvasPlane texKey="barnR" w={10} h={5} px={1024} glowing={false} draw={drawPlanks("#7a3220", 6)} position={[3.6, 2.5, 0]} rotation={[0, -Math.PI / 2, 0]} />
       <Sheet w={10} h={12} color="#d9b65a" rotation={[-Math.PI / 2, 0, 0]} />
