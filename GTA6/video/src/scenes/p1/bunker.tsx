@@ -20,7 +20,7 @@ const a_each = subT("p1_agri1", "На каждую"), a_15 = subT("p1_agri1", "�
 const q_3 = subT("p1_pm2", "Третья"), q_wall = subT("p1_pm2", "Строим"), q_now = subT("p1_pm2", "Немедленно");
 
 const T_REL = O.start + 1.72;          // кружка выскальзывает
-const T_HIT = O.start + 2.3;          // удар об пол
+const T_HIT = O.start + 2.2;          // удар об пол
 const T_SLAM = lerp(q_wall.start, q_wall.end, 0.5); // кулак об стол (на «стену»)
 const T_DOOR = AI.start + 0.12;
 const WW3_CUT = lerp(q_3.start, q_wall.start, 0.55); // врезка экрана со штампом
@@ -72,12 +72,12 @@ const Bam: React.FC<{ t: number; at: number; text: string; color?: string; x?: n
     </AbsoluteFill>
   );
 };
-const Caption: React.FC<{ text: string; t: number; at: number; y?: number; bg?: string; fg?: string; rot?: number }> = ({ text, t, at, y = 330, bg = "#f7e9c9", fg = "#111", rot = -3 }) => {
+const Caption: React.FC<{ text: string; t: number; at: number; y?: number; x?: number; size?: number; bg?: string; fg?: string; rot?: number }> = ({ text, t, at, y = 330, x, size = 58, bg = "#f7e9c9", fg = "#111", rot = -3 }) => {
   if (t < at) return null;
   const k = easeOutBack(prog(t, at, at + 0.2));
   return (
     <AbsoluteFill style={{ pointerEvents: "none", alignItems: "center" }}>
-      <div style={{ position: "absolute", top: y, transform: `scale(${k}) rotate(${rot}deg)`, background: bg, border: "6px solid #111", padding: "10px 26px", boxShadow: "8px 8px 0 rgba(0,0,0,0.45)", fontFamily: FONT, fontWeight: 900, fontSize: 58, color: fg, whiteSpace: "nowrap" }}>{text}</div>
+      <div style={{ position: "absolute", top: y, ...(x !== undefined ? { left: x, transformOrigin: "left center" } : {}), transform: `scale(${k}) rotate(${rot}deg)`, background: bg, border: "6px solid #111", padding: "10px 26px", boxShadow: "8px 8px 0 rgba(0,0,0,0.45)", fontFamily: FONT, fontWeight: 900, fontSize: size, color: fg, whiteSpace: "nowrap" }}>{text}</div>
     </AbsoluteFill>
   );
 };
@@ -131,6 +131,13 @@ const STAR = (() => {
   for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; const r = i % 2 ? 0.12 : 0.32; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
   return geo.poly("slamStar", pts, 0, 0.01);
 })();
+
+const FIST = (
+  <group position={[0, -0.02, 0.06]}>
+    <mesh position={[0, 0, 0.02]} geometry={geo.ellipse(0.13, 0.12, 0.05)} material={glow("#e9bf96")} />
+    {[-0.06, 0, 0.06].map((x) => <mesh key={x} position={[x, 0.05, 0.05]} geometry={geo.rrect(0.05, 0.03, 0.012, 0.02)} material={glow("#c99a72")} />)}
+  </group>
+);
 
 const shots: Shot[] = [];
 
@@ -218,7 +225,7 @@ shots.push({
       </group>
     </>;
   },
-  o: (t) => <><Vignette /><Caption t={t} at={s_pm2.start + 0.25} text="ВЧЕРА: 5 000 000" y={300} /><Caption t={t} at={s_pm2.start + 1.2} text="СЕГОДНЯ: 86 000 000+" y={410} bg="#c62828" fg="#fff" rot={2} /></>,
+  o: (t) => <><Vignette /><Caption t={t} at={s_pm2.start + 0.25} text="ВЧЕРА: 5 000 000" y={640} x={50} size={48} /><Caption t={t} at={s_pm2.start + 1.2} text="СЕГОДНЯ: 86 000 000+" y={750} x={70} size={48} bg="#c62828" fg="#fff" rot={2} /></>,
 });
 // 7. «Откуда, … взялось ещё восемьдесят?!» — сверхкрупно, тряска
 shots.push({
@@ -340,7 +347,7 @@ shots.push({
       {t > T_DOOR && <TearSpray t={t} x={ax} y={1.5} z={az} />}
     </>;
   },
-  o: (t) => <><Vignette /><Bam t={t} at={T_DOOR} text="БАХ!" x={700} y={420} /></>,
+  o: (t) => <><Vignette k={0.3} /><Bam t={t} at={T_DOOR} text="БАХ!" x={700} y={420} /></>,
 });
 // 15. «Нашим овцам …!» — крупно, рыдает с фото овечки
 shots.push({
@@ -362,7 +369,7 @@ shots.push({
     const k = prog(t, a_each.start, a_15.start);
     const men = Math.min(16, 1 + Math.floor(easeIn(k) * 16));
     return <>
-      <Cam pos={[lerp(0.3, -0.1, k), 2.1, lerp(5.8, 5.2, k)]} look={[0, 0.75, -1]} fov={44} />
+      <Cam pos={[lerp(0.3, -0.1, k), 1.75, lerp(5.8, 5.2, k)]} look={[0, 0.35, -1]} fov={44} />
       <BarnInterior t={t} men={men} board={false} />
     </>;
   },
@@ -458,27 +465,30 @@ shots.push({
 shots.push({
   id: "bk_slam", from: q_wall.start, to: q_now.start, bg: "#0b0d0c",
   r: (t) => {
-    const up = prog(t, q_wall.start, T_SLAM - 0.05);
-    const down = prog(t, T_SLAM - 0.05, T_SLAM);
-    const armR = t < T_SLAM - 0.05 ? lerp(1.2, 2.9, easeOut(up)) : lerp(2.9, 0.75, down);
+    const up = prog(t, q_wall.start, T_SLAM - 0.26);
+    const down = prog(t, T_SLAM - 0.26, T_SLAM);
+    const armR = t < T_SLAM - 0.26 ? lerp(1.2, 2.9, easeOut(up)) : lerp(2.9, 0.6, easeIn(down));
+    const insert = t >= T_SLAM - 0.3 && t < T_SLAM + 0.32; // врезка: кулак крупно
     const [sx, sy] = camShake(t, [[T_SLAM, 0.16]]);
     const jump = t > T_SLAM ? Math.max(0, Math.sin(prog(t, T_SLAM, T_SLAM + 0.3) * Math.PI)) * 0.18 : 0;
     const alarm = t >= T_SLAM;
     return <>
-      <Cam pos={[0.35 + sx, 2.1 + sy, -0.3]} look={[0.2, 1.05, -3.3]} fov={42} />
+      {insert
+        ? <Cam pos={[1.1 + sx * 0.5, 1.55 + sy * 0.5, -1.5]} look={[0.5, 0.55, -3.35]} fov={44} />
+        : <Cam pos={[0.35 + sx, 2.1 + sy, -0.3]} look={[0.2, 1.05, -3.3]} fov={42} />}
       <Room t={t} alarm={alarm} tableJump={jump} hide={["curly"]}
-        pm={{ eyes: "angry", mouth: "scream", mouthOpen: 0.4 + pmMouth(t) * 0.6, armR, armL: 0.5, bodyTilt: t > T_SLAM - 0.05 ? -0.12 : 0.05, sweat: 1, squash: t > T_SLAM && t < T_SLAM + 0.1 ? 1.12 : 1 }}
+        pm={{ eyes: "angry", mouth: "scream", mouthOpen: 0.4 + pmMouth(t) * 0.6, armR, armL: 0.5, handR: FIST, bodyTilt: t > T_SLAM - 0.05 ? -0.12 : 0.05, sweat: 1, squash: t > T_SLAM && t < T_SLAM + 0.1 ? 1.12 : 1 }}
         def={{ eyes: "wide", bodyTilt: 0.1 }}
         agri={agriSob(t, { mouth: "o", eyes: "wide", tears: 0.6 })}
         extras={alarm ? { bun: { eyes: "wide", bodyTilt: 0.2 }, old: { eyes: "wide" }, slick: { eyes: "wide", mouth: "o" } } : undefined} />
       {/* удар кулака: вспышка-звезда и трещины на столе */}
-      {t >= T_SLAM && t < T_SLAM + 0.35 && <group position={[0.6, 0.8, -3.3]} scale={0.6 + prog(t, T_SLAM, T_SLAM + 0.15) * 0.6}>
+      {t >= T_SLAM && t < T_SLAM + 0.35 && <group position={[0.62, 0.78, -3.3]} scale={0.35 + prog(t, T_SLAM, T_SLAM + 0.15) * 0.35}>
         <mesh material={glow("#fff3a0", 0.95)} geometry={STAR} />
       </group>}
       {t >= T_SLAM && [0, 1, 2, 3].map((i) => <mesh key={i} position={[0.45 + i * 0.06, 0.655, -2.9 - i * 0.03]} rotation={[-Math.PI / 2, 0, i * 1.3]} material={glow("#111")}><planeGeometry args={[0.32, 0.018]} /></mesh>)}
     </>;
   },
-  o: (t) => <><RedFlash t={t} from={T_SLAM} /><Vignette /><Bam t={t} at={T_SLAM} text="БАМ!" x={300} y={420} /></>,
+  o: (t) => <><RedFlash t={t} from={T_SLAM} /><Vignette /><Bam t={t} at={T_SLAM} text="БАМ!" x={310} y={380} /></>,
 });
 // 24. «Немедленно!» — сверхкрупно, красная мигалка
 shots.push({
@@ -501,8 +511,8 @@ shots.push({
     const tq = twos(t);
     const [sx, sy] = camShake(t, [[NOW_CUT, 0.08]], 0.02);
     return <>
-      <Cam pos={[lerp(0.1, 0.4, k) + sx, lerp(2.4, 2.9, k) + sy, lerp(0.0, 1.6, k)]} look={[0, 1.3, -2.8]} fov={44} roll={lerp(-0.05, 0.03, k)} />
-      <Room t={t} alarm hide={["old", "slick"]}
+      <Cam pos={[lerp(0.0, 0.1, k) + sx, lerp(2.3, 2.6, k) + sy, lerp(0.3, 1.5, k)]} look={[0, 1.3, -3.1]} fov={44} roll={lerp(-0.05, 0.03, k)} />
+      <Room t={t} alarm hide={["old", "slick", "curly", "bun"]}
         pm={{ eyes: "angry", mouth: "scream", mouthOpen: 0.4 + pmMouth(t) * 0.6, sweat: 1, armL: 0.4, armR: 1.65 + Math.sin(tq * 16) * 0.1, bodyTilt: -0.08 }}
         def={{ eyes: "angry", mouth: "scream", mouthOpen: 0.7, armR: 2.7, armL: 0.3, handR: <group rotation={[0, 0, 0.3]}><Binoculars /></group> }}
         agri={agriSob(t, { eyes: "wide", mouth: "scream", tears: 0.5, armL: 2.6, armR: 2.6 })}

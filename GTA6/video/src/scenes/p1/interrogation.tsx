@@ -7,7 +7,7 @@ import { Character } from "../../kit/Character";
 import { CAST } from "../../kit/cast";
 import { Cam, PaperLights, Sheet, Puff, CanvasPlane } from "../../kit/Stage";
 import { geo, paper, glow, rng, FONT } from "../../kit/paper";
-import { WallSeg, WH, Gamepad, PowerStrip, Tooth, WireBit, Clouds, Hills, Sheep, SpitSpray, Spark, starG, Box, PaperCrowd, PM, cell } from "./wall_kit";
+import { WallSeg, WH, Gamepad, PowerStrip, Tooth, WireBit, Clouds, Hills, Sheep, SpitSpray, Spark, starG, Box, PaperCrowd, PM, cell, Gear3D } from "./wall_kit";
 
 const P = "p1" as const;
 const GR = () => cue(P, "p1_grab"), C2 = () => cue(P, "p1_cmd2"), SP = () => cue(P, "p1_spit"), G1 = () => cue(P, "p1_gamer1"), ZM = () => cue(P, "p1_zoom"), TT = () => cue(P, "p1_title");
@@ -21,9 +21,9 @@ const subsIn = (a: number, b: number) => part(P).subs.filter((s) => s.start >= a
 // ======================= ДЕКОРАЦИЯ =======================
 const drawStencil = (g: CanvasRenderingContext2D, W: number, H: number) => {
   g.clearRect(0, 0, W, H);
-  g.fillStyle = "rgba(20,20,20,0.85)"; g.font = `900 ${H * 0.3}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle";
-  g.fillText("НОВАЯ ЗЕЛАНДИЯ", W / 2, H * 0.3);
-  g.font = `800 ${H * 0.2}px ${FONT}`; g.fillText("СУВЕРЕННАЯ ТЕРРИТОРИЯ", W / 2, H * 0.7);
+  g.fillStyle = "rgba(20,20,20,0.85)"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.font = `900 ${H * 0.19}px ${FONT}`; g.fillText("СУВЕРЕННАЯ ТЕРРИТОРИЯ", W / 2, H * 0.34);
+  g.font = `800 ${H * 0.19}px ${FONT}`; g.fillText("НОВОЙ ЗЕЛАНДИИ", W / 2, H * 0.7);
   g.strokeStyle = "rgba(20,20,20,0.85)"; g.lineWidth = H * 0.04; g.strokeRect(W * 0.02, H * 0.04, W * 0.96, H * 0.92);
 };
 const drawGraffiti = (g: CanvasRenderingContext2D, W: number, H: number) => {
@@ -73,12 +73,12 @@ const InnerSet: React.FC<{ t: number; crumble?: number }> = ({ t, crumble = 0 })
       <Sheet w={500} h={300} color="#6fae4f" position={[0, -0.01, 150]} rotation={[-Math.PI / 2, 0, 0]} />
       {/* стена (внутренняя сторона) */}
       <group position={[0, 0, WZ]}>
-        {[-20, -12, -4, 4, 12, 20].map((x, i) => <WallSeg key={x} x={x} k={1} seed={40 + i} parapet={false} />)}
+        {Array.from({ length: 13 }, (_, i) => -24 + i * 4).map((x, i) => <WallSeg key={x} x={x} k={1} seed={40 + i} parapet={false} />)}
       </group>
-      <CanvasPlane texKey="nz_stencil" w={4.2} h={1.5} px={768} glowing={false} transparent draw={drawStencil} position={[-2.6, 3.4, WZ + 0.31]} />
-      <CanvasPlane texKey="nz_graffiti" w={3.4} h={1.9} px={768} glowing={false} transparent draw={drawGraffiti} position={[3.0, 2.0, WZ + 0.31]} />
+      <CanvasPlane texKey="nz_stencil2" w={5.6} h={1.7} px={1024} glowing={false} transparent draw={drawStencil} position={[-0.2, 4.5, WZ + 0.31]} />
+      <CanvasPlane texKey="nz_graffiti" w={3.0} h={1.7} px={768} glowing={false} transparent draw={drawGraffiti} position={[-3.6, 1.7, WZ + 0.31]} />
       {/* «верёвочная лестница» из удлинителей, свисающая со стены */}
-      <group position={[1.35, 0, WZ + 0.42]}>
+      <group position={[3.9, 0, WZ + 0.42]}>
         {[-0.45, 0.45].map((x) => <mesh key={x} geometry={geo.rrect(0.07, 14, 0.03, 0.04)} material={paper("#ff7f11")} position={[x, 7, 0]} rotation={[0, 0, Math.sin(tw * 2) * 0.004]} />)}
         {Array.from({ length: 10 }, (_, i) => <mesh key={i} geometry={geo.rrect(1.05, 0.14, 0.04, 0.05)} material={paper(i % 2 ? "#f3f1ea" : "#dcd8cc")} position={[0, 0.9 + i * 1.3, 0.03]} />)}
       </group>
@@ -123,7 +123,7 @@ function overFlyers(t: number): PM[] {
 // ======================= ПЕРСОНАЖИ =======================
 const GEAR_BACK = <group><mesh geometry={geo.rrect(0.95, 0.62, 0.05, 0.08)} material={paper("#202020")} /><mesh geometry={geo.rrect(0.84, 0.5, 0.04, 0.08)} material={paper("#3d5a8a")} position={[0, 0, 0.02]} /></group>;
 
-const SPIT_SPOTS: [number, number, number][] = [[-0.38, 1.0, 0.035], [0.36, 1.06, 0.03], [-0.15, 1.6, 0.03], [0.2, 1.62, 0.025], [-0.42, 1.2, 0.025], [0.43, 0.98, 0.022], [0.0, 0.88, 0.028]];
+const SPIT_SPOTS: [number, number, number][] = [[-0.38, 1.0, 0.02], [0.36, 1.06, 0.018], [-0.15, 1.6, 0.016], [0.42, 1.18, 0.015]];
 interface GamerState { y?: number; x?: number; eyes?: "crazy" | "wide" | "angry"; mouth?: "grin" | "talk" | "o" | "teethGrit" | "closed"; open?: number; armL?: number; armR?: number; wire?: boolean; strip?: boolean; tilt?: number; headTilt?: number; spit?: number; squash?: number; gap?: boolean; legs?: "stand" | "run"; lookX?: number; lookY?: number }
 const Gamer: React.FC<{ s: GamerState; t: number }> = ({ s, t }) => {
   const mo = s.mouth ?? "grin";
@@ -138,13 +138,14 @@ const Gamer: React.FC<{ s: GamerState; t: number }> = ({ s, t }) => {
           {s.gap && mo === "grin" && <mesh geometry={geo.rrect(0.05, 0.04, 0.005, 0.02)} material={paper("#2a0b0b")} position={[0.05, 1.11, 0.2]} />}
           {/* слюна командира на лице */}
           {SPIT_SPOTS.slice(0, Math.floor((s.spit ?? 0) * SPIT_SPOTS.length)).map(([x, y, r], i) => (
-            <mesh key={i} geometry={geo.ellipse(r, r * 1.25, 0.01)} material={glow("#cfeeff", 0.9)} position={[x, y, 0.22]} />
+            <mesh key={i} geometry={geo.ellipse(r, r * 1.25, 0.01)} material={glow("#f4f7f2", 0.9)} position={[x, y, 0.22]} />
           ))}
         </group>}
-        back={GEAR_BACK} />
+        back={<group scale={[-1, 1, 1]}><Gear3D kind={0} /></group>} />
       {/* затылок (для кадров со спины) */}
       <mesh geometry={geo.ellipse(0.5, 0.44, 0.03)} material={paper("#3a2414")} position={[0, 1.47, -0.075]} />
-      <mesh geometry={geo.arc(0.36, 0.2, 0, Math.PI, 0.03)} material={paper("#4a505c")} position={[0, 0.92, -0.08]} />
+      <mesh geometry={geo.arc(0.42, 0.24, 0, Math.PI, 0.03)} material={paper("#6b7280")} position={[0, 0.98, -0.085]} />
+      <mesh geometry={geo.ellipse(0.12, 0.1, 0.02)} material={paper("#a50f18")} position={[-0.52, 1.4, -0.08]} />
     </group>
   );
 };
@@ -158,9 +159,9 @@ const Commander: React.FC<{ s: CmdState }> = ({ s }) => {
       <Character {...CAST.commander} glasses="none" rotationY={Math.PI} eyes={s.eyes ?? "angry"} mouth={s.mouth ?? "scream"} mouthOpen={s.open ?? 0}
         armL={s.armL ?? 0.6} armR={s.armR ?? 1.0} bodyTilt={s.tilt ?? 0} headTilt={s.headTilt ?? 0} sweat={s.sweat ?? 0} />
       {/* свои очки (могут сползать) */}
-      {sh < 1 && (
+      {(
         <mesh geometry={geo.poly("shades2", [[-0.335, 0.065], [0.335, 0.065], [0.3, -0.065], [0.04, -0.086], [0, -0.032], [-0.04, -0.086], [-0.3, -0.065]], 0.03, 0.035)} material={paper("#0d0d0d")}
-          position={[0, 1.46 - easeIn(sh) * 0.32, -0.15 - sh * 0.05]} rotation={[0, Math.PI, sh * 0.5]} />
+          position={[0, 1.46 - easeOut(sh) * 0.12, -0.15 - sh * 0.03]} rotation={[0, Math.PI, sh * 0.22]} />
       )}
       {/* каска со спины */}
       <mesh geometry={geo.arc(0.6, 0.52, 0, Math.PI, 0.04)} material={paper("#4b5320")} position={[0, 1.52, 0.075]} />
@@ -184,13 +185,13 @@ const CollarFist: React.FC = () => (
 
 // ======================= ШОТЫ =======================
 /** базовый «держат с трёх сторон» */
-const Holders: React.FC<{ t: number; releaseR?: number; onlyL?: boolean }> = ({ t, releaseR = 0, onlyL }) => {
+const Holders: React.FC<{ t: number; releaseR?: number; onlyL?: boolean; noCrouch?: boolean }> = ({ t, releaseR = 0, onlyL, noCrouch }) => {
   const tw = twos(t);
   return (
     <>
       <SWAT x={-1.2} z={-0.2} armR={1.25 + Math.sin(tw * 7) * 0.05} armL={0.5} tilt={0.08} />
       {!onlyL && <SWAT x={1.2} z={-0.2} armL={lerp(1.25 + Math.sin(tw * 7 + 1) * 0.05, 0.25, releaseR)} armR={0.5} tilt={lerp(-0.08, 0, releaseR)} eyes={releaseR > 0.5 ? "wide" : "angry"} />}
-      {!onlyL && <SWAT x={-0.62} z={-0.75} y={0.05} armL={0.4} armR={2.3} tilt={-0.12} />}
+      {!onlyL && !noCrouch && <group position={[-0.95, -0.62, 0.4]}><SWAT x={0} z={0} armL={0.9} armR={1.7 + Math.sin(tw * 9) * 0.08} tilt={-0.25} /></group>}
     </>
   );
 };
@@ -230,8 +231,6 @@ function shotGrab(t: number) {
   } else {
     els.push(<Gamer key="g" t={t} s={{ armL: 1.2, armR: 1.2, eyes: "crazy", mouth: "teethGrit", wire: true, tilt: Math.sin(twos(t) * 9) * 0.04 }} />);
     els.push(<Holders key="h" t={t} />);
-    const pk = prog(lt, cloudB, cloudB + 0.35);
-    if (pk < 1) els.push(<Puff key="pf" position={[0, 0.6, 0.5]} scale={1.4 * (1 - pk) + 0.3} color="#e8e3d6" opacity={1 - pk} />);
   }
   return (
     <>
@@ -276,7 +275,7 @@ function shotCmd2(t: number) {
       <Holders t={t} onlyL={onCmd} />
       <CollarFist />
       <Commander s={cmd} />
-      <SpitSpray o={[CX, 1.2, CZ - 0.25]} dir={[0, 0.15, -1]} t={t} active={(tt) => (mouthFor(P, ["p1_cmd2"], tt))} seed={3} n={8} />
+      <SpitSpray o={[CX - 0.05, 1.2, CZ - 0.3]} dir={[-0.35, 0.1, -1]} t={t} active={(tt) => (mouthFor(P, ["p1_cmd2"], tt))} seed={3} n={4} />
     </>
   );
 }
@@ -300,7 +299,7 @@ function shotSpit(t: number) {
       els.push(<group key="wire" position={[0.06 + tk * 0.2, 1.24 - easeIn(tk) * 0.8, 0.22 + tk * 0.2]} rotation={[0, 0, -tk * 2]}><WireBit s={0.95} /></group>);
       for (let i = 0; i < 6; i++) els.push(<mesh key={"d" + i} geometry={geo.ellipse(0.02, 0.025, 0.01)} material={glow(i % 2 ? "#c0161f" : "#cfeeff")} position={[lerp(0.05, -0.4 - hash(i) * 0.3, tk), 1.2 + (hash(i * 3) - 0.3) * 0.25 * tk, 0.3 + tk * 0.4]} />);
     }
-    els.push(<Holders key="h" t={t} />);
+    els.push(<Holders key="h" t={t} noCrouch />);
   } else if (lt < 1.55) {
     // вставка: зуб скачет по бетону у сапог командира
     const k = lt - 0.85;
@@ -311,7 +310,7 @@ function shotSpit(t: number) {
     els.push(<mesh key="bl" geometry={geo.ellipse(0.06, 0.03, 0.005)} material={paper("#b3121b")} position={[-0.3, 0.005, 0.95]} rotation={[-Math.PI / 2, 0, 0]} />);
     els.push(<Gamer key="g" t={t} s={{ eyes: "crazy", mouth: "grin", gap: true, armL: 1.2, armR: 1.2 }} />);
     els.push(<Commander key="cm" s={{ eyes: "angry", mouth: "frown", armR: 0.4 }} />);
-    els.push(<Holders key="h" t={t} />);
+    els.push(<Holders key="h" t={t} noCrouch />);
   } else {
     // достаёт тройник и смотрит в глаза
     const k = prog(lt, 1.6, 2.15);
@@ -321,7 +320,7 @@ function shotSpit(t: number) {
     els.push(<Cam key="c" pos={[1.0, 0.95, 4.3 - prog(lt, 1.55, 3.1) * 0.6]} look={[0.25, 1.3, 0]} fov={44} roll={-0.06} />);
     els.push(<Gamer key="g" t={t} s={{ eyes: "crazy", mouth: "grin", gap: true, armL: 1.2, armR, strip: true, spit: 1, lookX: 0, lookY: 0 }} />);
     if (glint > 0 && glint < 1) els.push(<mesh key="gl" geometry={starG(4, 0.2 * Math.sin(glint * Math.PI), 0.03)} material={glow("#ffffff")} position={[0.95, 1.15, 0.5]} rotation={[0, 0, glint * 2]} />);
-    els.push(<Holders key="h" t={t} releaseR={1} />);
+    els.push(<Holders key="h" t={t} releaseR={1} noCrouch />);
   }
   return (
     <>
@@ -331,45 +330,93 @@ function shotSpit(t: number) {
   );
 }
 
+// вставка: телефон, примотанный к геймпаду: «ПАТЧ 200 ГБ — 0%»
+const PHONE: V3 = [-4.5, 1.1, 2.5];
+const PhoneInsert: React.FC<{ t: number }> = ({ t }) => {
+  const blink = Math.floor(t * 3) % 2;
+  return (
+    <group position={PHONE}>
+      <group position={[0, -0.42, 0]}><Gamepad s={2.6} rot={0.05} /></group>
+      {[-1, 1].map((k) => <mesh key={k} geometry={geo.ellipse(0.2, 0.17, 0.05)} material={paper("#f0caa3")} position={[k * 0.42, -0.55, 0.25]} rotation={[0, 0, k * 0.4]} />)}
+      <mesh geometry={geo.rrect(0.5, 0.86, 0.06, 0.04)} material={paper("#151515")} position={[0, 0.16, 0.12]} />
+      <CanvasPlane texKey={"phone200_" + blink} w={0.43} h={0.76} px={430} position={[0, 0.16, 0.15]} draw={(g, W, H) => {
+        g.fillStyle = "#0e1a2b"; g.fillRect(0, 0, W, H);
+        g.textAlign = "center"; g.fillStyle = "#fff";
+        g.font = `800 ${W * 0.085}px ${FONT}`; g.fillText("ЗАГРУЗКА ПАТЧА", W / 2, H * 0.16);
+        g.font = `900 ${W * 0.27}px ${FONT}`; g.fillStyle = "#ffd23a"; g.fillText("200 ГБ", W / 2, H * 0.38);
+        g.fillStyle = "#33415a"; g.fillRect(W * 0.1, H * 0.5, W * 0.8, H * 0.05);
+        g.fillStyle = "#ff3b30"; g.fillRect(W * 0.1, H * 0.5, W * 0.012, H * 0.05);
+        g.font = `900 ${W * 0.16}px ${FONT}`; g.fillStyle = "#ff3b30"; g.fillText("0%", W / 2, H * 0.7);
+        g.font = `700 ${W * 0.075}px ${FONT}`; g.fillStyle = blink ? "#ffffff" : "#8aa0c0"; g.fillText("ОЖИДАНИЕ РОЗЕТКИ...", W / 2, H * 0.86);
+      }} />
+      {/* скотч и кровь */}
+      {[-0.27, 0.56].map((y) => <mesh key={y} geometry={geo.rrect(0.7, 0.07, 0.01, 0.02)} material={paper("#d9b866")} position={[0, y, 0.17]} rotation={[0, 0, y > 0 ? 0.15 : -0.1]} />)}
+      <mesh geometry={geo.ellipse(0.05, 0.035, 0.01)} material={paper("#b3121b")} position={[0.17, 0.5, 0.17]} />
+    </group>
+  );
+};
+
 // gamer1: хриплая реплика, медленный наезд, реакция командира
 function shotGamer1(t: number) {
   const g = G1();
   const ss = subsIn(g.start, g.end);
   const b1 = ss[1]?.start ?? g.start + (g.end - g.start) * 0.35;
   const b2 = ss[2]?.start ?? g.start + (g.end - g.start) * 0.7;
-  const react0 = b1 + (b2 - b1) * 0.42, react1 = b1 + (b2 - b1) * 0.72;
+  const react0 = b1 + Math.min(1.4, (b2 - b1) * 0.33), react1 = b1 + Math.min(2.7, (b2 - b1) * 0.64);
+  const ins0 = b2, ins1 = Math.min(b2 + 1.4, b2 + (g.end - b2) * 0.4);
   const m = mouthFor(P, ["p1_gamer1"], t);
   const talking = m > 0.12;
   const tw = twos(t);
   const gm: GamerState = { eyes: "crazy", mouth: talking ? "talk" : "grin", open: m, gap: true, armL: 1.2, armR: 1.55, strip: true, spit: 1, headTilt: Math.sin(tw * 1.3) * 0.06, lookX: 0 };
   let cam: { pos: V3; look: V3; fov: number; roll?: number };
-  let showCmd = false;
-  const cmd: CmdState = { eyes: "normal", mouth: "o", open: 0.3, sweat: 1, armR: 0.3, armL: 0.3, lean: 0 };
+  let showCmd = false, swatClose = false, insert = false;
+  const cmd: CmdState = { eyes: "normal", mouth: "o", open: 0.3, sweat: 1, armR: 0.3, armL: 0.3, lean: 0, shades: 0 };
   if (t < b1) {
     const k = prog(t, g.start - 0.1, b1);
-    cam = { pos: [0.15, 1.45, 4.0 - easeInOut(k) * 1.5], look: [0.2, 1.25, 0], fov: 44, roll: 0.05 * k };
+    cam = { pos: [0.15, 1.35, 4.0 - easeInOut(k) * 1.4], look: [0.2, 1.0, 0], fov: 44, roll: 0.05 * k };
   } else if (t < react0) {
     const k = prog(t, b1, react0);
     cam = { pos: [-1.4 + k * 0.3, 0.3, 3.0], look: [0, 1.55, 0], fov: 46, roll: 0.15 }; // снизу сбоку, голландский угол
   } else if (t < react1) {
     const k = prog(t, react0, react1);
-    showCmd = true;
+    showCmd = true; gm.armR = 0.45;
     cam = { pos: [1.0, 1.75, -3.5 + k * 0.5], look: [CX - 0.1, 1.38, CZ], fov: 44 };
   } else if (t < b2) {
     const k = prog(t, react1, b2);
-    cam = { pos: [-0.6, 1.8, 4.8 - k * 0.3], look: [0.05, 1.2, 0], fov: 44 };
-    showCmd = true;
+    swatClose = true;
+    cam = { pos: [-1.55 + k * 0.1, 1.5, 2.6 - k * 0.3], look: [-1.25, 1.0, -0.2], fov: 44 };
+  } else if (t < ins1) {
+    insert = true;
+    const k = prog(t, ins0, ins1);
+    cam = { pos: [PHONE[0] + 0.05, PHONE[1] + 0.05, PHONE[2] + 2.3 - k * 0.3], look: [PHONE[0], PHONE[1] - 0.05, PHONE[2]], fov: 40 };
   } else {
-    const k = prog(t, b2, ZM().start);
-    cam = { pos: [0.08, 1.42, 3.4 - easeInOut(k) * 1.1], look: [0.08, 1.32, 0], fov: 44 };
+    const k = prog(t, ins1, ZM().start);
+    cam = { pos: [0.08, 1.4, 3.3 - easeInOut(k) * 0.9], look: [0.08, 1.02, 0], fov: 44 };
   }
+  if (insert) return (
+    <>
+      <Cam pos={cam.pos} look={cam.look} fov={cam.fov} />
+      <InnerSet t={t} />
+      <PhoneInsert t={t} />
+    </>
+  );
+  if (swatClose) return (
+    <>
+      <Cam pos={cam.pos} look={cam.look} fov={cam.fov} roll={-0.04} />
+      <InnerSet t={t} />
+      <Gamer t={t} s={gm} />
+      <SWAT x={-1.2} z={-0.2} armR={1.25} armL={0.5} eyes="wide" />
+      <mesh geometry={geo.poly("dropS", [[0, 0.06], [0.03, 0], [0.02, -0.03], [-0.02, -0.03], [-0.03, 0]], 0.012, 0.015)} material={glow("#a9dcff", 0.95)} position={[-1.5, 1.75 - prog(t, react1, b2) * 0.3, 0.1]} scale={1.6} />
+      <SWAT x={-2.3} z={-0.5} armR={0.3} armL={0.3} eyes="wide" />
+    </>
+  );
   const hideCmd = cam.pos[2] < CZ - 0.2 ? false : cam.pos[2] > 0.5 && !showCmd;
   return (
     <>
       <Cam pos={cam.pos} look={cam.look} fov={cam.fov} roll={cam.roll ?? 0} />
       <InnerSet t={t} />
       <Gamer t={t} s={gm} />
-      <Holders t={t} releaseR={1} onlyL={cam.pos[2] < 0} />
+      <Holders t={t} releaseR={1} onlyL={cam.pos[2] < 0} noCrouch />
       <Commander s={{ ...cmd, hide: hideCmd }} />
     </>
   );
@@ -381,13 +428,13 @@ function shotZoom(t: number) {
   const a = 0.5, b = 1.35;
   const tw = twos(t);
   if (lt < b) {
-    const sh = prog(lt, 0.1, 0.42);
+    const sh = prog(lt, 0.05, 0.45);
     const zk = easeIn(prog(lt, a, b - 0.15));
     const [sx, sy] = shake(t, z.start + a, 0.015, 0.9, 40);
-    const pos: V3 = [CX + sx, 1.46 + sy, lerp(CZ - 4.4, CZ - 1.15, zk)];
+    const pos: V3 = [CX + sx, 1.5 + sy, lerp(CZ - 4.6, CZ - 3.0, zk)];
     return (
       <>
-        <Cam pos={pos} look={[CX, 1.46, CZ]} fov={lerp(44, 26, zk)} />
+        <Cam pos={pos} look={[CX, 1.5, CZ]} fov={lerp(44, 30, zk)} />
         <InnerSet t={t} />
         <Commander s={{ eyes: sh > 0.6 ? "wide" : "normal", mouth: "o", open: 0.6, shades: sh, sweat: 1, armL: 0.2, armR: 0.2 }} />
       </>
@@ -436,7 +483,7 @@ function shotZoom(t: number) {
       {chunks}
       {dust}
       <Gamer t={t} s={{ eyes: "crazy", mouth: "grin", gap: true, armL: 1.2, armR: 1.55, strip: true, spit: 1 }} />
-      <Holders t={t} releaseR={1} />
+      <Holders t={t} releaseR={1} noCrouch />
       <SWAT x={1.2} z={-0.2} armL={2.6} armR={2.4} eyes="wide" />
       <Commander s={{ eyes: "wide", mouth: "o", open: 0.8, shades: 1, sweat: 1, armL: 2.0 + Math.sin(tw * 10) * 0.1, armR: 2.0, tilt: -0.05 }} />
     </>
@@ -469,10 +516,10 @@ const CrackFlash: React.FC<{ t: number }> = ({ t }) => {
 
 const Title: React.FC<{ t: number }> = ({ t }) => {
   const c = TT(), lt = t - c.start;
-  const k1 = easeOutBack(prog(lt, 0.15, 0.55)), k2 = easeOutBack(prog(lt, 0.45, 0.85));
+  const k1 = 1.25 - 0.25 * easeOutBack(prog(lt, 0, 0.3)), k2 = easeOutBack(prog(lt, 0.3, 0.7));
   const dots = Math.min(3, Math.floor(prog(lt, 0.9, 1.8) * 4));
   const wob = (Math.floor(lt * 6) % 2 ? 1 : -1) * 0.6;
-  const fadeIn = clamp01(lt / 0.15);
+  const fadeIn = 1;
   const badge = easeOutBack(prog(lt, 1.2, 1.6));
   return (
     <AbsoluteFill style={{ background: "#0b0a0c", justifyContent: "center", alignItems: "center", opacity: fadeIn }}>

@@ -22,7 +22,7 @@ export const Subtitles: React.FC<{ pid: PartId; t: number; censored: boolean; hi
   return (
     <AbsoluteFill style={{ justifyContent: "flex-start", alignItems: "center", top: 1235, pointerEvents: "none" }}>
       <div style={{ transform: `scale(${0.85 + 0.15 * easeOutBack(k)})`, maxWidth: 940, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-        <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 30, letterSpacing: 2, color: "#ffe14d", textTransform: "uppercase", WebkitTextStroke: "7px #000", paintOrder: "stroke fill" }}>{NAMES[s.who] ?? ""}</div>
+        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 46, letterSpacing: 2, color: "#ffe14d", textTransform: "uppercase", WebkitTextStroke: "10px #000", paintOrder: "stroke fill" }}>{NAMES[s.who] ?? ""}</div>
         <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: crowd ? 78 : 58, lineHeight: 1.08, color: crowd ? "#ff4d4d" : "#ffffff", WebkitTextStroke: "12px #000", paintOrder: "stroke fill", textShadow: "0 6px 0 rgba(0,0,0,0.35)" }}>
           {censorText(s.text, censored)}
         </div>

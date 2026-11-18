@@ -51,11 +51,11 @@ export const WindowSet: React.FC<{ t: number; mouth: number; scared: number; low
   const bin = lower; // 0 — бинокль у глаз, 1 — опущен
   return (
     <group>
-      <ambientLight intensity={1.45} />
-      <directionalLight position={[-4, 6, 8]} intensity={1.6} color="#fff3dc" />
+      <ambientLight intensity={1.7} />
+      <directionalLight position={[-4, 6, 8]} intensity={1.8} color="#fff3dc" />
       <hemisphereLight args={["#cfe8ff", "#8a7f70", 0.6]} />
       {/* интерьер за спиной */}
-      <Sheet w={6} h={4} color="#2a312c" position={[0, 1.6, -1.6]} />
+      <Sheet w={6} h={4} color="#3d4740" position={[0, 1.6, -1.6]} />
       <pointLight position={[0, 1.6, 0.8]} intensity={3} distance={4} color="#fff2d0" />
       {/* бункер стоит у самого океана: песок и прибой перед стеной */}
       <Sheet w={30} h={10} color="#e3cc8c" rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 4]} />
@@ -321,7 +321,7 @@ export const MattressSet: React.FC<{ t: number; t0: number }> = ({ t, t0 }) => {
       <WaveStrip y={-0.08} z={-4.6} color="#3a92d2" t={t} amp={0.1} w={50} seed={6} speed={-0.4} />
       <Swimmer position={[1.25 - dt * 0.1, -0.05, -3.0]} t={t} i={2} s={0.85} />
       <WaveStrip y={-0.1} z={-1.6} color="#348ccc" t={t} amp={0.12} w={50} seed={3} speed={-0.6} />
-      <Swimmer position={[-0.2 - dt * 0.12, -0.05, 0.4]} t={t} i={0} s={0.8} hero />
+      <Swimmer position={[0.35 - dt * 0.12, -0.05, -0.7]} t={t} i={0} s={0.8} hero />
       <WaveStrip y={-0.12} z={1.3} color="#2a73b0" t={t} amp={0.14} w={50} seed={4} speed={0.8} />
     </group>
   );
@@ -480,9 +480,7 @@ export const BarnExterior: React.FC<{ t: number; t0: number }> = ({ t, t0 }) => 
           <Piece g={geo.rrect(1.1, 2.4, 0.02, 0.06)} c="#c9563a" p={[sd * 0.55, 1.2, 0]} />
           <Piece g={geo.rrect(1.0, 0.12, 0.0, 0.07)} c="#f4f4ef" p={[sd * 0.55, 1.2, 0]} r={sd * 1.1} />
         </group>)}
-        <CanvasPlane texKey="barnSign2" w={1.6} h={0.36} glowing={false} draw={(g, W, H) => {
-          g.fillStyle = "#f7e9c9"; g.fillRect(0, 0, W, H); g.font = `900 ${Math.floor(H * 0.55)}px ${FONT}`; g.fillStyle = "#b71c1c"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ЗАНЯТО", W / 2, H / 2 + 2);
-        }} position={[0, 2.65, 0.1]} />
+        {/* табличка «ЗАНЯТО» убрана: её перекрывали летящие овцы */}
       </group>
       {queue.map((p, i) => <Man key={i} i={i + 2} t={t} position={[p[0], 0, p[2] - 0.8]} s={0.95} extra={{ armL: i % 2 ? 1.5 : 0.4, armR: i % 2 ? 0.4 : 1.6, bodyTilt: i % 2 ? 0.08 : -0.08 }} />)}
       {flying}

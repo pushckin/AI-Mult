@@ -288,13 +288,13 @@ export const MugCrash: React.FC<{ x: number; y0: number; z: number; tRelease: nu
     shards.push(<Piece key={i} g={geo.poly("shard" + (i % 3), i % 3 === 0 ? [[0, 0], [0.07, 0.01], [0.03, 0.06]] : i % 3 === 1 ? [[0, 0], [0.05, -0.02], [0.06, 0.04], [0.01, 0.05]] : [[0, 0], [0.08, 0], [0.04, 0.03]], 0, 0.02)} c={i % 4 === 0 ? "#c62828" : "#f1ece0"} p={[x + dx, 0.03 + dy, z + dz]} r={rel * (6 + i)} />);
   }
   // кофейная клякса растёт + брызги-«корона»
-  const sk = easeOut(prog(rel, 0, 0.25));
+  const sk = 1.5 * easeOut(prog(rel, 0, 0.25));
   const crown = clamp01(1 - rel / 0.6);
   return (
     <group>
       <mesh position={[x, 0.012, z]} rotation={[-Math.PI / 2, 0, 0]} scale={[sk, sk, 1]} geometry={geo.poly("puddle", [[-0.35, 0], [-0.2, 0.15], [0.05, 0.2], [0.3, 0.12], [0.4, -0.05], [0.2, -0.18], [-0.1, -0.2], [-0.32, -0.12]], 0.05, 0.01)} material={paper("#4a2a14")} />
       {crown > 0 && (
-        <group position={[x, 0.02, z + 0.05]} scale={[0.6 + rel * 1.4, crown * (0.6 + rel * 1.8), 1]}>
+        <group position={[x, 0.02, z + 0.05]} scale={[1.0 + rel * 2.0, crown * (1.0 + rel * 2.4), 1]}>
           {[-3, -2, -1, 0, 1, 2, 3].map((k) => (
             <Piece key={k} g={geo.poly("cr", [[-0.03, 0], [0.03, 0], [0.0, 0.22]], 0.01, 0.02)} c="#5a3418" p={[k * 0.06, 0, 0]} r={-k * 0.25} />
           ))}
@@ -461,7 +461,7 @@ export const Room: React.FC<RoomState> = (s) => {
   const alarmOn = !!s.alarm;
   const flash = alarmOn ? (Math.floor(t * 4) % 2 === 0 ? 1 : 0.35) : 0;
   const dark = s.dark ?? 0;
-  const amb = (alarmOn ? 0.62 : 0.97) * (1 - dark * 0.6);
+  const amb = (alarmOn ? 0.62 : 1.12) * (1 - dark * 0.6);
   const jump = s.tableJump ?? 0;
   const hide = new Set(s.hide ?? []);
   const sitM = (k: string) => {

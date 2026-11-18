@@ -429,8 +429,8 @@ export const SpitSpray: React.FC<{ o: [number, number, number]; dir: [number, nu
       const h1 = hash(Math.round(t0 * 100) * 13 + i + seed * 7), h2 = hash(Math.round(t0 * 100) * 29 + i * 3 + seed), h3 = hash(i * 17 + Math.round(t0 * 100));
       const sp = 1.6 + h3 * 2.2;
       const x = o[0] + (dir[0] + (h1 - 0.5) * 0.9) * age * sp, y = o[1] + (dir[1] + (h2 - 0.4) * 0.7) * age * sp - 2.5 * age * age, z = o[2] + dir[2] * age * sp;
-      const r = 0.018 + h1 * 0.03;
-      els.push(<mesh key={w + "_" + i} geometry={geo.ellipse(r, r * 1.2, 0.01)} material={glow("#bfe9ff", 0.95)} position={[x, y, z]} />);
+      const r = 0.008 + h1 * 0.014;
+      els.push(<mesh key={w + "_" + i} geometry={geo.ellipse(r, r * 1.2, 0.01)} material={glow("#f4f7f2", 0.92)} position={[x, y, z]} />);
     }
   }
   return <>{els}</>;

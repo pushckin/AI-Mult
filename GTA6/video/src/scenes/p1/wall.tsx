@@ -476,14 +476,15 @@ const HERO: V3 = [0.4, 0, 6.0];
 function shotHero(t: number) {
   const a = C1().start + 2.0, k = prog(t, a, a + 1.4);
   const tw = twos(t);
-  const crowd = beachState(t, { armsAll: true }).filter((m) => !(Math.abs(m.x - HERO[0]) < 1.6 && m.z > HERO[2] - 1.2));
+  const crowd = beachState(t, { armsAll: true }).filter((m) => !(Math.abs(m.x - HERO[0]) < (m.z > HERO[2] + 1.5 ? 0.9 : 1.4) && m.z > HERO[2] - 1.2 && m.z < 13));
   return (
     <>
-      <Cam pos={[1.3 - k * 0.3, 1.1, 9.0 - k * 0.5]} look={[0.2, 5.5 + k * 1.5, 0]} fov={66} roll={-0.05} />
+      <Cam pos={[0.5 - k * 0.2, 3.2, 12.5 - k * 0.8]} look={[0.35, 0.7, 5]} fov={50} roll={-0.04} />
       <World t={t} x0={-24} x1={24} crowd={crowd} fog={[25, 60, "#2b2632"]} />
       <Commander t={t} open={mouthFor(P, ["p1_cmd1"], t)} />
       <Character {...{ outfit: "hoodie" as const, color: "#d35400", hat: "messyHair" as const, hairColor: "#2b1b10" }} adult position={HERO} rotationY={Math.PI}
         armL={2.5 + Math.sin(tw * 11) * 0.25} armR={2.7 - Math.sin(tw * 11) * 0.25} back={<Gear3D kind={0} />} legs="stand" />
+      <mesh geometry={geo.ellipse(0.52, 0.46, 0.03)} material={paper("#2b1b10")} position={[HERO[0], 1.47, HERO[2] + 0.075]} />
     </>
   );
 }
