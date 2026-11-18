@@ -146,10 +146,13 @@ export function drawMap(n: number, alarm: number, stamp: boolean) {
     const wx = ox + 0.642 * sx, wy = oy + 0.527 * sy;
     g.fillStyle = "#fff"; g.beginPath(); g.arc(wx, wy, W * 0.022, 0, 7); g.fill();
     g.fillStyle = "#e53935"; g.beginPath(); g.arc(wx, wy, W * 0.013, 0, 7); g.fill();
-    g.font = `800 ${Math.floor(W * 0.045)}px ${FONT}`; g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "middle";
-    g.fillText("ВЕЛЛИНГТОН", wx + W * 0.035, wy);
+    if (!stamp) {
+      g.font = `800 ${Math.floor(W * 0.045)}px ${FONT}`; g.textAlign = "right"; g.textBaseline = "middle";
+      g.lineWidth = W * 0.012; g.strokeStyle = "#0b1a22"; g.strokeText("ВЕЛЛИНГТОН", wx - W * 0.035, wy + H * 0.035);
+      g.fillStyle = "#fff"; g.fillText("ВЕЛЛИНГТОН", wx - W * 0.035, wy + H * 0.035);
+    }
     // стрелки вторжения
-    if (n > 60) {
+    if (n > 60 && !stamp) {
       g.strokeStyle = "#ff3b3b"; g.fillStyle = "#ff3b3b"; g.lineWidth = W * 0.018;
       for (const [x0, y0, x1, y1] of [[0.05, 0.25, 0.4, 0.4], [0.97, 0.12, 0.76, 0.3], [0.95, 0.7, 0.62, 0.66], [0.04, 0.9, 0.2, 0.84]]) {
         const X0 = x0 * W, Y0 = y0 * H, X1 = x1 * W, Y1 = y1 * H;
@@ -161,9 +164,11 @@ export function drawMap(n: number, alarm: number, stamp: boolean) {
       }
     }
     if (stamp) {
-      g.save(); g.translate(W * 0.5, H * 0.5); g.rotate(-0.25);
-      g.strokeStyle = "#ff2b2b"; g.lineWidth = W * 0.022; g.strokeRect(-W * 0.42, -H * 0.075, W * 0.84, H * 0.15);
-      g.font = `900 ${Math.floor(W * 0.11)}px ${FONT}`; g.fillStyle = "#ff2b2b"; g.textAlign = "center"; g.fillText("ВТОРЖЕНИЕ", 0, 4);
+      g.fillStyle = "rgba(0,0,0,0.6)"; g.fillRect(0, 0, W, H);
+      g.save(); g.translate(W * 0.5, H * 0.5); g.rotate(-0.95);
+      g.fillStyle = "rgba(255,240,230,0.92)"; g.fillRect(-W * 0.37, -H * 0.07, W * 0.74, H * 0.14);
+      g.strokeStyle = "#e01b1b"; g.lineWidth = W * 0.022; g.strokeRect(-W * 0.35, -H * 0.055, W * 0.7, H * 0.11);
+      g.font = `900 ${Math.floor(W * 0.085)}px ${FONT}`; g.fillStyle = "#e01b1b"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ВТОРЖЕНИЕ", 0, 4);
       g.restore();
     }
     // рамка
@@ -175,7 +180,7 @@ export function drawMap(n: number, alarm: number, stamp: boolean) {
 export function population(t: number): number {
   const o = C("p1_open");
   const stops: [number, number][] = [
-    [o.start + 0.1, 5_400_000], [o.start + 0.75, 5_400_000], [o.start + 1.25, 19_800_000], [o.start + 1.75, 54_000_000], [o.end - 0.35, 86_000_000],
+    [o.start + 0.1, 5_400_000], [o.start + 0.5, 5_400_000], [o.start + 0.85, 19_800_000], [o.start + 1.2, 54_000_000], [o.start + 1.6, 86_000_000],
   ];
   if (t <= stops[0][0]) return stops[0][1];
   for (let i = 1; i < stops.length; i++) {
@@ -183,7 +188,7 @@ export function population(t: number): number {
     if (t <= t1) { const k = prog(t, t0, t1); return Math.round(lerp(v0, v1, k)); }
   }
   // потом медленно ползёт дальше
-  return Math.round(86_000_000 + (t - stops[stops.length - 1][0]) * 7_919);
+  return Math.round(86_000_000 + (t - stops[stops.length - 1][0]) * 1_237);
 }
 
 /** одометр: каждая цифра крутится непрерывно */
@@ -209,7 +214,7 @@ export function drawCounter(v: number, rate: number, alarm: number) {
       g.save(); g.beginPath(); g.rect(x + 3, y0, cw - 6, ch); g.clip();
       g.font = `900 ${Math.floor(ch * 0.82)}px ${FONT}`;
       const col = alarm > 0.5 ? "#ff4040" : "#ffd23f";
-      const off = speed > 0.5 ? f : 0; // крутящиеся разряды показывают перекат
+      const off = speed > 25 ? f : speed > 0.3 ? (f > 0.75 ? easeInOut((f - 0.75) / 0.25) : 0) : 0; // перекат барабана: стоит, потом щёлкает
       for (const k of lead ? [] : [0, 1]) {
         g.fillStyle = col;
         g.globalAlpha = speed > 25 ? 0.55 : 1;
@@ -315,7 +320,7 @@ export const BackOf: React.FC<{ position: [number, number, number]; scale?: numb
 
 // ---------- массовка министров (оригинальные внешности) ----------
 export const EXTRAS: Record<string, Partial<CharacterProps>> = {
-  bun: { adult: true, outfit: "dress", color: "#355c7d", hat: "bun", hairColor: "#2b1b10", skin: "#f1c9a4", glasses: "round" },
+  bun: { adult: true, outfit: "dress", color: "#355c7d", hat: "bun", hairColor: "#2b1b10", skin: "#f1c9a4" },
   old: { adult: true, outfit: "suit", color: "#6b4f3a", color2: "#3e2e22", tie: "#2e7d32", hat: "baldGray", hairColor: "#d9d9d9", skin: "#eec39b", mustache: true },
   curly: { adult: true, outfit: "suit", color: "#2e5f5a", color2: "#203f3c", tie: "#f39c12", hat: "curly", hairColor: "#c9a227", skin: "#f5d3b3" },
   slick: { adult: true, outfit: "suit", color: "#7a2e3b", color2: "#3d1b22", tie: "#111", hat: "slickHair", hairColor: "#111", skin: "#c68b59" },
@@ -456,7 +461,7 @@ export const Room: React.FC<RoomState> = (s) => {
   const alarmOn = !!s.alarm;
   const flash = alarmOn ? (Math.floor(t * 4) % 2 === 0 ? 1 : 0.35) : 0;
   const dark = s.dark ?? 0;
-  const amb = (alarmOn ? 0.55 : 0.82) * (1 - dark * 0.65);
+  const amb = (alarmOn ? 0.62 : 0.97) * (1 - dark * 0.6);
   const jump = s.tableJump ?? 0;
   const hide = new Set(s.hide ?? []);
   const sitM = (k: string) => {

@@ -24,7 +24,7 @@ export const CAST: Record<string, Look> = {
   // Семья в квартире
   dad: { adult: true, outfit: "tshirt", color: "#2e86c1", color2: "#3c3c3c", hat: "slickHair", hairColor: "#6b4226", mustache: true, skin: "#f3cba1" },
   mom: { adult: true, outfit: "dress", color: "#c0392b", color2: "#f6d3b0", hat: "bun", hairColor: "#a0522d", skin: "#f6d3b0" },
-  kid: { outfit: "tshirt", color: "#f1c40f", color2: "#2c3e50", hat: "beanie", hatColor: "#16a085", skin: "#f6d3b0", scale: 0.78 },
+  kid: { outfit: "tshirt", color: "#e74c3c", color2: "#2c3e50", hat: "curly", hairColor: "#c65d1e", skin: "#f6d3b0", scale: 0.78 },
   grandpa: { adult: true, outfit: "cardigan", color: "#8b7765", color2: "#555", hat: "baldGray", hairColor: "#e6e6e6", glasses: "round", skin: "#efc9a3", stubble: false },
   // Геймер с HDMI (часть 2): кепка козырьком, футболка, гарнитура не нужна
   gamer2: { adult: true, outfit: "tshirt", color: "#7d3c98", color2: "#2c3e50", hat: "cap", hatColor: "#222", stubble: true, sweat: 1, skin: "#e8bb90" },
