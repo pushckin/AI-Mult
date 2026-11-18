@@ -48,7 +48,7 @@ function drawPicture(g: CanvasRenderingContext2D, W: number, H: number) {
 }
 
 const SOCKET_F: V3 = [-0.85, 0.38, -2.97], SOCKET_V: V3 = [0.85, 0.38, -2.97];
-const GRANDPA_P: V3 = [0.98, 0.05, -0.85];
+const GRANDPA_P: V3 = [0.98, 0.05, -0.15];
 const VENT_P: V3 = [1.4, 0, -2.2];
 
 const Room: React.FC<{ t: number }> = ({ t }) => {
@@ -80,16 +80,16 @@ const Room: React.FC<{ t: number }> = ({ t }) => {
 
 const Table: React.FC<{ t: number; tv?: boolean }> = ({ t, tv }) => (
   <group position={[0, 0, -0.85]}>
-    <mesh position={[0, 0.36, 0]} material={paper("#6b4226")}><boxGeometry args={[1.8, 0.72, 1.0]} /></mesh>
-    <CanvasPlane texKey="bt_cloth" w={1.9} h={1.1} px={256} position={[0, 0.735, 0]} rotation={[-Math.PI / 2, 0, 0]} glowing={false} draw={drawCloth} />
-    <mesh position={[0, 0.62, 0.52]} material={paper("#d64541")}><planeGeometry args={[1.9, 0.24]} /></mesh>
+    <mesh position={[0, 0.36, 0]} material={paper("#6b4226")}><boxGeometry args={[1.45, 0.72, 1.0]} /></mesh>
+    <CanvasPlane texKey="bt_cloth" w={1.55} h={1.1} px={256} position={[0, 0.735, 0]} rotation={[-Math.PI / 2, 0, 0]} glowing={false} draw={drawCloth} />
+    <mesh position={[0, 0.62, 0.52]} material={paper("#d64541")}><planeGeometry args={[1.55, 0.24]} /></mesh>
     {/* еда */}
     {!tv && <group position={[0, 0.8, -0.1]}>
       <mesh geometry={geo.ellipse(0.32, 0.12, 0.04)} material={paper("#f4f4f4")} position={[0, -0.04, 0]} />
       <mesh geometry={geo.ellipse(0.22, 0.13, 0.08)} material={paper("#c9822b")} position={[0, 0.04, 0.03]} />
       {[-1, 1].map((s) => <mesh key={s} geometry={geo.rrect(0.07, 0.16, 0.035, 0.04)} material={paper("#e8c9a0")} position={[s * 0.2, 0.12, 0.04]} rotation={[0, 0, s * 0.5]} />)}
     </group>}
-    {[-0.62, -0.22, 0.25, 0.62].map((x, i) => <mesh key={i} position={[x, 0.745, 0.25]} rotation={[-Math.PI / 2, 0, 0]} material={paper("#ffffff")}><circleGeometry args={[0.13, 20]} /></mesh>)}
+    {[-0.5, -0.17, 0.17, 0.5].map((x, i) => <mesh key={i} position={[x, 0.745, 0.25]} rotation={[-Math.PI / 2, 0, 0]} material={paper("#ffffff")}><circleGeometry args={[0.13, 20]} /></mesh>)}
     <mesh position={[-0.75, 0.86, -0.1]} geometry={geo.rrect(0.12, 0.22, 0.03, 0.06)} material={paper("#8e44ad", { opacity: 0.8 })} />
   </group>
 );
@@ -99,33 +99,45 @@ const Grandpa: React.FC<{ t: number; mood: "calm" | "shock" | "yell" | "blue"; p
   const m = mouthFor("p2", ["p2_ded"], t);
   const blue = mood === "blue" ? clamp01(prog(t, REACT_IN(), REACT_IN() + 0.6)) : 0;
   const skin = "#" + new THREE.Color("#efc9a3").lerp(new THREE.Color("#8fa6e0"), blue).getHexString();
-  const maskOff = mood === "yell" ? 0.7 : mood === "blue" ? 0.35 : 0;
+  const maskOff = mood === "yell" ? 0.7 : 0;
   const props = ({
     calm: { eyes: "closed", mouth: "smile", armL: 0.35, armR: 0.35 },
     shock: { eyes: "wide", mouth: "o", armL: 0.8, armR: 0.8 },
-    yell: { eyes: "angry", mouth: "scream", mouthOpen: m, armR: -0.95, armL: 2.5 + Math.sin(tq * 22) * 0.15, sweat: 1, bodyTilt: Math.sin(tq * 16) * 0.04 },
-    blue: { eyes: "tiny", mouth: "wavy", armR: -0.95, armL: 0.4, sweat: 1, bodyTilt: -0.12 * blue, headTilt: -0.15 * blue },
+    yell: { eyes: "angry", mouth: "scream", mouthOpen: m, armR: -0.3, armL: 2.5 + Math.sin(tq * 22) * 0.15, sweat: 1, bodyTilt: Math.sin(tq * 16) * 0.04 },
+    blue: { eyes: "tiny", mouth: "wavy", armR: -0.3, armL: 0.4, sweat: 1, bodyTilt: -0.12 * blue, headTilt: -0.15 * blue },
   } as Record<string, Partial<CharacterProps>>)[mood];
   return (
     <group position={pos}>
-      <Character {...CAST.grandpa} legs="sit" {...props} skin={skin} />
-      <group position={[0, -0.21, 0]} scale={1.35}><VentMask off={maskOff} /></group>
+      <Character {...CAST.grandpa} legs="sit" {...props} skin={skin} front={(mood === "yell" || mood === "blue") ? <HeartClutch t={t} skin={skin} /> : undefined} />
+      <group position={[0, -0.0, 0]} scale={1.12}><VentMask off={maskOff} /></group>
+    </group>
+  );
+};
+/** Рука деда, прижатая к сердцу (поверх туловища) */
+const HeartClutch: React.FC<{ t: number; skin: string }> = ({ t, skin }) => {
+  const j = Math.sin(twos(t) * 30) * 0.015;
+  return (
+    <group position={[0.08 + j, 0.62, 0.14]}>
+      <mesh position={[0.2, 0.1, 0]} rotation={[0, 0, 0.9]} geometry={geo.rrect(0.42, 0.15, 0.06, 0.03)} material={paper("#8b7765")} />
+      <mesh position={[-0.04, -0.02, 0.03]} geometry={geo.ellipse(0.11, 0.1, 0.03)} material={paper(skin)} />
+      <mesh position={[-0.13, 0.05, 0.05]} rotation={[0, 0, 0.8]} geometry={geo.rrect(0.1, 0.05, 0.025, 0.02)} material={paper(skin)} />
+      <mesh position={[-0.12, 0.17, 0.02]} geometry={geo.poly("heart", [[0, -0.07], [0.08, 0.02], [0.05, 0.07], [0, 0.04], [-0.05, 0.07], [-0.08, 0.02]], 0.02, 0.02)} material={glow("#e53935")} />
     </group>
   );
 };
 const Tube: React.FC<{ off?: number }> = ({ off = 0 }) => (
-  <Cable pts={[[GRANDPA_P[0] + off * 0.3, 1.05 - off * 0.2, GRANDPA_P[2] + 0.3], [GRANDPA_P[0] + 0.45, 0.75, GRANDPA_P[2] + 0.1], [VENT_P[0] - 0.1, 0.65, VENT_P[2] + 0.4], [VENT_P[0], 0.8, VENT_P[2] + 0.1]]} r={0.035} color="#9fd0e8" />
+  <Cable pts={[[GRANDPA_P[0] + off * 0.34, 0.95 - off * 0.27, GRANDPA_P[2] + 0.3], [GRANDPA_P[0] + 0.45, 0.6, GRANDPA_P[2] + 0.12], [GRANDPA_P[0] + 0.6, 0.55, GRANDPA_P[2] - 0.6], [VENT_P[0] - 0.05, 0.7, VENT_P[2] + 0.4], [VENT_P[0], 0.8, VENT_P[2] + 0.1]]} r={0.035} color="#9fd0e8" />
 );
 
-const Family: React.FC<{ t: number; grandpaMood: "calm" | "shock" | "yell" | "blue"; panic: boolean }> = ({ t, grandpaMood, panic }) => {
+const Family: React.FC<{ t: number; grandpaMood: "calm" | "shock" | "yell" | "blue"; panic: boolean; noMom?: boolean }> = ({ t, grandpaMood, panic, noMom }) => {
   const tq = twos(t);
   const chew = Math.abs(Math.sin(tq * 7)) * 0.4;
   const fork = <mesh position={[0.02, 0.15, 0.05]} geometry={geo.rrect(0.04, 0.32, 0.02, 0.02)} material={paper("#bbb")} />;
   return (
     <>
       <Character {...CAST.dad} position={[-0.5, 0.05, -1.6]} legs="sit" eyes={panic ? "wide" : "normal"} mouth={panic ? "scream" : "talk"} mouthOpen={panic ? 0.7 : chew} armR={panic ? 2.4 : 0.9 + chew * 0.5} handR={fork} armL={panic ? 2.2 : 0.3} lookX={panic ? 0.3 : 0.4} />
-      <Character {...CAST.mom} position={[0.45, 0.05, -1.6]} legs="sit" eyes={panic ? "wide" : "normal"} mouth={panic ? "scream" : "smile"} mouthOpen={0.9} armL={panic ? 2.6 : 0.4} armR={panic ? 2.6 : 0.4} lookX={panic ? -0.3 : -0.4} />
-      <Character {...CAST.kid} position={[-0.98, 0.32, -0.75]} legs="sit" eyes={panic ? "wide" : "normal"} mouth={panic ? "o" : "grin"} armR={1.2} handR={fork} lookX={panic ? 0.5 : 0} />
+      {!noMom && <Character {...CAST.mom} position={[0.45, 0.05, -1.6]} legs="sit" eyes={panic ? "wide" : "normal"} mouth={panic ? "scream" : "smile"} mouthOpen={0.9} armL={panic ? 2.6 : 0.4} armR={panic ? 2.6 : 0.4} lookX={panic ? -0.3 : -0.4} />}
+      <Character {...CAST.kid} position={[-0.98, 0.32, -0.2]} legs="sit" eyes={panic ? "wide" : "normal"} mouth={panic ? "o" : "grin"} armR={1.2} handR={fork} lookX={panic ? 0.5 : 0} />
       <Grandpa t={t} mood={grandpaMood} />
       <Tube off={grandpaMood === "yell" ? 0.7 : 0} />
     </>
@@ -138,7 +150,7 @@ const MEN = (() => {
   const outfits = ["hoodie", "tshirt", "tshirt", "hoodie", "flannel"] as const;
   const hats = ["messyHair", "cap", "beanie", "curly", "headset", "none", "slickHair"] as const;
   const cols = ["#c0392b", "#2c3e50", "#16a085", "#8e44ad", "#d35400", "#2980b9", "#7f8c8d", "#27ae60", "#34495e", "#f39c12"];
-  const targets: [number, number][] = [[-0.85, -2.35], [0.8, -2.4], [-0.35, -2.3], [0.4, -2.15], [-1.05, 0.35], [1.3, -2.1], [-0.55, -1.95], [0.6, -1.9], [0.05, -2.0], [-0.1, -2.7]];
+  const targets: [number, number][] = [[-0.85, -2.35], [0.8, -2.4], [-0.3, -2.75], [0.35, -2.7], [-1.3, -1.95], [1.35, -1.95], [-0.7, -2.0], [0.75, -1.95], [0.05, -2.3], [-1.1, -2.7]];
   return targets.map(([x, z], i) => ({
     x, z, delay: i * 0.09, outfit: outfits[i % 5], hat: hats[Math.floor(r() * hats.length)], color: cols[i], hatColor: cols[(i + 4) % 10],
     hair: ["#2b1b10", "#4a2f1b", "#111", "#c9a227"][i % 4], skin: ["#f6d1a8", "#e8b98f", "#c68b59", "#f3c9a0", "#d9a37a"][i % 5], gear: i, scream: r() < 0.5,
@@ -203,7 +215,7 @@ export const FlatWide: React.FC<{ t: number }> = ({ t }) => {
   const z = easeOut(prog(t, h + 0.05, h + 0.35));
   return (
     <>
-      <Cam pos={[sx + sx2, lerp(3.1, 4.0, z) + sy + sy2, lerp(4.0, lerp(5.9, 5.3, easeInOut(k)), z)]} look={[0, lerp(1.25, 1.0, z), lerp(-1.3, -1.4, z)]} fov={lerp(44, 50, z)} />
+      <Cam pos={[sx + sx2, lerp(3.1, 4.7, z) + sy + sy2, lerp(4.0, lerp(5.6, 5.1, easeInOut(k)), z)]} look={[0, lerp(1.25, 1.05, z), lerp(-1.3, -1.6, z)]} fov={lerp(44, 50, z)} />
       <Room t={t} />
       <Men t={t} />
       <Family t={t} grandpaMood={t > VENT_OFF() ? "shock" : panic ? "shock" : "calm"} panic={panic} />
@@ -215,8 +227,8 @@ export const FlatWide: React.FC<{ t: number }> = ({ t }) => {
 };
 
 // ============ D3: крупно — тройник в тройник ============
-const HandIn: React.FC<{ tip: V3; ang: number; sleeve: string; skin?: string; children?: React.ReactNode }> = ({ tip, ang, sleeve, skin = "#e8b98f", children }) => (
-  <group position={tip} rotation={[0, 0, ang]} scale={0.7}>
+const HandIn: React.FC<{ tip: V3; ang: number; sleeve: string; skin?: string; scale?: number; children?: React.ReactNode }> = ({ tip, ang, sleeve, skin = "#e8b98f", scale = 0.7, children }) => (
+  <group position={tip} rotation={[0, 0, ang]} scale={scale}>
     {/* рука идёт от кончика в сторону −X локально */}
     <mesh position={[-0.95, 0, -0.02]} geometry={geo.rrect(1.5, 0.3, 0.12, 0.05)} material={paper(sleeve)} />
     <mesh position={[-0.12, 0, 0.02]} geometry={geo.ellipse(0.19, 0.17, 0.05)} material={paper(skin)} />
@@ -300,10 +312,10 @@ export const DedShot: React.FC<{ t: number }> = ({ t }) => {
   const [sx, sy] = shake(t, DED().start + 0.1, 0.04, 0.6);
   return (
     <>
-      <Cam pos={[GRANDPA_P[0] - 0.4 + sx, 1.8 + sy, lerp(2.9, 2.4, easeOut(k))]} look={[GRANDPA_P[0] - 0.05, 1.0, GRANDPA_P[2]]} fov={40} />
+      <Cam pos={[GRANDPA_P[0] + 0.12 + sx, 1.8 + sy, lerp(3.7, 3.3, easeOut(k))]} look={[GRANDPA_P[0] + 0.1, 1.05, GRANDPA_P[2]]} fov={40} />
       <Room t={t} />
       <Men t={t} backOnly />
-      <Family t={t} grandpaMood="yell" panic />
+      <Family t={t} grandpaMood="yell" panic noMom />
       <Table t={t} />
     </>
   );
@@ -328,18 +340,18 @@ function drawTv(g: CanvasRenderingContext2D, W: number, H: number, on: boolean) 
   g.font = `900 ${H * 0.2}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle";
   g.lineWidth = 10; g.strokeStyle = "#1a0b2e"; g.strokeText("GTA VI", W / 2, H * 0.3);
   g.fillStyle = "#ff4fd8"; g.fillText("GTA VI", W / 2, H * 0.3);
-  g.font = `900 ${H * 0.1}px ${FONT}`; g.textAlign = "left";
-  g.fillStyle = "#000"; g.fillRect(8, 8, W * 0.3, H * 0.14);
-  g.fillStyle = "#39ff7a"; g.fillText("60 FPS", 16, 8 + H * 0.07);
+  g.font = `900 ${H * 0.2}px ${FONT}`; g.textAlign = "center";
+  g.fillStyle = "#000"; g.fillRect(W * 0.08, H * 0.6, W * 0.62, H * 0.28);
+  g.fillStyle = "#39ff7a"; g.fillText("60 FPS", W * 0.39, H * 0.745);
 }
-const TV_P: V3 = [-0.4, 0.76, -1.0];
+const TV_P: V3 = [-0.25, 0.76, -1.0];
 const TvOnTable: React.FC<{ on: boolean; boot: number }> = ({ on, boot }) => (
   <group position={TV_P}>
     <mesh position={[0, 0.05, 0]} geometry={geo.rrect(0.4, 0.08, 0.02, 0.15)} material={paper("#222")} />
     <mesh position={[0, 0.15, -0.03]} geometry={geo.rrect(0.08, 0.2, 0.02, 0.05)} material={paper("#222")} />
     <group position={[0, 0.62, 0]}>
       <Plasma w={1.35} h={0.82} screenNode={
-        <CanvasPlane texKey={"bt_tv_" + (on ? 1 : 0)} w={1.27} h={0.74} px={512} position={[0, 0, 0.045]} draw={(g, W, H) => drawTv(g, W, H, on)} />
+        <CanvasPlane texKey={"bt_tv2_" + (on ? 1 : 0)} w={1.27} h={0.74} px={512} position={[0, 0, 0.045]} draw={(g, W, H) => drawTv(g, W, H, on)} />
       } />
       {on && boot < 1 && <mesh position={[0, 0, 0.05]} material={glow("#ffffff", 1 - boot)}><planeGeometry args={[1.27, 0.74]} /></mesh>}
     </group>
@@ -380,11 +392,61 @@ export const ReactShot: React.FC<{ t: number }> = ({ t }) => {
   const k = prog(t, REACT_IN(), FLAT_END());
   return (
     <>
-      <Cam pos={[GRANDPA_P[0] - 0.15, 1.65, lerp(2.2, 1.8, easeOut(k))]} look={[GRANDPA_P[0] - 0.05, 1.05, GRANDPA_P[2]]} fov={40} />
+      <Cam pos={[GRANDPA_P[0] + 0.12, 1.6, lerp(2.5, 2.1, easeOut(k))]} look={[GRANDPA_P[0] + 0.1, 1.0, GRANDPA_P[2]]} fov={40} />
       <Room t={t} />
       <Men t={t + 10} backOnly />
-      <Family t={t} grandpaMood="blue" panic />
+      <Family t={t} grandpaMood="blue" panic noMom />
       <Table t={t} tv />
+    </>
+  );
+};
+
+// ============ D2: врезка — выдёргивают холодильник и ИВЛ деда ============
+export const UNPLUG_IN = () => DOOR().start + 1.0;
+const Tag: React.FC<{ text: string; position: V3; rot?: number; color?: string }> = ({ text, position, rot = 0, color = "#fff6d5" }) => (
+  <group position={position} rotation={[0, 0, rot]}>
+    <mesh geometry={geo.rrect(0.52, 0.15, 0.03, 0.02)} material={paper("#222")} />
+    <CanvasPlane texKey={"bt_tag2_" + text} w={0.49} h={0.12} px={420} position={[0, 0, 0.035]} glowing={false}
+      draw={(g, W, H) => { g.fillStyle = color; g.fillRect(0, 0, W, H); g.fillStyle = "#111"; let fs = H * 0.66; g.font = `900 ${fs}px ${FONT}`; const mw = g.measureText(text).width; if (mw > W * 0.9) { fs *= (W * 0.9) / mw; g.font = `900 ${fs}px ${FONT}`; } g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, W / 2, H * 0.55); }} />
+  </group>
+);
+export const UnplugInsert: React.FC<{ t: number }> = ({ t }) => {
+  const tq = twos(t);
+  const fOn = t < FRIDGE_OFF(), vOn = t < VENT_OFF();
+  const yf = easeOut(prog(t, FRIDGE_OFF() - 0.05, FRIDGE_OFF() + 0.12));
+  const yv = easeOut(prog(t, VENT_OFF() - 0.05, VENT_OFF() + 0.12));
+  const [sx, sy] = shake(t, FRIDGE_OFF(), 0.04, 0.25);
+  const [sx2, sy2] = shake(t, VENT_OFF(), 0.04, 0.25);
+  const SF: V3 = [-0.28, 0.62, 0.02], SV: V3 = [0.3, 0.62, 0.02];
+  const pf: V3 = [SF[0] - yf * 0.35, SF[1] - yf * 0.55, 0.12 + yf * 0.2];
+  const pv: V3 = [SV[0] + yv * 0.35, SV[1] - yv * 0.55, 0.12 + yv * 0.2];
+  return (
+    <>
+      <Cam pos={[0.0 + sx + sx2, 1.3 + sy + sy2, 4.2]} look={[0, 1.05, 0]} fov={40} />
+      <PaperLights intensity={1.0} tint="#fff3df" />
+      <CanvasPlane texKey="bt_wallpaper" w={6} h={4} px={1024} position={[0, 1.6, -0.6]} glowing={false} draw={drawWallpaper} />
+      <Sheet w={6} h={4} color="#8a5a34" position={[0, 0, 1]} rotation={[-Math.PI / 2, 0, 0]} />
+      {/* холодильник слева, ИВЛ справа */}
+      <Fridge position={[-1.0, 0, -0.5]} on={fOn} />
+      <Ventilator position={[0.95, 0, -0.45]} t={t} alive={vOn} screenOn />
+      {!vOn && Math.floor(t * 4) % 2 === 0 && <mesh position={[0.85, 1.48, -0.3]} material={glow("#ff3b30")}><circleGeometry args={[0.07, 14]} /></mesh>}
+      {/* розетки на плинтусе */}
+      <mesh position={[0, 0.62, -0.01]} geometry={geo.rrect(1.1, 0.4, 0.04, 0.03)} material={paper("#efe9da")} />
+      <group position={SF} scale={1.2}><Socket plugged={false} /></group>
+      <group position={SV} scale={1.2}><Socket plugged={false} /></group>
+      {/* вилки с бирками */}
+      <group position={pf} rotation={[0, 0, yf * 0.8]}><mesh geometry={geo.rrect(0.2, 0.2, 0.05, 0.08)} material={paper("#eeeeee")} /></group>
+      <Cable pts={[[pf[0], pf[1] - 0.08, pf[2]], [pf[0] - 0.15, pf[1] - 0.3, 0.1], [-0.7, 0.15, -0.2], [-0.9, 0.3, -0.45]]} r={0.022} color="#eee" />
+      <group position={[SF[0] - 0.02, SF[1] + 0.38, 0.02]} scale={1.15}><Tag text="ХОЛОДИЛЬНИК" position={[0, 0, 0]} rot={0.06} /></group>
+      <group position={pv} rotation={[0, 0, -yv * 0.8]}><mesh geometry={geo.rrect(0.2, 0.2, 0.05, 0.08)} material={paper("#333")} /></group>
+      <Cable pts={[[pv[0], pv[1] - 0.08, pv[2]], [pv[0] + 0.12, pv[1] - 0.3, 0.1], [0.7, 0.2, -0.2], [0.9, 0.5, -0.4]]} r={0.022} color="#333" />
+      <group position={[SV[0] + 0.03, SV[1] + 0.38, 0.02]} scale={1.15}><Tag text="ИВЛ ДЕДА" position={[0, 0, 0]} rot={-0.06} color="#ffd6d6" /></group>
+      {/* руки, выдёргивающие вилки */}
+      {t > FRIDGE_OFF() - 0.35 && <HandIn tip={[pf[0] - 0.02, pf[1] + 0.02, pf[2] + 0.05]} ang={0.9} sleeve="#2980b9" scale={0.5} />}
+      {t > VENT_OFF() - 0.35 && <HandIn tip={[pv[0] + 0.02, pv[1] + 0.02, pv[2] + 0.05]} ang={2.25} sleeve="#d35400" skin="#c68b59" scale={0.5} />}
+      <Sparks t={t} t0={FRIDGE_OFF()} origin={[SF[0], SF[1], 0.15]} n={10} dur={0.3} seed={6} scale={0.6} />
+      <Sparks t={t} t0={VENT_OFF()} origin={[SV[0], SV[1], 0.15]} n={10} dur={0.3} seed={7} scale={0.6} />
+      {tq < 0 && null}
     </>
   );
 };

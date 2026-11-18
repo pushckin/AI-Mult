@@ -3,7 +3,7 @@ import React from "react";
 import { Character } from "../../kit/Character";
 import { CAST } from "../../kit/cast";
 import { Piece } from "../../kit/Character";
-import { CanvasPlane, Sheet, Crowd, crowdGrid, PaperLights } from "../../kit/Stage";
+import { CanvasPlane, Sheet, Crowd, crowdGrid, PaperLights, Puff } from "../../kit/Stage";
 import { paper, glow, geo, rng, FONT } from "../../kit/paper";
 import { hash, noise1, twos, easeOut, easeIn, clamp01, prog } from "../../kit/anim";
 import { drawInterior, drawTimerScreen, Gamepad, Phone, Sheep, Fireball, Pylon, CoolingTower, CellTower, Sparks, Smoke, Wire, Stars } from "./finale_world";
@@ -38,11 +38,6 @@ export const FacadeSet: React.FC<{ t: number; sec: number; dark?: boolean }> = (
   return (
     <>
       <NightLights k={dark ? 0.3 : 0.55} />
-      {dark && rows.flatMap((y, ri) => cols.map((x, ci) => {
-        const ph = ((tq * 1.3 + (ri * 3 + ci) * 0.37) % 1);
-        const s = 0.5 + ph * 0.9;
-        return <CanvasPlane key={"a" + ri + ci} texKey={"fin_aaa" + ((ri + ci) % 3)} w={1.2 * s} h={0.5 * s} px={384} position={[x + (ci - 1) * ph * 0.4, y + 0.35 + ph * 0.9, 0.4 + ph]} transparent opacity={1 - ph * ph} draw={(g, W, H) => { g.clearRect(0, 0, W, H); g.font = `900 ${H * 0.75}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = H * 0.12; g.strokeStyle = "#111"; g.lineJoin = "round"; const txt = ["А-А-А!", "АААА!!", "СУ-У-У!"][(ri + ci) % 3]; g.strokeText(txt, W / 2, H / 2); g.fillStyle = "#ff4d4d"; g.fillText(txt, W / 2, H / 2); }} />;
-      }))}
       <Sheet w={14} h={14} color="#0d1430" position={[0, 3, -6]} />
       <Moon position={[2.6, 6.2, -5.8]} r={0.45} />
       <Sheet w={5.2} h={9} color="#5b4466" position={[0, 2.2, 0]} />
@@ -165,8 +160,8 @@ function drawGaugeFace(g: CanvasRenderingContext2D, W: number, H: number, cracke
   g.strokeStyle = "#111"; g.lineWidth = 5;
   for (let i = 0; i <= 10; i++) { const th = 1.25 - (2.5 * i) / 10; g.beginPath(); g.moveTo(cx - Math.sin(th) * R * 0.74, cy - Math.cos(th) * R * 0.74); g.lineTo(cx - Math.sin(th) * R * 0.6, cy - Math.cos(th) * R * 0.6); g.stroke(); }
   g.fillStyle = "#111"; g.textAlign = "center"; g.textBaseline = "middle";
-  g.font = `900 ${W * 0.075}px ${FONT}`; g.fillText("НАГРУЗКА СЕТИ", cx, H * 0.83);
-  g.font = `900 ${W * 0.06}px ${FONT}`; g.fillText("5 млн", cx - R * 0.88, cy + R * 0.32); g.fillStyle = "#c0161e"; g.fillText("86 млн", cx + R * 0.86, cy + R * 0.32);
+  g.font = `900 ${W * 0.1}px ${FONT}`; g.fillText("НАГРУЗКА", cx, H * 0.84);
+  g.font = `900 ${W * 0.09}px ${FONT}`; g.fillText("5М", cx - R * 0.8, cy + R * 0.3); g.fillStyle = "#c0161e"; g.fillText("86М", cx + R * 0.8, cy + R * 0.3);
   if (cracked) {
     g.strokeStyle = "#333"; g.lineWidth = 4;
     const r = rng(3);
@@ -179,16 +174,13 @@ function drawGridMap(g: CanvasRenderingContext2D, W: number, H: number, blink: b
   for (let x = 0; x < W; x += 32) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
   for (let y = 0; y < H; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
   g.fillStyle = blink ? "#ff2a2a" : "#a01010";
-  g.font = `900 ${H * 0.13}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle";
-  g.fillText("ПЕРЕГРУЗКА", W * 0.5, H * 0.17);
-  // столбики нагрузки по регионам
-  const r = rng(8);
-  for (let i = 0; i < 9; i++) { const h = H * (0.45 + r() * 0.2); g.fillStyle = i % 3 === 0 ? "#ffd23d" : "#ff2a2a"; g.fillRect(W * 0.08 + i * W * 0.095, H * 0.92 - h, W * 0.06, h); }
-  g.fillStyle = "#fff"; g.font = `900 ${H * 0.12}px ${FONT}`; g.fillText("1720%", W * 0.5, H * 0.45);
+  g.font = `900 ${H * 0.2}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText("ПЕРЕГРУЗКА", W * 0.5, H * 0.22);
+  g.fillStyle = "#fff"; g.font = `900 ${H * 0.42}px ${FONT}`; g.fillText("1720%", W * 0.5, H * 0.65);
 }
 
-export interface BunkerState { t: number; needle: number; broke: number; mouth: number; tsec: number }
-export const BunkerSet: React.FC<BunkerState & { showEngineer?: boolean }> = ({ t, needle, broke, mouth, tsec, showEngineer = true }) => {
+export interface BunkerState { t: number; needle: number; broke: number; mouth: number; tsec: number; tcs: number }
+export const BunkerSet: React.FC<BunkerState & { showEngineer?: boolean }> = ({ t, needle, broke, mouth, tsec, tcs, showEngineer = true }) => {
   const tq = twos(t);
   const tr = (i: number, a = 0.025) => noise1(tq * 30 + i * 13) * a;
   const lamp = Math.floor(t * 4) % 2 === 0;
@@ -207,11 +199,11 @@ export const BunkerSet: React.FC<BunkerState & { showEngineer?: boolean }> = ({ 
       <mesh geometry={geo.ellipse(0.13, 0.15, 0.05)} position={[-1.5, 3.75, -1.85]} material={glow(lamp ? "#ff2020" : "#7a1010")} />
       {lamp && <mesh geometry={geo.ellipse(0.6, 0.6, 0.01)} position={[-1.5, 3.75, -1.9]} material={glow("#ff3030", 0.25)} />}
       {/* монитор энергосистемы */}
-      <Piece g={geo.rrect(1.55, 1.05, 0.05, 0.06)} c="#222" p={[-0.95, 2.75, -1.92]} />
-      <CanvasPlane texKey={"fin_gridmap_" + (lamp ? 1 : 0)} w={1.42} h={0.92} px={512} position={[-0.95, 2.75, -1.86]} draw={(g, W, H) => drawGridMap(g, W, H, lamp)} />
+      <Piece g={geo.rrect(1.75, 1.1, 0.05, 0.06)} c="#222" p={[-0.78, 2.7, -1.92]} />
+      <CanvasPlane texKey={"fin_gridmap2_" + (lamp ? 1 : 0)} w={1.62} h={0.97} px={512} position={[-0.78, 2.7, -1.86]} draw={(g, W, H) => drawGridMap(g, W, H, lamp)} />
       {/* табло отсчёта */}
-      <Piece g={geo.rrect(1.1, 0.42, 0.04, 0.06)} c="#111" p={[0.55, 3.55, -1.92]} />
-      <CanvasPlane texKey={"fin_bunkclock_" + tsec} w={1.0} h={0.34} px={384} position={[0.55, 3.55, -1.86]} draw={(g, W, H) => { g.fillStyle = "#120404"; g.fillRect(0, 0, W, H); g.fillStyle = "#ff3030"; g.shadowColor = "#ff3030"; g.shadowBlur = 12; g.font = `900 ${H * 0.6}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(`00:00:0${tsec}`, W / 2, H / 2 + 2); }} />
+      <Piece g={geo.rrect(1.6, 0.5, 0.04, 0.06)} c="#111" p={[0.5, 3.6, -1.92]} />
+      <CanvasPlane texKey={`fin_bclk_${tsec}_${tcs}`} w={1.5} h={0.4} px={448} position={[0.5, 3.6, -1.86]} draw={(g, W, H) => { g.fillStyle = "#120404"; g.fillRect(0, 0, W, H); g.fillStyle = "#ff3030"; g.shadowColor = "#ff3030"; g.shadowBlur = 12; g.font = `900 ${H * 0.62}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(`00:00:0${tsec}.${String(tcs).padStart(2, "0")}`, W / 2, H / 2 + 2); }} />
       {/* стрелочный прибор */}
       <group position={[0.65, 2.6, -1.85]}>
         <Piece g={geo.ellipse(0.62, 0.62, 0.12)} c="#3a3d42" />
@@ -229,11 +221,17 @@ export const BunkerSet: React.FC<BunkerState & { showEngineer?: boolean }> = ({ 
         })}
         {broke > 0 && <Smoke t={t} at={[-Math.sin(needle) * L * 0.95, Math.cos(needle) * L * 0.95, 0.25]} n={5} s={0.55} color="#4a4a50" opacity={0.85} rise={0.9} />}
         {broke > 0 && <Smoke t={t + 0.7} at={[0, 0.1, 0.22]} n={3} s={0.4} color="#6a6a70" opacity={0.6} />}
+        {broke > 0 && [0, 0.35, 0.7].map((d, i) => {
+          const pk = clamp01((broke * 1.2 - d * 0.5) / 0.6);
+          if (pk <= 0) return null;
+          return <Puff key={"pf" + i} position={[0.5 + i * 0.1 + pk * 0.2, 0.05 + pk * 0.45 + i * 0.08, 0.3 + i * 0.02]} scale={0.3 + pk * 0.55} color={i % 2 ? "#3e3f44" : "#5c5d63"} opacity={1} />;
+        })}
         {broke > 0 && <Sparks t={t} at={[[-Math.sin(needle) * 0.6, Math.cos(needle) * 0.6, 0.3], [0.45, 0.4, 0.3]]} s={1.2} />}
       </group>
       {/* стол */}
-      <mesh geometry={geo.rrect(3.8, 0.14, 0.03, 1.3)} position={[-1.05, 1.5, 0]} material={paper("#5e4634")} />
-      {[-2.85, 0.75].map((x) => [-0.5, 0.5].map((z) => <Piece key={x + "_" + z} g={geo.rrect(0.12, 1.43, 0.02, 0.12)} c="#4a3626" p={[x, 0.72, z]} />))}
+      <mesh geometry={geo.rrect(2.55, 0.14, 0.03, 1.3)} position={[-0.32, 1.5, 0]} material={paper("#5e4634")} />
+      <mesh geometry={geo.rrect(2.55, 0.03, 0.01, 1.3)} position={[-0.32, 1.585, 0]} material={paper("#7a5c44")} />
+      {[-1.5, 0.86].map((x) => [-0.5, 0.55].map((z) => <Piece key={x + "_" + z} g={geo.rrect(0.13, 1.43, 0.02, 0.12)} c={z > 0 ? "#4a3626" : "#3a2a1c"} p={[x, 0.72, z]} />))}
       {/* на столе: бумаги, кружка, красный телефон */}
       <Piece g={geo.rrect(0.5, 0.04, 0.01, 0.4)} c="#f4f1e8" p={[-0.3, 1.59, 0.1]} />
       <Piece g={geo.rrect(0.16, 0.2, 0.03, 0.16)} c="#e8e8e8" p={[0.35, 1.68, 0.25]} />
@@ -246,7 +244,7 @@ export const BunkerSet: React.FC<BunkerState & { showEngineer?: boolean }> = ({ 
       </group>
       {/* инженер */}
       {showEngineer && (
-        <Character {...CAST.engineer} position={[1.2 + tr(7, 0.01), 0, -0.9]} eyes="wide" mouth="talk" mouthOpen={mouth} sweat={1} armL={0.25} armR={1.9 + tr(8, 0.1)} headTilt={tr(9, 0.06)} lookX={-0.4} lookY={0.5} rotationY={-0.15} />
+        <Character {...CAST.engineer} position={[0.98 + tr(7, 0.01), 0, -1.2]} eyes="wide" mouth="talk" mouthOpen={mouth} sweat={1} armL={0.25} armR={1.9 + tr(8, 0.1)} headTilt={tr(9, 0.06)} lookX={-0.4} lookY={0.5} rotationY={-0.15} />
       )}
     </>
   );
@@ -354,7 +352,7 @@ export const DarkRoom: React.FC<{ t: number; phone: number; scream: number; mout
   return (
     <>
       <PaperLights intensity={0.13} tint="#6f80c0" />
-      <pointLight position={[0.15, 1.35, 1.0]} intensity={2.6 * phone * light} distance={4} decay={1.2} color="#b9d6ff" />
+      <pointLight position={[0.15, 1.35, 1.0]} intensity={3.4 * phone * light} distance={4} decay={1.2} color="#b9d6ff" />
       <Sheet w={12} h={8} color="#1b2136" position={[0, 2.5, -2.5]} />
       <Sheet w={12} h={8} color="#191a22" position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} />
       {/* окно с луной (тёмный город) */}
@@ -380,7 +378,7 @@ export const DarkRoom: React.FC<{ t: number; phone: number; scream: number; mout
       {/* геймер */}
       <Character {...CAST.gamer} position={[0.35 + shiver, 0, 0.5]} legs="sit" eyes={scream > 0.5 ? "crazy" : tvLook ? "wide" : "sad"} mouth={scream > 0.5 ? "scream" : "talk"} mouthOpen={mouth} lookX={tvLook ? -0.9 : -0.2} lookY={tvLook ? 0 : -0.8} armR={0.95} armL={0.5} handR={<Phone lit={phone} s={1.1} />} rotationY={tvLook ? -0.35 : 0} headTilt={tvLook ? 0.1 : 0.05} />
       {/* отсвет телефона на лице */}
-      {phone > 0 && <CanvasPlane texKey="fin_phoneglow" w={1.6} h={1.6} px={128} position={[0.45, 1.3, 0.85]} transparent opacity={0.35 * phone * light} draw={(g, W, H) => { const gr = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W / 2); gr.addColorStop(0, "rgba(190,220,255,0.8)"); gr.addColorStop(1, "rgba(190,220,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, W, H); }} />}
+      {phone > 0 && <CanvasPlane texKey="fin_phoneglow" w={1.6} h={1.6} px={128} position={[0.45, 1.3, 0.85]} transparent opacity={0.45 * phone * light} draw={(g, W, H) => { const gr = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W / 2); gr.addColorStop(0, "rgba(190,220,255,0.8)"); gr.addColorStop(1, "rgba(190,220,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, W, H); }} />}
     </>
   );
 };

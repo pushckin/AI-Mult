@@ -267,7 +267,7 @@ function shotCmd2(t: number) {
   const push = Math.min(1, lt / 1.6);
   const cam = onCmd
     ? { pos: [1.0 + sx, 1.8 + sy, -3.7 + push * (last ? 1.1 : 0.4)] as V3, look: [CX - 0.1, 1.35, CZ] as V3, fov: 44 }
-    : { pos: [0.1 + sx, 1.8 + sy, 4.9 - push * 0.4] as V3, look: [0.2, 1.2, 0] as V3, fov: 44 };
+    : { pos: [-0.6 + sx, 1.8 + sy, 4.9 - push * 0.4] as V3, look: [0.05, 1.2, 0] as V3, fov: 44 };
   return (
     <>
       <Cam pos={cam.pos} look={cam.look} fov={cam.fov} roll={onCmd ? -0.03 : 0.03} />
@@ -318,7 +318,7 @@ function shotSpit(t: number) {
     const armR = lerp(0.15, 1.55, easeOutBack(k));
     const clack = s.start + 2.15;
     const glint = prog(t, clack, clack + 0.4);
-    els.push(<Cam key="c" pos={[0.2, 1.4, 4.4 - prog(lt, 1.55, 3.1) * 0.6]} look={[0.25, 1.2, 0]} fov={44} />);
+    els.push(<Cam key="c" pos={[1.0, 0.95, 4.3 - prog(lt, 1.55, 3.1) * 0.6]} look={[0.25, 1.3, 0]} fov={44} roll={-0.06} />);
     els.push(<Gamer key="g" t={t} s={{ eyes: "crazy", mouth: "grin", gap: true, armL: 1.2, armR, strip: true, spit: 1, lookX: 0, lookY: 0 }} />);
     if (glint > 0 && glint < 1) els.push(<mesh key="gl" geometry={starG(4, 0.2 * Math.sin(glint * Math.PI), 0.03)} material={glow("#ffffff")} position={[0.95, 1.15, 0.5]} rotation={[0, 0, glint * 2]} />);
     els.push(<Holders key="h" t={t} releaseR={1} />);
@@ -342,22 +342,22 @@ function shotGamer1(t: number) {
   const talking = m > 0.12;
   const tw = twos(t);
   const gm: GamerState = { eyes: "crazy", mouth: talking ? "talk" : "grin", open: m, gap: true, armL: 1.2, armR: 1.55, strip: true, spit: 1, headTilt: Math.sin(tw * 1.3) * 0.06, lookX: 0 };
-  let cam: { pos: V3; look: V3; fov: number };
+  let cam: { pos: V3; look: V3; fov: number; roll?: number };
   let showCmd = false;
   const cmd: CmdState = { eyes: "normal", mouth: "o", open: 0.3, sweat: 1, armR: 0.3, armL: 0.3, lean: 0 };
   if (t < b1) {
     const k = prog(t, g.start - 0.1, b1);
-    cam = { pos: [0.15, 1.45, 4.6 - easeInOut(k) * 1.2], look: [0.2, 1.22, 0], fov: 44 };
+    cam = { pos: [0.15, 1.45, 4.0 - easeInOut(k) * 1.5], look: [0.2, 1.25, 0], fov: 44, roll: 0.05 * k };
   } else if (t < react0) {
     const k = prog(t, b1, react0);
-    cam = { pos: [-1.9 + k * 0.3, 0.9, 3.3], look: [0.1, 1.35, 0], fov: 44 }; // снизу сбоку
+    cam = { pos: [-1.4 + k * 0.3, 0.3, 3.0], look: [0, 1.55, 0], fov: 46, roll: 0.15 }; // снизу сбоку, голландский угол
   } else if (t < react1) {
     const k = prog(t, react0, react1);
     showCmd = true;
     cam = { pos: [1.0, 1.75, -3.5 + k * 0.5], look: [CX - 0.1, 1.38, CZ], fov: 44 };
   } else if (t < b2) {
     const k = prog(t, react1, b2);
-    cam = { pos: [0.1, 1.8, 4.8 - k * 0.3], look: [0.2, 1.2, 0], fov: 44 };
+    cam = { pos: [-0.6, 1.8, 4.8 - k * 0.3], look: [0.05, 1.2, 0], fov: 44 };
     showCmd = true;
   } else {
     const k = prog(t, b2, ZM().start);
@@ -366,7 +366,7 @@ function shotGamer1(t: number) {
   const hideCmd = cam.pos[2] < CZ - 0.2 ? false : cam.pos[2] > 0.5 && !showCmd;
   return (
     <>
-      <Cam pos={cam.pos} look={cam.look} fov={cam.fov} />
+      <Cam pos={cam.pos} look={cam.look} fov={cam.fov} roll={cam.roll ?? 0} />
       <InnerSet t={t} />
       <Gamer t={t} s={gm} />
       <Holders t={t} releaseR={1} onlyL={cam.pos[2] < 0} />

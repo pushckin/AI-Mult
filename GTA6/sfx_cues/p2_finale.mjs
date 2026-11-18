@@ -1,6 +1,6 @@
 // Звуки сцены p2_finale (Обратный отсчёт + Финал). Формат: { cue, at, sfx, gain, from?: 'end', len? }
 // Визуальные привязки: тики таймера — p2_space +0/+1/+2, p2_eng end-3.7, p2_go +0, СТАРТ p2_go +1.0;
-// стрелка пробивает прибор — p2_eng end-1.6; неон p2_flash +0; БАБАХ p2_flash +1.3; страна гаснет p2_flash +2.9.
+// стрелка пробивает прибор — p2_eng end-1.6; неон p2_flash +0; БАБАХ p2_flash +1.3; страна гаснет p2_flash +2.5 (волна до +3.1).
 export default [
   // --- космос: гудящая страна, отсчёт 5-4-3, монтаж ---
   { cue: 'p2_space', at: 0, sfx: 'transformer_hum', gain: 0.55, len: 4.0 },
@@ -26,7 +26,7 @@ export default [
   { cue: 'p2_flash', at: 0, sfx: 'start_chime', gain: 0.9 },
   { cue: 'p2_flash', at: 1.3, sfx: 'explosion_big', gain: 1.0 },
   { cue: 'p2_flash', at: 1.3, sfx: 'rumble_low', gain: 0.6 },
-  { cue: 'p2_flash', at: 2.85, sfx: 'power_blackout', gain: 0.75 },
+  { cue: 'p2_flash', at: 2.45, sfx: 'power_blackout', gain: 0.75 },
   // --- тишина: сверчки и треск проводов ---
   { cue: 'p2_silence', at: 0.1, sfx: 'crickets', gain: 0.55, len: 5.0 },
   { cue: 'p2_silence', at: 0.2, sfx: 'fire_crackle', gain: 0.3, len: 4.0 },

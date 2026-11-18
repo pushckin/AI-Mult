@@ -224,7 +224,7 @@ export const VentMask: React.FC<{ off?: number }> = ({ off = 0 }) => (
   <group position={[0.0 + off * 0.25, 0.95 - off * 0.2, 0.2]} rotation={[0, 0, off * 0.8]}>
     <Piece g={geo.ellipse(0.16, 0.13, 0.03)} c="#bfe6f5" m={paper("#bfe6f5", { opacity: 0.85 })} />
     <Piece g={geo.ellipse(0.07, 0.06, 0.03)} c="#7fb3d5" p={[0, -0.06, 0.02]} />
-    <Piece g={geo.rrect(0.9, 0.03, 0.01, 0.015)} c="#6d8fa3" p={[0, 0.04, -0.02]} />
+    <Piece g={geo.rrect(0.9, 0.03, 0.01, 0.015)} c="#6d8fa3" p={[0, 0.04, -0.3]} />
   </group>
 );
 

@@ -17,8 +17,8 @@ const D = () => C() - N();
 export const NEWS_START = () => N() - 0.05;
 export const CRASH_AT = () => N() + Math.min(3.2, D() * 0.44); // мужик влетает в окно (sfx glass_break: news1+3.2)
 export const NEWS_CUT1 = () => CRASH_AT() - 0.5;     // крупный → общий
-export const CORD_IN = () => C() - 0.12;             // врезка: шнур
-export const CORD_OUT = () => C() + 0.62;            // назад в эфир, глюки
+export const CORD_IN = () => C() - 0.45;             // врезка: шнур
+export const CORD_OUT = () => C() + 0.6;            // назад в эфир, глюки
 export const NEWS_END = () => N2().end;
 
 // ---------- задник: ночной город в огне за окном ----------
@@ -88,13 +88,9 @@ const Studio: React.FC<{ t: number; broken: boolean }> = ({ t, broken }) => (
 
 const Desk: React.FC = () => (
   <group position={[0.3, 0, 0.35]}>
-    <mesh position={[0, 0.45, 0]} material={paper("#0f1d42")}><boxGeometry args={[2.2, 0.9, 0.8]} /></mesh>
+    <mesh position={[0, 0.45, 0]} material={paper("#33529a")}><boxGeometry args={[2.2, 0.9, 0.8]} /></mesh>
     <mesh position={[0, 0.91, 0]} material={paper("#d8dee9")}><boxGeometry args={[2.3, 0.04, 0.9]} /></mesh>
-    <CanvasPlane texKey="bt_desk" w={2.0} h={0.5} px={600} position={[0, 0.48, 0.41]} draw={(g, W, H) => {
-      g.fillStyle = "#c62828"; g.fillRect(0, 0, W, H);
-      g.fillStyle = "#fff"; g.fillRect(0, H * 0.78, W, H * 0.08);
-      drawText(g, W, H * 0.8, "НЗ-24", { fg: "#fff", size: 90 });
-    }} />
+    {[0.2, 0.62].map((y, i) => <mesh key={i} position={[0, y, 0.41]} material={paper(i ? "#c62828" : "#25407a")}><planeGeometry args={[2.2, i ? 0.06 : 0.04]} /></mesh>)}
     {/* бумаги и кружка */}
     <mesh position={[0.75, 0.97, 0.15]} geometry={geo.rrect(0.16, 0.14, 0.03, 0.12)} material={paper("#e8e8e8")} />
   </group>
@@ -116,13 +112,29 @@ const Anchor: React.FC<{ t: number; stand?: number; look?: number; yell?: boolea
   );
 };
 
+/** Украденная плазма, которую мужик держит перед собой */
+function drawLoot(g: CanvasRenderingContext2D, W: number, H: number) {
+  g.fillStyle = "#6fa8ff"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#9cc4ff"; g.beginPath(); g.moveTo(W * 0.1, H); g.lineTo(W * 0.45, 0); g.lineTo(W * 0.6, 0); g.lineTo(W * 0.25, H); g.fill();
+  g.fillStyle = "#e53935"; g.beginPath(); g.arc(W * 0.78, H * 0.3, H * 0.24, 0, 7); g.fill();
+  g.fillStyle = "#fff"; g.font = `900 ${H * 0.2}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("-70%", W * 0.78, H * 0.31);
+  g.fillStyle = "#111"; g.font = `900 ${H * 0.16}px ${FONT}`; g.fillText("4K  85\"", W * 0.35, H * 0.78);
+}
+const LootTv: React.FC<{ oneHand?: boolean }> = ({ oneHand }) => (
+  <group position={[oneHand ? -0.3 : 0, 0.5, 0.28]} rotation={[0, 0, oneHand ? 0.12 : 0]}>
+    <mesh geometry={geo.rrect(1.4, 0.86, 0.04, 0.06)} material={paper("#1a1a1a")} />
+    <CanvasPlane texKey="bt_loot" w={1.3} h={0.76} px={400} position={[0, 0, 0.05]} draw={drawLoot} />
+    {(oneHand ? [-1] : [-1, 1]).map((s) => <mesh key={s} position={[s * 0.72, -0.05, 0.08]} geometry={geo.ellipse(0.1, 0.1, 0.04)} material={paper("#eab48c")} />)}
+  </group>
+);
+
 /** Мужик с плазмой */
 const PlasmaGuy: React.FC<{ t: number; pose: "fly" | "walk" | "stare" | "yank"; arm?: number; legPhase?: number }> = ({ t, pose, arm = 0.2, legPhase = 0 }) => (
   <Character outfit="tshirt" color="#2f9e57" color2="#3b3f5c" hat="curly" hairColor="#2a1a12" adult stubble sweat={1} skin="#eab48c"
     eyes={pose === "fly" ? "crazy" : pose === "stare" ? "squint" : "crazy"} mouth={pose === "fly" ? "scream" : "grin"} mouthOpen={1}
     lookX={pose === "stare" ? 0 : 0.3} legs={pose === "walk" || pose === "fly" ? "run" : "stand"} legPhase={legPhase}
     armL={0.35} armR={arm}
-    handL={<group position={[-0.25, 0.1, 0.12]} rotation={[0, 0, 0.25]}><Plasma w={1.1} h={0.66} screen="#2b3550" /></group>}
+    front={<LootTv oneHand={pose === "yank" || pose === "stare"} />}
     back={<BackGear kind={1} />} />
 );
 
@@ -164,7 +176,7 @@ export const NewsWide: React.FC<{ t: number }> = ({ t }) => {
     } else {
       const u = easeInOut(prog(t, walk0, walk1));
       const walking = t > walk0 && t < walk1;
-      guy = <group position={[lerp(-0.7, -0.45, u), walking ? Math.abs(Math.sin(tq * 9)) * 0.05 : 0, lerp(1.1, 3.25, u)]}><PlasmaGuy t={t} pose={t > walk1 ? "stare" : "walk"} arm={t > walk1 ? 0.15 : 0.4} legPhase={walking ? tq * 14 : 0} /></group>;
+      guy = <group position={[lerp(-0.7, -0.45, u), walking ? Math.abs(Math.sin(tq * 9)) * 0.05 : 0, lerp(1.1, 2.3, u)]}><PlasmaGuy t={t} pose={t > walk1 ? "stare" : "walk"} arm={t > walk1 ? 0.15 : 0.4} legPhase={walking ? tq * 14 : 0} /></group>;
     }
   }
   const anchorLook = t > ca + 0.1 && t < ca + 0.9 ? -0.9 : 0;
@@ -244,11 +256,11 @@ export const NewsGraphics: React.FC<{ t: number; glitch?: number; censored: bool
         </div>
       )}
       {liveOn && <div style={{ position: "absolute", right: 150, top: 192, fontWeight: 900, fontSize: 44, color: "rgba(255,255,255,0.85)", WebkitTextStroke: "3px rgba(0,0,0,0.5)", paintOrder: "stroke fill", transform: `translateX(${-gx}px)` }}>НЗ-24</div>}
-      <div style={{ position: "absolute", left: 30, right: 30, top: 1010, transform: `translateX(${(1 - lt) * -1100 + gx}px)` }}>
+      <div style={{ position: "absolute", left: 30, right: 30, top: 950, transform: `translateX(${(1 - lt) * -1100 + gx}px)` }}>
         <div style={{ display: "inline-block", background: "#c62828", color: "#fff", fontWeight: 900, fontSize: 46, padding: "6px 22px", border: "5px solid #111", borderBottom: "none" }}>ЭКСТРЕННЫЙ ВЫПУСК</div>
         <div style={{ background: "#f7f3e8", color: "#111", fontWeight: 900, fontSize: 52, padding: "8px 22px", border: "5px solid #111", whiteSpace: "nowrap", overflow: "hidden" }}>{headline}</div>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 1168, height: 56, background: "#111", overflow: "hidden", display: "flex", alignItems: "center", opacity: lt }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 1112, height: 56, background: "#111", overflow: "hidden", display: "flex", alignItems: "center", opacity: lt }}>
         <div style={{ position: "absolute", left: 1080 - scroll, whiteSpace: "nowrap", fontWeight: 800, fontSize: 36, color: "#ffe14d" }}>{TICKER + TICKER}</div>
         <div style={{ position: "relative", background: "#ffe14d", color: "#111", fontWeight: 900, fontSize: 34, padding: "8px 16px", height: "100%", display: "flex", alignItems: "center" }}>СРОЧНО</div>
       </div>

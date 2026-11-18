@@ -27,7 +27,7 @@ function islandPath(g: CanvasRenderingContext2D, W: number, H: number) {
 }
 
 /** Огни страны: lit — тёплые окна; neon — загрузочный неон; arcs — искрящие дуги (вариант кадра) */
-function drawLights(g: CanvasRenderingContext2D, W: number, H: number, mode: "lit" | "neon") {
+function drawLights(g: CanvasRenderingContext2D, W: number, H: number, mode: "lit" | "neon", cut = 0) {
   g.clearRect(0, 0, W, H);
   g.save();
   islandPath(g, W, H);
@@ -41,6 +41,7 @@ function drawLights(g: CanvasRenderingContext2D, W: number, H: number, mode: "li
     for (let y = 0; y < H; y += 14) g.fillRect(0, y, W, 4);
     g.globalAlpha = 1;
   } else {
+    g.beginPath(); g.rect(0, cut * H, W, H); g.clip();
     g.fillStyle = "rgba(255,190,60,0.22)"; g.fillRect(0, 0, W, H);
     // все окна страны: ровная россыпь
     for (let i = 0; i < 2600; i++) {
@@ -98,7 +99,8 @@ export const Stars: React.FC<{ z?: number; w?: number; h?: number }> = ({ z = -6
 );
 
 /** Земля (ночная сторона) + острова НЗ. lights 0..1 — яркость огней, neon 0..1, buzz — гудящий трансформатор, rings — 0..1 волна крика */
-export const SpaceNZ: React.FC<{ t: number; lights: number; neon?: number; buzz?: number; rings?: number; burn?: number }> = ({ t, lights, neon = 0, buzz = 0, rings = -1, burn = 0 }) => {
+export const SpaceNZ: React.FC<{ t: number; lights: number; wave?: number; neon?: number; buzz?: number; rings?: number; burn?: number }> = ({ t, lights, wave = 0, neon = 0, buzz = 0, rings = -1, burn = 0 }) => {
+  const step = Math.round(clamp01(wave) * 12);
   const sphere = useMemo(() => new THREE.SphereGeometry(6, 64, 48), []);
   const ring = useMemo(() => new THREE.RingGeometry(5.95, 6.45, 96), []);
   const tq = Math.floor(t * 12);
@@ -121,8 +123,8 @@ export const SpaceNZ: React.FC<{ t: number; lights: number; neon?: number; buzz?
       ))}
       {lights > 0.01 && (
         <>
-          <CanvasPlane texKey="fin_halo_lit" w={6.5} h={7.5} px={256} position={[0, 0, 0.03]} transparent opacity={0.55 * lights * hum} draw={(g, W, H) => drawHalo(g, W, H, "rgba(255,210,90,0.9)", "rgba(255,170,40,0.35)")} />
-          <CanvasPlane texKey="fin_lights_lit" w={BW} h={BH} px={512} position={[0, 0, 0.16]} transparent opacity={lights} draw={(g, W, H) => drawLights(g, W, H, "lit")} />
+          <CanvasPlane texKey="fin_halo_lit" w={6.5} h={7.5} px={256} position={[0, 0, 0.03]} transparent opacity={0.55 * lights * hum * (1 - clamp01(wave))} draw={(g, W, H) => drawHalo(g, W, H, "rgba(255,210,90,0.9)", "rgba(255,170,40,0.35)")} />
+          <CanvasPlane texKey={"fin_lights_lit" + (step ? "_w" + step : "")} w={BW} h={BH} px={512} position={[0, 0, 0.16]} transparent opacity={lights} draw={(g, W, H) => drawLights(g, W, H, "lit", step / 12)} />
         </>
       )}
       {neon > 0.01 && (
@@ -143,6 +145,16 @@ export const SpaceNZ: React.FC<{ t: number; lights: number; neon?: number; buzz?
   );
 };
 const RING_UNIT = new THREE.RingGeometry(0.9, 1.0, 64);
+
+/** Финал: в тёмной стране мигает один-единственный экранчик (телефон на 1%) */
+export const EndBlink: React.FC<{ t: number }> = ({ t }) => {
+  const on = Math.floor(t * 2.2) % 2 === 0;
+  const p = proj(174.76, -36.85);
+  return on ? <group position={[p[0], p[1], 0.2]}>
+    <mesh geometry={geo.ellipse(0.12, 0.12, 0.01)} material={glow("#9fc4ff", 0.35)} />
+    <mesh position={[0, 0, 0.01]} geometry={geo.ellipse(0.035, 0.035, 0.01)} material={glow("#e6f0ff")} />
+  </group> : null;
+};
 
 // ---------- таймер ----------
 export const timerText = (sec: number) => `00:00:0${Math.max(0, sec)}`;

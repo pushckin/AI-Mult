@@ -7,16 +7,37 @@ import { timerText } from "./finale_world";
 
 const ink = (w: number, c = "#000") => ({ WebkitTextStroke: `${w}px ${c}`, paintOrder: "stroke fill" as const });
 
-/** Табло обратного отсчёта сверху кадра. tick — время с последней смены цифры (для «удара») */
-export const TimerHUD: React.FC<{ sec: number; tick: number; small?: boolean; label?: string }> = ({ sec, tick, small, label = "ДО РЕЛИЗА GTA VI" }) => {
-  const pop = 1 + 0.18 * (1 - easeOut(clamp01(tick / 0.25)));
+/** Табло обратного отсчёта сверху кадра. tick — время с последней смены цифры (для «удара»); cs — сотые; slow — «время тянется» */
+export const TimerHUD: React.FC<{ sec: number; tick: number; cs?: number | null; slow?: boolean; t?: number; small?: boolean; label?: string }> = ({ sec, tick, cs = null, slow, t = 0, small, label = "ДО РЕЛИЗА GTA VI" }) => {
+  const pop = 1 + 0.22 * (1 - easeOut(clamp01(tick / 0.3)));
   const sc = (small ? 0.72 : 1) * pop;
+  const red = sec <= 1;
+  const blink = slow && Math.floor(t * 2.5) % 2 === 0;
+  const col = red ? "#ff3b3b" : "#7ff3ff";
   return (
     <AbsoluteFill style={{ alignItems: "center", top: small ? 165 : 180, pointerEvents: "none" }}>
       <div style={{ transform: `scale(${sc}) rotate(-1.5deg)`, transformOrigin: "top center", background: "#f3e6c8", border: "6px solid #151515", boxShadow: "10px 10px 0 rgba(0,0,0,0.5)", padding: "12px 26px 18px", textAlign: "center" }}>
-        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 34, color: "#b71c1c", letterSpacing: 2 }}>{label}</div>
-        <div style={{ marginTop: 6, background: "#0c0f17", border: "4px solid #333", padding: "2px 22px", fontFamily: FONT, fontWeight: 900, fontSize: 112, lineHeight: 1.1, color: sec <= 1 ? "#ff3b3b" : "#7ff3ff", letterSpacing: 4, textShadow: `0 0 18px ${sec <= 1 ? "#ff3b3b" : "#2fd8ff"}` }}>{timerText(sec)}</div>
+        <div style={{ fontFamily: FONT, fontWeight: 900, fontSize: 34, color: "#b71c1c", letterSpacing: 2 }}>{slow ? "ВРЕМЯ ТЯНЕТСЯ… ×0.1" : label}</div>
+        <div style={{ marginTop: 6, background: "#0c0f17", border: "4px solid #333", padding: "2px 22px", fontFamily: FONT, fontWeight: 900, fontSize: 104, lineHeight: 1.1, color: col, letterSpacing: 4, textShadow: `0 0 18px ${red ? "#ff3b3b" : "#2fd8ff"}`, whiteSpace: "nowrap" }}>
+          {timerText(sec).slice(0, -1)}<span style={{ opacity: blink ? 0.6 : 1, color: blink ? "#ffffff" : undefined }}>{sec}</span>
+          {cs !== null && <span style={{ fontSize: 62, color: red ? "#ff8a8a" : "#bdf7ff" }}>.{String(cs).padStart(2, "0")}</span>}
+        </div>
       </div>
+    </AbsoluteFill>
+  );
+};
+
+/** Одна «крик»-надпись сверху кадра (вне зоны субтитров) */
+export const ShoutText: React.FC<{ t: number; t0: number }> = ({ t, t0 }) => {
+  const k = t - t0;
+  if (k < 0) return null;
+  const i = Math.floor(k / 0.55);
+  const kk = (k % 0.55) / 0.55;
+  const txt = ["А-А-А-А!", "СУ-У-У-У!", "АААААА!!"][i % 3];
+  const s = 0.6 + 0.5 * easeOutBack(clamp01(kk / 0.35));
+  return (
+    <AbsoluteFill style={{ alignItems: "center", top: 260 + (i % 2) * 90, pointerEvents: "none" }}>
+      <div style={{ transform: `scale(${s}) rotate(${i % 2 ? 6 : -7}deg)`, fontFamily: FONT, fontWeight: 900, fontSize: 150, color: "#ff3b3b", ...ink(16, "#111"), opacity: kk > 0.85 ? (1 - kk) / 0.15 : 1 }}>{txt}</div>
     </AbsoluteFill>
   );
 };
@@ -100,7 +121,10 @@ export const PhoneScreen: React.FC<{ k: number; t: number }> = ({ k, t }) => {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 34px", background: "#1f2a38", color: "#fff", fontWeight: 800, fontSize: 34 }}>
             <span>00:01</span>
             <span style={{ display: "flex", alignItems: "center", gap: 10, color: "#ff4d4d" }}>
-              <span style={{ fontSize: 30 }}>нет сети ✕</span>
+              <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 3, color: "#fff" }}>
+                <span style={{ fontSize: 30, marginRight: 4 }}>E</span>
+                {[10, 16, 22, 28].map((h, i) => <span key={i} style={{ width: 7, height: h, background: i === 0 ? "#fff" : "rgba(255,255,255,0.25)", display: "inline-block" }} />)}
+              </span>
               <span style={{ display: "inline-flex", alignItems: "center" }}>
                 <span style={{ width: 66, height: 32, border: "4px solid #fff", borderRadius: 7, padding: 3, boxSizing: "border-box", display: "inline-block" }}>
                   <span style={{ display: "block", width: 7, height: "100%", background: blink ? "#ff3b3b" : "transparent" }} />

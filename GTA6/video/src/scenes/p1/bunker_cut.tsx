@@ -51,12 +51,17 @@ export const WindowSet: React.FC<{ t: number; mouth: number; scared: number; low
   const bin = lower; // 0 — бинокль у глаз, 1 — опущен
   return (
     <group>
-      <ambientLight intensity={1.15} />
-      <directionalLight position={[-4, 6, 8]} intensity={1.4} color="#fff3dc" />
-      <hemisphereLight args={["#cfe8ff", "#8a7f70", 0.5]} />
+      <ambientLight intensity={1.45} />
+      <directionalLight position={[-4, 6, 8]} intensity={1.6} color="#fff3dc" />
+      <hemisphereLight args={["#cfe8ff", "#8a7f70", 0.6]} />
       {/* интерьер за спиной */}
-      <Sheet w={6} h={4} color="#1b201d" position={[0, 1.6, -1.6]} />
-      <pointLight position={[0, 1.6, 0.8]} intensity={2} distance={4} color="#fff2d0" />
+      <Sheet w={6} h={4} color="#2a312c" position={[0, 1.6, -1.6]} />
+      <pointLight position={[0, 1.6, 0.8]} intensity={3} distance={4} color="#fff2d0" />
+      {/* бункер стоит у самого океана: песок и прибой перед стеной */}
+      <Sheet w={30} h={10} color="#e3cc8c" rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 4]} />
+      <WaveStrip y={0.12} z={1.6} color="#bfe4f2" t={t} amp={0.05} w={30} seed={1} speed={0.6} />
+      <WaveStrip y={0.05} z={2.0} color="#3d98d6" t={t} amp={0.08} w={30} seed={2} speed={-0.5} />
+      <WaveStrip y={-0.05} z={2.3} color="#2a73b0" t={t} amp={0.1} w={30} seed={3} speed={0.7} />
       <Character {...CAST.defense} position={[0, 0, -0.55]} eyes={scared > 0.5 ? "wide" : "normal"} mouth="talk" mouthOpen={mouth} sweat={scared}
         armL={lerp(2.75, 0.4, bin)} armR={lerp(2.75, 0.4, bin)} brow={scared > 0.5 ? 1 : 0.2}
         front={bin < 0.5 ? <group position={[0, 1.33, 0.2]}><Binoculars glint={Math.floor(t * 6) % 5 === 0 ? 1 : 0} /></group> : undefined}
@@ -130,7 +135,7 @@ export const Palm: React.FC<{ position: [number, number, number]; s?: number; t:
 );
 
 /** пляж: самолёт скользит на брюхе. k — прогресс 0..1 по планy */
-export const BeachSet: React.FC<{ t: number; t0: number; t1: number }> = ({ t, t0, t1 }) => {
+export const BeachSet: React.FC<{ t: number; t0: number; t1: number; S?: number }> = ({ t, t0, t1, S = 0.72 }) => {
   const dur = t1 - t0;
   const k = prog(t, t0, t1);
   const touch = 0.18; // доля времени до касания
@@ -143,14 +148,14 @@ export const BeachSet: React.FC<{ t: number; t0: number; t1: number }> = ({ t, t
   const r = rng(Math.floor(t * 15));
   const sparks: React.ReactNode[] = [];
   if (sliding && speed > 0.08) for (let i = 0; i < 10; i++) {
-    const sx = x + 0.9 + r() * 1.6, sy = 0.05 + r() * 0.5 * speed;
-    sparks.push(<Piece key={i} g={geo.poly("spark", [[0, 0], [0.22, 0.03], [0.0, 0.05]], 0, 0.01)} c="#ffd23f" m={glow(i % 3 ? "#ffd23f" : "#ff8a2a")} p={[sx, sy, 0.5]} r={0.3 + r() * 0.6} />);
+    const sx = x + (0.9 + r() * 1.6) * S, sy = 0.05 + r() * 0.5 * speed * S;
+    sparks.push(<Piece key={i} g={geo.poly("spark", [[0, 0], [0.22, 0.03], [0.0, 0.05]], 0, 0.01)} c="#ffd23f" m={glow(i % 3 ? "#ffd23f" : "#ff8a2a")} p={[sx, sy, 0.5]} r={0.3 + r() * 0.6} s={[S * 1.4, S * 1.4, 1]} />);
   }
   const puffs: React.ReactNode[] = [];
   if (sliding) for (let i = 0; i < 7; i++) {
     const age = ((twos(t) - t0) * 1.2 + i * 0.17) % 1.2;
-    const px = x + 2.4 + i * 0.75 + age * 0.5;
-    puffs.push(<Puff key={i} position={[px, 0.25 + age * 0.6, 0.35 - i * 0.05]} scale={(0.4 + age * 0.9) * (0.4 + speed * 0.7)} color={i % 2 ? "#e9d8a6" : "#d8c48c"} />);
+    const px = x + (2.4 + i * 0.75 + age * 0.5) * S;
+    puffs.push(<Puff key={i} position={[px, (0.25 + age * 0.6) * S, 0.35 - i * 0.05]} scale={(0.4 + age * 0.9) * (0.4 + speed * 0.7) * S} color={i % 2 ? "#e9d8a6" : "#d8c48c"} />);
   }
   // бегущие с пляжа отдыхающие (толпа инстансами — уже с консолями!)
   const fleeing: CrowdMember[] = [0, 1, 2, 3, 4, 5].map((i) => ({ x: -2.2 - i * 0.55 - (t - t0) * (1.3 + hash(i) * 0.5), z: 1.0 + hash(i + 4) * 1.4, s: 0.55, variant: 5 + i * 9, phase: i }));
@@ -169,7 +174,7 @@ export const BeachSet: React.FC<{ t: number; t0: number; t1: number }> = ({ t, t
       {/* песок */}
       <Sheet w={60} h={20} color="#e6cf8f" rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.0, 4]} />
       {/* борозда за самолётом */}
-      {sliding && <mesh position={[(x + 4.2) / 2 + 1.0, 0.012, 0.2]} rotation={[-Math.PI / 2, 0, 0]} material={paper("#b89a58")}><planeGeometry args={[Math.max(0.01, 4.2 - x + 1.5), 0.5]} /></mesh>}
+      {sliding && <mesh position={[(x + 4.2) / 2 + 0.6, 0.012, 0.2]} rotation={[-Math.PI / 2, 0, 0]} material={paper("#a8884a")}><planeGeometry args={[Math.max(0.01, 4.2 - x + 1.0), 0.45]} /></mesh>}
       <Palm position={[-3.2, 0, -2.5]} t={t} s={1.1} lean={0.15} />
       <Palm position={[3.6, 0, -3.5]} t={t} s={1.3} lean={-0.12} />
       <Palm position={[-1.0, 0, -4.5]} t={t} s={0.9} />
@@ -180,7 +185,7 @@ export const BeachSet: React.FC<{ t: number; t0: number; t1: number }> = ({ t, t
         <Piece g={geo.arc(0.4, 0.35, 0, Math.PI, 0.045)} c="#fff" p={[0, 1.2, 0.01]} />
       </group>
       <Crowd members={fleeing} t={t} bounce={0.12} />
-      <group position={[x, y, 0]} rotation={[0, 0, rot]}>
+      <group position={[x, y, 0]} rotation={[0, 0, rot]} scale={S}>
         <Airliner t={t} />
       </group>
       {sparks}
@@ -205,8 +210,8 @@ function drawFerry(g: CanvasRenderingContext2D, W: number, H: number) {
 }
 export const FerrySet: React.FC<{ t: number; t0: number; t1: number }> = ({ t, t0, t1 }) => {
   const k = prog(t, t0, t1);
-  const sink = easeIn(k) * 1.0 + k * 0.4;
-  const tilt = 0.06 + k * 0.32 + Math.sin(twos(t) * 6) * 0.015;
+  const sink = 0.35 + easeIn(k) * 0.6 + k * 0.3;
+  const tilt = -(0.2 + k * 0.3) + Math.sin(twos(t) * 6) * 0.015; // корма (слева) уходит под воду
   // люди на пароме: плотная куча
   const r = rng(17);
   const deck: CrowdMember[] = [];
@@ -219,7 +224,8 @@ export const FerrySet: React.FC<{ t: number; t0: number; t1: number }> = ({ t, t
     const per = 0.9, off = hash(i) * per;
     const age = ((t - t0) + off) % per;
     const side = i % 2 ? 1 : -1;
-    fall.push({ x: side * (1.6 + age * (1.2 + hash(i + 2))), y: 1.6 + 2.2 * age - 6 * age * age, z: 0.4 + hash(i + 7) * 0.5, s: 0.42, variant: (i * 13) % 64, rot: age * 8 * side, phase: i });
+    const x0 = side > 0 ? 1.4 + hash(i + 1) * 1.2 : -1.0;
+    fall.push({ x: x0 + side * age * (1.0 + hash(i + 2)), y: (side > 0 ? 1.9 : 0.8) + 2.6 * age - 7 * age * age, z: 0.4 + hash(i + 7) * 0.5, s: 0.42, variant: (i * 13) % 64, rot: age * 8 * side, phase: i });
   }
   return (
     <group>
@@ -241,9 +247,14 @@ export const FerrySet: React.FC<{ t: number; t0: number; t1: number }> = ({ t, t
         </group>;
       })}
       <WaveStrip y={-0.05} z={1.2} color="#3d98d6" t={t} amp={0.12} w={60} seed={1} speed={-0.6} />
-      <WaveStrip y={-0.35} z={2.0} color="#2a73b0" t={t} amp={0.14} w={60} seed={2} speed={0.8} />
+      {/* барахтающиеся в воде с консолями */}
+      <Crowd members={Array.from({ length: 14 }, (_, i) => ({ x: (hash(i + 30) - 0.5) * 6, y: -0.75 + Math.sin(t * 3 + i) * 0.05, z: 1.4 + hash(i + 40) * 1.6, s: 0.5, variant: (i * 7) % 64, phase: i }))} t={t} bounce={0.04} />
+      <WaveStrip y={-0.55} z={1.9} color="#348ccc" t={t} amp={0.12} w={60} seed={3} speed={0.5} />
+      <Crowd members={Array.from({ length: 10 }, (_, i) => ({ x: (hash(i + 60) - 0.5) * 5, y: -1.25 + Math.sin(t * 3 + i) * 0.05, z: 3.2 + hash(i + 70) * 1.2, s: 0.55, variant: (i * 11) % 64, phase: i }))} t={t} bounce={0.04} />
+      <WaveStrip y={-1.05} z={3.4} color="#2a73b0" t={t} amp={0.14} w={60} seed={2} speed={0.8} />
+      <WaveStrip y={-1.6} z={4.6} color="#1f5f99" t={t} amp={0.16} w={60} seed={5} speed={-0.7} />
       {/* спасательный круг */}
-      <group position={[1.2, -0.05 + Math.sin(t * 3) * 0.04, 2.3]}>
+      <group position={[1.0, -1.15 + Math.sin(t * 3) * 0.04, 3.5]}>
         <mesh material={paper("#ff6f00")}><torusGeometry args={[0.2, 0.07, 8, 20]} /></mesh>
       </group>
     </group>
@@ -282,8 +293,8 @@ export const Swimmer: React.FC<{ position: [number, number, number]; t: number; 
 export const MattressSet: React.FC<{ t: number; t0: number }> = ({ t, t0 }) => {
   const dt = t - t0;
   const far: React.ReactNode[] = [];
-  for (let i = 0; i < 26; i++) {
-    const z = -3 - hash(i) * 9, x = (hash(i + 5) - 0.5) * (8 + -z * 1.4) - dt * 0.25;
+  for (let i = 0; i < 14; i++) {
+    const z = -9 - hash(i) * 5, x = (hash(i + 5) - 0.5) * (8 + -z * 1.4) - dt * 0.25;
     far.push(
       <group key={i} position={[x, -0.05, z]}>
         <Piece g={geo.rrect(1.2, 0.16, 0.08, 0.1)} c={MAT_COLORS[i % 6]} p={[0, 0.06, 0]} />
@@ -300,16 +311,17 @@ export const MattressSet: React.FC<{ t: number; t0: number }> = ({ t, t0 }) => {
       <CanvasPlane texKey="skyMat" w={70} h={24} glowing={false} draw={drawSky("#79bde9", "#e3f3fa")} position={[0, 8, -20]} />
       {/* берег Новой Зеландии вдали */}
       <Piece g={geo.poly("coast", [[-12, 0], [-6, 1.4], [-3, 1.1], [0, 2.0], [4, 1.3], [12, 0.6], [12, -1], [-12, -1]], 0.3, 0.05)} c="#4f9a48" p={[2, 0, -17]} />
-      <CanvasPlane texKey="coastSign" w={3.2} h={0.7} glowing={false} draw={(g, W, H) => {
-        g.fillStyle = "#f7e9c9"; g.fillRect(0, 0, W, H); g.font = `900 ${Math.floor(H * 0.5)}px ${FONT}`; g.fillStyle = "#1b1b1b"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("НОВАЯ ЗЕЛАНДИЯ →", W / 2, H / 2 + 2);
-      }} position={[3, 2.6, -16.8]} />
+      <CanvasPlane texKey="coastSign2" w={6} h={1.1} glowing={false} draw={(g, W, H) => {
+        g.fillStyle = "#f7e9c9"; g.fillRect(0, 0, W, H); g.strokeStyle = "#1b1b1b"; g.lineWidth = 8; g.strokeRect(4, 4, W - 8, H - 8); g.font = `900 ${Math.floor(H * 0.42)}px ${FONT}`; g.fillStyle = "#1b1b1b"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("НОВАЯ ЗЕЛАНДИЯ →", W / 2, H / 2 + 2);
+      }} position={[0, 3.3, -16.8]} />
       <WaveStrip y={0.0} z={-14} color="#2f80c2" t={t} amp={0.06} w={70} />
       {far}
       <WaveStrip y={-0.05} z={-2.2} color="#3d98d6" t={t} amp={0.1} w={50} seed={2} speed={0.5} />
-      <Swimmer position={[-0.8, -0.05, -1.2]} t={t} i={1} s={0.75} />
-      <Swimmer position={[1.3, -0.05, -1.6]} t={t} i={2} s={0.7} />
-      <WaveStrip y={-0.1} z={-0.5} color="#348ccc" t={t} amp={0.12} w={50} seed={3} speed={-0.6} />
-      <Swimmer position={[0.15 - dt * 0.12, -0.05, 0.6]} t={t} i={0} hero />
+      <Swimmer position={[-1.1 - dt * 0.1, -0.05, -6.0]} t={t} i={1} s={0.9} />
+      <WaveStrip y={-0.08} z={-4.6} color="#3a92d2" t={t} amp={0.1} w={50} seed={6} speed={-0.4} />
+      <Swimmer position={[1.25 - dt * 0.1, -0.05, -3.0]} t={t} i={2} s={0.85} />
+      <WaveStrip y={-0.1} z={-1.6} color="#348ccc" t={t} amp={0.12} w={50} seed={3} speed={-0.6} />
+      <Swimmer position={[-0.2 - dt * 0.12, -0.05, 0.4]} t={t} i={0} s={0.8} hero />
       <WaveStrip y={-0.12} z={1.3} color="#2a73b0" t={t} amp={0.14} w={50} seed={4} speed={0.8} />
     </group>
   );
@@ -342,7 +354,7 @@ export const Sheep: React.FC<{ position: [number, number, number]; t: number; s?
 };
 
 // ---------- сарай ----------
-function drawPlanks(base: string, seed: number, sign?: string) {
+function drawPlanks(base: string, seed: number, sign?: string, signY = 0.06) {
   return (g: CanvasRenderingContext2D, W: number, H: number) => {
     const r = rng(seed);
     const n = 12;
@@ -355,9 +367,9 @@ function drawPlanks(base: string, seed: number, sign?: string) {
       for (let k = 0; k < 2; k++) { g.fillStyle = "rgba(40,20,10,0.5)"; g.beginPath(); g.arc((i + 0.5) * (W / n), r() * H, 5, 0, 7); g.fill(); }
     }
     if (sign) {
-      g.fillStyle = "#f7e9c9"; g.fillRect(W * 0.2, H * 0.06, W * 0.6, H * 0.16);
-      g.font = `900 ${Math.floor(H * 0.09)}px ${FONT}`; g.fillStyle = "#1b1b1b"; g.textAlign = "center"; g.textBaseline = "middle";
-      g.fillText(sign, W / 2, H * 0.145);
+      g.fillStyle = "#f7e9c9"; g.fillRect(W * 0.3, H * signY, W * 0.4, H * 0.1);
+      g.font = `900 ${Math.floor(H * 0.055)}px ${FONT}`; g.fillStyle = "#1b1b1b"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText(sign, W / 2, H * (signY + 0.055));
     }
   };
 }
@@ -380,24 +392,17 @@ export const Man: React.FC<{ i: number; position: [number, number, number]; t: n
   );
 };
 
-export const BarnInterior: React.FC<{ t: number; men: number; sheep?: boolean; lying?: boolean }> = ({ t, men, sheep = true, lying }) => {
+export const BarnInterior: React.FC<{ t: number; men: number; sheep?: boolean; lying?: boolean; board?: boolean }> = ({ t, men, sheep = true, lying, board = true }) => {
+  // ряды мужиков за овцой, каждый на своей глубине (без взаимопроникновения)
+  const rows: [number, number[]][] = [[0.1, [-1.55, 1.0]], [-0.55, [-1.05, 0.05, 1.1]], [-1.15, [-1.6, -0.5, 0.55, 1.6]], [-1.75, [-1.05, 0.05, 1.1]], [-2.35, [-1.6, -0.5, 0.55, 1.6]]];
   const spots: [number, number, number][] = [];
-  const r = rng(31);
-  // кольца вокруг овцы, от ближних к дальним
-  for (let ring = 0; ring < 3; ring++) {
-    const n = [5, 6, 6][ring];
-    for (let i = 0; i < n; i++) {
-      const a = Math.PI * (0.05 + (0.9 * i) / Math.max(1, n - 1));
-      const R = 0.95 + ring * 0.55;
-      spots.push([Math.cos(a) * R * 1.25 + (r() - 0.5) * 0.15, 0, -Math.sin(a) * R * 0.8 - 0.25 - ring * 0.2]);
-    }
-  }
+  rows.forEach(([z, xs], ri) => xs.forEach((x, j) => spots.push([x, 0, z - j * 0.035 - ri * 0.01])));
   return (
     <group>
       <ambientLight intensity={1.05} color="#ffe9c4" />
       <directionalLight position={[2, 6, 6]} intensity={1.2} color="#ffe2b0" />
       <pointLight position={[0, 3, 1]} intensity={3} distance={8} color="#ffcf80" />
-      <CanvasPlane texKey="barnBack" w={10} h={5} px={1024} glowing={false} draw={drawPlanks("#8b3a24", 4, "СТОЙЛО №3 · ОВЦЫ")} position={[0, 2.5, -3.6]} />
+      <CanvasPlane texKey={board ? "barnBack" : "barnBackSign"} w={10} h={5} px={1024} glowing={false} draw={drawPlanks("#8b3a24", 4, board ? undefined : "СТОЙЛО №3 · ОВЦЫ", 0.4)} position={[0, 2.5, -3.6]} />
       <CanvasPlane texKey="barnL" w={10} h={5} px={1024} glowing={false} draw={drawPlanks("#7a3220", 5)} position={[-3.6, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} />
       <CanvasPlane texKey="barnR" w={10} h={5} px={1024} glowing={false} draw={drawPlanks("#7a3220", 6)} position={[3.6, 2.5, 0]} rotation={[0, -Math.PI / 2, 0]} />
       <Sheet w={10} h={12} color="#d9b65a" rotation={[-Math.PI / 2, 0, 0]} />
@@ -413,11 +418,11 @@ export const BarnInterior: React.FC<{ t: number; men: number; sheep?: boolean; l
       <Piece g={geo.rrect(1.1, 0.6, 0.06, 0.6)} c="#e3bf55" p={[-2.6, 0.3, -2.9]} />
       <Piece g={geo.rrect(1.1, 0.6, 0.06, 0.6)} c="#d8b24a" p={[-2.3, 0.9, -3.0]} />
       {/* табличка-грамота на стене */}
-      <CanvasPlane texKey="barnRatio" w={1.5} h={0.8} glowing={false} draw={(g, W, H) => {
+      {board && <CanvasPlane texKey="barnRatio" w={1.5} h={0.8} glowing={false} draw={(g, W, H) => {
         g.fillStyle = "#1f2a24"; g.fillRect(0, 0, W, H); g.strokeStyle = "#8a6a3a"; g.lineWidth = 14; g.strokeRect(0, 0, W, H);
         g.font = `900 ${Math.floor(H * 0.3)}px ${FONT}`; g.fillStyle = "#f4f4f4"; g.textAlign = "center"; g.textBaseline = "middle";
         g.fillText("1 ОВЦА = 15", W / 2, H * 0.36); g.font = `800 ${Math.floor(H * 0.17)}px ${FONT}`; g.fillText("ПОТНЫХ МУЖИКОВ", W / 2, H * 0.72);
-      }} position={[1.15, 2.75, -3.55]} />
+      }} position={[0.3, 2.65, -3.55]} />}
       {/* лампа */}
       <group position={[0, 3.3, -0.6]} rotation={[0, 0, Math.sin(t * 1.8) * 0.12]}>
         <mesh position={[0, 0.4, 0]} material={paper("#111")}><boxGeometry args={[0.02, 0.8, 0.02]} /></mesh>
@@ -449,10 +454,10 @@ export const BarnExterior: React.FC<{ t: number; t0: number }> = ({ t, t0 }) => 
     const age = dt - off;
     if (age < 0 || age > per) continue;
     const dir = i % 2 ? 1 : -1;
-    const x = dir * (0.2 + age * (1.3 + (i % 3) * 0.35)), y = 0.6 + 5.2 * age - 4.9 * age * age, z = 0.3 + age * 1.2;
+    const x = dir * (0.2 + age * (1.1 + (i % 3) * 0.3)), y = 1.0 + 6.0 * age - 4.9 * age * age, z = 0.3 + age * 1.0;
     flying.push(<Sheep key={i} position={[x, Math.max(-0.2, y), z]} t={t} s={0.75} flip={dir < 0} eyes="wide" baa={1} rot={age * 6 * dir} />);
   }
-  const queue: [number, number, number][] = [[-1.45, 0, 0.6], [1.5, 0, 0.7], [-2.2, 0, 1.6], [2.2, 0, 1.7]];
+  const queue: [number, number, number][] = [[-1.35, 0, 0.55], [1.4, 0, 0.65]];
   return (
     <group>
       <ambientLight intensity={1.15} />
@@ -466,7 +471,9 @@ export const BarnExterior: React.FC<{ t: number; t0: number }> = ({ t, t0 }) => 
         <CanvasPlane texKey="barnFront" w={5.2} h={3.4} px={768} glowing={false} draw={drawPlanks("#a8402a", 8)} position={[0, 1.7, 0]} />
         <Piece g={geo.poly("roof", [[-3.0, 0], [3.0, 0], [0, 1.7]], 0.05, 0.08)} c="#5b2a1a" p={[0, 3.3, 0.02]} />
         <Piece g={geo.poly("roofIn", [[-2.4, 0], [2.4, 0], [0, 1.3]], 0.05, 0.08)} c="#a8402a" p={[0, 3.35, 0.05]} />
-        <Piece g={geo.rrect(0.9, 0.5, 0.05, 0.08)} c="#f4f4ef" p={[0, 4.0, 0.07]} />
+        <CanvasPlane texKey="barnFarm" w={1.1} h={0.45} glowing={false} draw={(g, W, H) => {
+          g.fillStyle = "#f4f4ef"; g.fillRect(0, 0, W, H); g.font = `900 ${Math.floor(H * 0.55)}px ${FONT}`; g.fillStyle = "#5b2a1a"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ФЕРМА", W / 2, H / 2 + 2);
+        }} position={[0, 3.95, 0.12]} />
         <Piece g={geo.rrect(2.2, 2.4, 0.02, 0.02)} c="#1a0f0a" p={[0, 1.2, 0.03]} />
         {/* распахнутые створки */}
         {[-1, 1].map((sd) => <group key={sd} position={[sd * 1.1, 0, 0.05]} rotation={[0, sd * -1.1, 0]}>

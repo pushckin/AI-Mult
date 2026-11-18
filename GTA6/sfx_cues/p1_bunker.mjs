@@ -4,8 +4,8 @@ export default [
   // открытие: гул бункера, счётчик, кружка
   { cue: 'p1_open', at: -0.1, sfx: 'rumble_low', gain: 0.45 },
   { cue: 'p1_open', at: 0.25, sfx: 'counter_spin', gain: 0.75 },
-  { cue: 'p1_open', at: 2.0, sfx: 'whoosh', gain: 0.35 },
-  { cue: 'p1_open', at: 2.45, sfx: 'mug_crash', gain: 0.85 },
+  { cue: 'p1_open', at: 1.65, sfx: 'whoosh', gain: 0.35 },
+  { cue: 'p1_open', at: 2.25, sfx: 'mug_crash', gain: 0.85 },
   // министр обороны: океан под докладом, «Боинг», паром, матрасы
   { cue: 'p1_def1', at: 0.0, sfx: 'ocean', gain: 0.35 },
   { cue: 'p1_def1', at: 2.0, sfx: 'jet_crash', gain: 0.75 },

@@ -4,9 +4,9 @@ import { SceneDef } from "../types";
 import { cue, part, prog, easeInOut, easeOut, easeIn, shake, mouthFor, clamp01, lerp, noise1, twos } from "../../kit/anim";
 import { Cam } from "../../kit/Stage";
 import { Fade } from "../../kit/Overlays";
-import { SpaceNZ, Stars } from "./finale_world";
+import { SpaceNZ, Stars, EndBlink } from "./finale_world";
 import { FacadeSet, BarnSet, BeachSet, BunkerSet, GamerRoom, BoomSet, SilenceSet, DarkRoom, DarkCity } from "./finale_sets";
-import { TimerHUD, StartStamp, LoadingScreen, BoomText, PhoneScreen, EndCard } from "./finale_overlays";
+import { ShoutText, TimerHUD, StartStamp, LoadingScreen, BoomText, PhoneScreen, EndCard } from "./finale_overlays";
 
 const C = (id: string) => cue("p2", id);
 const SP = C("p2_space"), ENG = C("p2_eng"), GO = C("p2_go"), FL = C("p2_flash"), SIL = C("p2_silence"), PH = C("p2_phone"), G3 = C("p2_gamer3"), SC = C("p2_scream"), END = C("p2_end");
@@ -19,7 +19,7 @@ const T_TICK2 = Math.max(ENG.start + ENGD * 0.35, ENG.end - 3.7); // от кон
 const T_TICK1 = GO.start, T_TICK0 = GO.start + 1.0;
 const T_NEON_LOAD = FL.start + 0.6;     // космос-неон → загрузочный экран
 const T_BOOM = FL.start + 1.3;          // взрыв (музыка глушится отсюда)
-const T_DARKSPACE = FL.start + 2.9;     // вид из космоса: страна гаснет
+const T_DARKSPACE = FL.start + 2.3;     // вид из космоса: страна гаснет
 const T_PHONE_UI = PH.start + 0.9;      // экран телефона на весь кадр
 const T_G3_CU = G3.start + Math.min(1.1, (G3.end - G3.start) * 0.4);
 const T_CITY = G3.end + 0.2;
@@ -44,7 +44,18 @@ function tickAge(t: number) {
   for (const x of ticks) if (t >= x) last = x;
   return t - last;
 }
-const hud = (t: number, small = false) => <TimerHUD sec={timerSec(t)} tick={tickAge(t)} small={small} />;
+/** сотые доли: «слоу-мо» — секунды 3 и 2 тянутся через всю реплику инженера, 1 — пролетает за секунду */
+function timerCs(t: number): number | null {
+  const tq = Math.floor(t * 12) / 12;
+  let v: number;
+  if (t < T_TICK3 || t >= T_TICK0) return null;
+  if (t < T_TICK2) v = 0.99 * (1 - prog(tq, T_TICK3, T_TICK2));
+  else if (t < T_TICK1) v = 0.99 * (1 - prog(tq, T_TICK2, T_TICK1));
+  else v = 0.99 * (1 - prog(tq, T_TICK1, T_TICK0));
+  return Math.round(v * 100);
+}
+const isSlow = (t: number) => t >= T_TICK3 + 0.3 && t < T_TICK1;
+const hud = (t: number, small = false) => <TimerHUD sec={timerSec(t)} cs={timerCs(t)} slow={isSlow(t)} t={t} tick={tickAge(t)} small={small} />;
 
 // ---- стрелка прибора ----
 function needleAngle(t: number) {
@@ -54,10 +65,10 @@ function needleAngle(t: number) {
   if (t > T_NEEDLE_BREAK) a = -1.35 - 0.12 * easeOut(prog(t, T_NEEDLE_BREAK, T_NEEDLE_BREAK + 0.3)) + jit * 0.5;
   return a;
 }
-const bunkerState = (t: number) => ({ t, needle: needleAngle(t), broke: t > T_NEEDLE_BREAK ? prog(t, T_NEEDLE_BREAK, T_NEEDLE_BREAK + 1.2) + 0.001 : 0, mouth: mouthFor("p2", ["p2_eng"], t), tsec: timerSec(t) >= 3 ? 3 : 2 });
+const bunkerState = (t: number) => ({ t, needle: needleAngle(t), broke: t > T_NEEDLE_BREAK ? prog(t, T_NEEDLE_BREAK, T_NEEDLE_BREAK + 1.2) + 0.001 : 0, mouth: mouthFor("p2", ["p2_eng"], t), tsec: timerSec(t), tcs: timerCs(t) ?? 0 });
 
 // ---- космос ----
-const space = (t: number, opts: { z: number; lights: number; neon?: number; buzz?: number; rings?: number; burn?: number; shk?: [number, number]; look?: [number, number, number] }) => {
+const space = (t: number, opts: { z: number; lights: number; wave?: number; neon?: number; buzz?: number; rings?: number; burn?: number; shk?: [number, number]; look?: [number, number, number] }) => {
   const [sx, sy] = opts.shk ?? [0, 0];
   return (
     <>
@@ -65,7 +76,7 @@ const space = (t: number, opts: { z: number; lights: number; neon?: number; buzz
       <ambientLight intensity={0.9} />
       <directionalLight position={[-6, 4, 8]} intensity={1.6} />
       <Stars />
-      <SpaceNZ t={t} lights={opts.lights} neon={opts.neon} buzz={opts.buzz} rings={opts.rings} burn={opts.burn} />
+      <SpaceNZ t={t} lights={opts.lights} wave={opts.wave} neon={opts.neon} buzz={opts.buzz} rings={opts.rings} burn={opts.burn} />
     </>
   );
 };
@@ -120,7 +131,7 @@ export const SCENES: SceneDef[] = [
     render3d: (t) => {
       const k = prog(t, ENG.start, ENG.start + ENGD * 0.3);
       return <>
-        <Cam pos={[lerp(0.05, 0.2, k), 1.0, lerp(7.8, 7.2, k)]} look={[0.15, 0.85, 0]} fov={40} />
+        <Cam pos={[lerp(0.2, 0.3, k), 2.3, lerp(7.8, 7.2, k)]} look={[0.25, 1.05, 0]} fov={40} />
         <BunkerSet {...bunkerState(t)} />
       </>;
     },
@@ -130,10 +141,11 @@ export const SCENES: SceneDef[] = [
     render3d: (t) => {
       const k = prog(t, ENG.start + ENGD * 0.3, ENG.start + ENGD * 0.52);
       return <>
-        <Cam pos={[lerp(1.45, 1.3, k), 1.3, lerp(2.6, 2.2, k)]} look={[1.0, 1.25, -0.9]} fov={40} />
+        <Cam pos={[lerp(1.45, 1.3, k), 1.3, lerp(2.6, 2.2, k)]} look={[0.98, 1.25, -1.2]} fov={40} />
         <BunkerSet {...bunkerState(t)} />
       </>;
     },
+    overlay: (t) => hud(t, true),
   },
   {
     id: "fin_bunker_table", from: ENG.start + ENGD * 0.52, to: ENG.start + ENGD * 0.74, bg: "#2a2c30",
@@ -144,6 +156,7 @@ export const SCENES: SceneDef[] = [
         <BunkerSet {...bunkerState(t)} showEngineer={false} />
       </>;
     },
+    overlay: (t) => hud(t, true),
   },
   {
     id: "fin_bunker_gauge", from: ENG.start + ENGD * 0.74, to: GO.start, bg: "#2a2c30",
@@ -225,10 +238,11 @@ export const SCENES: SceneDef[] = [
     id: "fin_dark_space", from: T_DARKSPACE, to: SIL.start, bg: "#04060e",
     render3d: (t) => {
       const k = t - T_DARKSPACE;
-      const pattern = [1, 1, 1, 1, 1, 0.15, 0.9, 0, 0.6, 0, 0.25, 0];
-      const lights = pattern[Math.min(pattern.length - 1, Math.floor(k / 0.07))];
-      const [sx, sy] = shake(t, T_DARKSPACE, 0.12, 0.5);
-      return space(t, { z: lerp(8.2, 9.5, easeOut(prog(t, T_DARKSPACE, SIL.start))), lights, burn: clamp01(k * 2) * 0.8, shk: [sx, sy] });
+      // 0.2 с горит → волна темноты с севера на юг (0.6 с, с миганием) → кромешная тьма
+      const wave = prog(k, 0.2, 0.8);
+      const flick = k > 0.2 && k < 0.8 && Math.floor(k * 15) % 3 === 0 ? 0.55 : 1;
+      const [sx, sy] = shake(t, T_DARKSPACE + 0.2, 0.1, 0.6);
+      return space(t, { z: lerp(8.0, 9.2, easeOut(prog(t, T_DARKSPACE, SIL.start))), lights: wave >= 1 ? 0 : flick, wave, burn: clamp01((k - 0.3) * 2) * 0.8, shk: [sx, sy] });
     },
   },
 
@@ -251,7 +265,7 @@ export const SCENES: SceneDef[] = [
     id: "fin_phone", from: PH.start, to: G3.start, bg: "#05060a",
     render3d: (t) => {
       const k = prog(t, PH.start, G3.start);
-      const phone = t > PH.start + 0.3 ? 1 : 0.15;
+      const phone = t > PH.start + 0.3 ? 1 : 0.75;
       return <>
         <Cam pos={[0.45, 1.1, lerp(4.2, 3.7, k)]} look={[0.4, 0.95, 0.5]} fov={40} />
         <DarkRoom t={t} phone={phone} scream={0} mouth={0} />
@@ -323,6 +337,7 @@ export const SCENES: SceneDef[] = [
         <FacadeSet t={t} sec={0} dark />
       </>;
     },
+    overlay: (t) => <ShoutText t={t} t0={T_SC_WIN} />,
   },
   {
     id: "fin_scream_space", from: T_SC_SPACE, to: END.start, bg: "#04060e",
@@ -336,9 +351,14 @@ export const SCENES: SceneDef[] = [
   {
     id: "fin_end", from: END.start, to: TOTAL, bg: "#04060e",
     render3d: (t) => {
-      const k = prog(t, T_SC_SPACE, END.start + 2.5);
+      const k0 = prog(END.start, T_SC_SPACE, END.start + 2.5);
+      const z0 = lerp(7, 15, easeOut(k0));
+      const z = lerp(z0, z0 - 3.5, easeInOut(prog(t, END.start, TOTAL)));
       const [sx, sy] = shake(t, T_SC_SPACE, 0.5, 2.2, 22);
-      return space(t, { z: lerp(7, 15, easeOut(k)), lights: 0, burn: 0.5, rings: (t - T_SC_SPACE) * 0.9, shk: [sx, sy] });
+      return <>
+        {space(t, { z, lights: 0, burn: 0.5, rings: (t - T_SC_SPACE) * 0.9, shk: [sx, sy] })}
+        <EndBlink t={t} />
+      </>;
     },
     overlay: (t) => <>
       <Fade opacity={0.35 * prog(t, END.start, END.start + 0.4)} />

@@ -89,10 +89,10 @@ const WALL_CROWD: CrowdMember[] = (() => {
 })();
 
 const SOLDIERS: { x: number; z: number; flyAt: number; v: V3; spin: number; eyes: "wide" | "dead"; armL: number; armR: number }[] = [
-  { x: -2.4, z: 8.2, flyAt: 1.8, v: [-2.5, 9, 3], spin: 7, eyes: "dead", armL: 2.6, armR: 2.2 },
-  { x: -0.8, z: 9.4, flyAt: 1.92, v: [-0.6, 11, 4], spin: -8, eyes: "wide", armL: 2.4, armR: 2.8 },
-  { x: 0.9, z: 8.6, flyAt: 1.86, v: [1.4, 10, 3.5], spin: 9, eyes: "dead", armL: 2.9, armR: 2.0 },
-  { x: 2.5, z: 9.8, flyAt: 1.98, v: [2.4, 8.5, 4], spin: -6, eyes: "wide", armL: 2.2, armR: 2.6 },
+  { x: -2.3, z: 11.2, flyAt: 1.8, v: [-2.5, 9, 3], spin: 7, eyes: "dead", armL: 2.6, armR: 2.2 },
+  { x: -1.25, z: 12.2, flyAt: 1.92, v: [-0.6, 11, 4], spin: -8, eyes: "wide", armL: 2.4, armR: 2.8 },
+  { x: 1.25, z: 11.6, flyAt: 1.86, v: [1.4, 10, 3.5], spin: 9, eyes: "dead", armL: 2.9, armR: 2.0 },
+  { x: 2.3, z: 12.6, flyAt: 1.98, v: [2.4, 8.5, 4], spin: -6, eyes: "wide", armL: 2.2, armR: 2.6 },
 ];
 
 export const WallShot: React.FC<{ t: number }> = ({ t }) => {
@@ -105,10 +105,10 @@ export const WallShot: React.FC<{ t: number }> = ({ t }) => {
   const crowdAdv = Math.max(0, t - breach);
   const front = -1.5 + crowdAdv * 11;
   const members = WALL_CROWD.map((m) => {
-    const zz = m.z + crowdAdv * 11;
+    const zz = m.z + crowdAdv * 16;
     const inGap = Math.abs(m.x) < 3.6 + Math.max(0, crowdAdv - 0.4) * 6;
     const hidden = zz > -0.6 && !inGap;
-    return { ...m, z: Math.min(zz, 9.5 + hash(m.phase ?? 0) * 0.5), hidden: hidden || (crowdAdv <= 0 && m.z > -2), y: zz > 0.0 && zz < 9.6 && Math.abs(m.x) < 3.6 ? 0.72 : 0 };
+    return { ...m, z: Math.min(zz, 15.5 + hash(m.phase ?? 0) * 1.5), hidden: hidden || (crowdAdv <= 0 && m.z > -2), y: zz > 0.0 && zz < 9.6 && Math.abs(m.x) < 3.6 ? 0.72 : 0 };
   });
   // карабкающиеся по стене до обрушения
   const climbers: CrowdMember[] = t < o + 1.0 ? [-3.1, -1.6, 0.3, 1.9, 3.3].map((x, j) => ({ x, z: 0.75, y: SLAB_H - 0.7 + Math.abs(Math.sin(tq * 6 + j)) * 0.25, s: 1.1, variant: j * 9 + 3, rot: (j % 2 ? 0.2 : -0.2) })) : [];
@@ -135,10 +135,10 @@ export const WallShot: React.FC<{ t: number }> = ({ t }) => {
         const fa = o + s.flyAt;
         const panic = t > o + 0.7;
         if (t < fa) {
-          const run = panic ? Math.min(1.2, (t - (o + 0.7)) * 3) : 0;
+          const run = panic ? Math.min(0.4, (t - (o + 0.7)) * 1.5) : 0;
           return <Character key={j} {...CAST.soldier} position={[s.x, 0, s.z + run]} eyes="wide" mouth={panic ? "scream" : "o"} mouthOpen={0.8} lookY={panic ? 0.6 : 0.8} legs={panic ? "run" : "stand"} legPhase={tq * 18 + j} armL={panic ? 2.5 : 0.3} armR={panic ? 2.3 : 0.3} handR={!panic ? <mesh material={paper("#2b2b2b")} position={[0.1, 0.05, 0.05]}><planeGeometry args={[0.6, 0.1]} /></mesh> : undefined} />;
         }
-        const p = ballistic(t, fa, [s.x, 0, s.z + 1.2], s.v, 14);
+        const p = ballistic(t, fa, [s.x, 0, s.z + 0.4], s.v, 14);
         return (
           <group key={j} position={p} rotation={[0, 0, s.spin * (t - fa)]}>
             <Character {...CAST.soldier} position={[0, -0.9, 0]} eyes={s.eyes} mouth="scream" mouthOpen={1} armL={s.armL} armR={s.armR} legs="run" legPhase={tq * 20} />
@@ -146,7 +146,7 @@ export const WallShot: React.FC<{ t: number }> = ({ t }) => {
         );
       })}
       {/* овцы */}
-      {[[-1.4, 11.6, 1.95, [-3, 10, 3], 1], [1.5, 11.2, 2.0, [3, 11, 3.5], 0], [0.2, 12.4, 2.06, [0.8, 12, 2], 1]].map(([x, z, fl, v, f], j) => {
+      {[[-1.3, 16.4, 1.95, [-3, 10, 3], 1], [1.3, 16.0, 2.0, [3, 11, 3.5], 0], [0.1, 17.0, 2.06, [0.8, 12, 2], 1]].map(([x, z, fl, v, f], j) => {
         const fa = o + (fl as number);
         if (t < fa) return <Sheep key={j} position={[x as number, 0, z as number]} scale={0.8} flip={!!f} legPhase={t > o + 0.8 ? tq * 20 : 0} />;
         const p = ballistic(t, fa, [x as number, 0.3, z as number], v as V3, 14);
