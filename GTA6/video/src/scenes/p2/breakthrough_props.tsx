@@ -62,8 +62,8 @@ export const Tank: React.FC<{ position?: V3; rot?: number; scale?: number; crush
 export const Plasma: React.FC<{ w?: number; h?: number; screen?: string; position?: V3; rotation?: V3; on?: boolean; screenNode?: React.ReactNode }> = ({ w = 1.2, h = 0.72, screen = "#24344f", position, rotation, on, screenNode }) => (
   <group position={position} rotation={rotation}>
     <Piece g={geo.rrect(w, h, 0.03, 0.05)} c="#111" />
-    {screenNode ?? <mesh position={[0, 0.0, 0.031]} material={on ? glow(screen) : paper(screen)}><planeGeometry args={[w - 0.08, h - 0.08]} /></mesh>}
-    <mesh position={[-w * 0.18, h * 0.12, 0.033]} rotation={[0, 0, -0.6]} material={glow("#ffffff", 0.12)}><planeGeometry args={[w * 0.05, h * 0.9]} /></mesh>
+    {screenNode ?? <mesh position={[0, 0.0, 0.045]} material={on ? glow(screen) : paper(screen)}><planeGeometry args={[w - 0.08, h - 0.08]} /></mesh>}
+    <mesh position={[-w * 0.18, h * 0.12, 0.048]} rotation={[0, 0, -0.6]} material={glow("#ffffff", 0.12)}><planeGeometry args={[w * 0.05, h * 0.9]} /></mesh>
   </group>
 );
 
@@ -229,6 +229,10 @@ export const VentMask: React.FC<{ off?: number }> = ({ off = 0 }) => (
 );
 
 // ---------- осколки стекла ----------
+const TRIS: Pt[][] = [
+  [[0, 1], [0.7, -0.6], [-0.5, -0.4]], [[0, 1.2], [0.4, -0.5], [-0.3, -0.7]], [[-0.6, 0.8], [0.8, 0.2], [-0.1, -0.9]],
+  [[0, 0.9], [0.9, -0.2], [0.1, -0.8], [-0.6, -0.2]], [[-0.3, 1], [0.5, 0.6], [0.2, -1], [-0.4, -0.3]],
+];
 export const Shards: React.FC<{ t: number; t0: number; origin: V3; n?: number; seed?: number; spread?: number; dir?: V3 }> = ({ t, t0, origin, n = 22, seed = 3, spread = 2.4, dir = [0, 0.6, 2.2] }) => {
   if (t < t0) return null;
   const r = rng(seed);
@@ -236,11 +240,11 @@ export const Shards: React.FC<{ t: number; t0: number; origin: V3; n?: number; s
   const els: React.ReactNode[] = [];
   for (let i = 0; i < n; i++) {
     const vx = (r() - 0.5) * spread + dir[0], vy = r() * 2.2 + dir[1], vz = r() * dir[2] + 0.3;
-    const sz = 0.05 + r() * 0.16;
+    const sz = 0.05 + r() * 0.13;
     const spin = (r() - 0.5) * 18;
-    const x = origin[0] + vx * dt, y = Math.max(0.02, origin[1] + (r() - 0.5) * 1.2 + vy * dt - 4.9 * dt * dt), z = origin[2] + vz * dt;
-    const pts: Pt[] = [[0, sz], [sz * 0.7, -sz * 0.6], [-sz * 0.5, -sz * 0.4]];
-    els.push(<mesh key={i} position={[x, y, z]} rotation={[spin * dt * 0.3, spin * dt * 0.5, spin * dt]} geometry={geo.poly("sh" + (i % 5), pts.map(([a, b]) => [a / sz * 0.1, b / sz * 0.1] as Pt), 0, 0.01)} scale={[sz * 10, sz * 10, 1]} material={glow(i % 3 ? "#cdeefe" : "#ffffff", 0.9)} />);
+    const oy = (r() - 0.5) * 1.2, ox = (r() - 0.5) * 0.8;
+    const x = origin[0] + ox + vx * dt, y = Math.max(0.02, origin[1] + oy + vy * dt - 4.9 * dt * dt), z = origin[2] + vz * dt;
+    els.push(<mesh key={i} position={[x, y, z]} rotation={[spin * dt * 0.3, spin * dt * 0.5, spin * dt]} geometry={geo.poly("shard" + (i % 5), TRIS[i % 5], 0, 0.01)} scale={[sz, sz, 1]} material={glow(i % 3 ? "#cdeefe" : "#ffffff", 0.9)} />);
   }
   return <>{els}</>;
 };

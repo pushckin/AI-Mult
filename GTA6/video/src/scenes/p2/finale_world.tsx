@@ -117,27 +117,27 @@ export const SpaceNZ: React.FC<{ t: number; lights: number; neon?: number; buzz?
         <mesh key={i} geometry={geo.poly("nz" + i, poly, 0.02, 0.07)} position={[0, 0, 0.06]} material={paper(dark ? "#141a14" : neon > 0.5 ? "#3a1450" : "#2c5a33")} />
       ))}
       {burn > 0 && CITIES.slice(0, 8).map((c, i) => (
-        <mesh key={"b" + i} geometry={geo.ellipse(0.05, 0.05, 0.01)} position={[c[0], c[1], 0.12]} material={glow(i % 2 ? "#ff7a1a" : "#ffcc33", burn * (0.5 + 0.5 * hash(tq + i)))} />
+        <mesh key={"b" + i} geometry={geo.ellipse(0.05, 0.05, 0.01)} position={[c[0], c[1], 0.17]} material={glow(i % 2 ? "#ff7a1a" : "#ffcc33", burn * (0.5 + 0.5 * hash(tq + i)))} />
       ))}
       {lights > 0.01 && (
         <>
           <CanvasPlane texKey="fin_halo_lit" w={6.5} h={7.5} px={256} position={[0, 0, 0.03]} transparent opacity={0.55 * lights * hum} draw={(g, W, H) => drawHalo(g, W, H, "rgba(255,210,90,0.9)", "rgba(255,170,40,0.35)")} />
-          <CanvasPlane texKey="fin_lights_lit" w={BW} h={BH} px={512} position={[0, 0, 0.11]} transparent opacity={lights} draw={(g, W, H) => drawLights(g, W, H, "lit")} />
+          <CanvasPlane texKey="fin_lights_lit" w={BW} h={BH} px={512} position={[0, 0, 0.16]} transparent opacity={lights} draw={(g, W, H) => drawLights(g, W, H, "lit")} />
         </>
       )}
       {neon > 0.01 && (
         <>
           <CanvasPlane texKey="fin_halo_neon" w={9} h={10} px={256} position={[0, 0, 0.035]} transparent opacity={0.9 * neon} draw={(g, W, H) => drawHalo(g, W, H, "rgba(255,60,210,1)", "rgba(40,220,255,0.45)")} />
-          <CanvasPlane texKey="fin_lights_neon" w={BW} h={BH} px={512} position={[0, 0, 0.115]} transparent opacity={neon} draw={(g, W, H) => drawLights(g, W, H, "neon")} />
+          <CanvasPlane texKey="fin_lights_neon" w={BW} h={BH} px={512} position={[0, 0, 0.165]} transparent opacity={neon} draw={(g, W, H) => drawLights(g, W, H, "neon")} />
         </>
       )}
       {buzz > 0.01 && (
-        <CanvasPlane texKey={"fin_arcs" + (tq % 4)} w={BW} h={BH} px={512} position={[0, 0, 0.13]} transparent opacity={buzz} draw={(g, W, H) => drawArcs(g, W, H, tq % 4)} />
+        <CanvasPlane texKey={"fin_arcs" + (tq % 4)} w={BW} h={BH} px={512} position={[0, 0, 0.18]} transparent opacity={buzz} draw={(g, W, H) => drawArcs(g, W, H, tq % 4)} />
       )}
       {rings >= 0 && [0, 0.33, 0.66].map((o, i) => {
         const k = (rings + o) % 1;
         const s = 0.4 + k * 3.2;
-        return <mesh key={"r" + i} position={[0.1, -0.2, 0.2]} scale={[s, s, 1]} geometry={RING_UNIT} material={glow("#ff3b3b", 0.75 * (1 - k))} />;
+        return <mesh key={"r" + i} position={[0.1, -0.2, 0.25]} scale={[s, s, 1]} geometry={RING_UNIT} material={glow("#ff3b3b", 0.75 * (1 - k))} />;
       })}
     </group>
   );

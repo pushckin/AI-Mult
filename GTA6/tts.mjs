@@ -43,10 +43,30 @@ async function gen(l) {
       console.log('OK', l.id, MODELS[0], (buf.length / 48000).toFixed(2) + 's');
       return;
     } catch (e) {
+      if (/per day/.test(e.message)) return genFallback(l); // дневной лимит основной модели исчерпан
       const m = String(e.message).match(/retry in (\d+)/);
       const wait = m ? (+m[1] + 2) * 1000 : 15000;
       console.error('ERR', l.id, String(e.message).slice(0, 120), '→ жду', wait / 1000, 'с');
       await sleep(wait);
+    }
+  }
+  console.error('FAIL', l.id);
+}
+async function genFallback(l) {
+  for (const model of MODELS.slice(1)) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        let buf = await viaRest(model, l);
+        if (buf.slice(0, 4).toString() !== 'RIFF') buf = pcmToWav(buf, 24000);
+        fs.writeFileSync(path.join(voiceDir, `${l.id}.wav`), buf);
+        console.log('OK', l.id, model, (buf.length / 48000).toFixed(2) + 's');
+        return;
+      } catch (e) {
+        console.error('ERR', l.id, model, String(e.message).slice(0, 120));
+        if (/per day/.test(e.message)) break;
+        const m = String(e.message).match(/retry in (\d+)/);
+        await sleep(m ? (+m[1] + 2) * 1000 : 8000);
+      }
     }
   }
   console.error('FAIL', l.id);
