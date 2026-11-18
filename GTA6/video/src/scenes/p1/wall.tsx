@@ -10,7 +10,7 @@ import { Cam, PaperLights, Sheet, Puff } from "../../kit/Stage";
 import { geo, paper, glow, rng } from "../../kit/paper";
 import {
   PaperCrowd, CrowdMass, PM, cell, makeBeach, WallSeg, BarbedWire, Spark, Turret, Megaphone, Rifle, Tracer, Dust, Clouds, Hills, Box,
-  WH, WT, SEG, AD, Body0, starG,
+  WH, WT, SEG, AD, Body0, starG, Gear3D,
 } from "./wall_kit";
 
 const P = "p1" as const;
@@ -19,9 +19,9 @@ const SKY = "#9fd3f0";
 type V3 = [number, number, number];
 
 // ---------------- мир ----------------
-const SEGS = Array.from({ length: 24 }, (_, i) => -96 + SEG * i + SEG / 2);
+const SEGS = Array.from({ length: 192 / SEG }, (_, i) => -96 + SEG * i + SEG / 2);
 /** вырастание стены: волна слева направо */
-const segStart = (x: number) => Wc().start + 0.35 + Math.min(1.5, Math.max(0, (x + 34) / 60) * 1.25);
+const segStart = (x: number) => Wc().start + 0.35 + Math.min(1.0, Math.max(0, (x + 34) / 60) * 0.7);
 const riseK = (x: number, t: number) => easeOutBack(prog(t, segStart(x), segStart(x) + 0.8));
 
 const Ocean: React.FC<{ t: number }> = ({ t }) => (
@@ -164,8 +164,7 @@ function shotRise(t: number) {
       <World t={t} x0={-34} x1={36} crowd={beachState(t)} fog={[70, 140, "#2b2632"]} noSoldiers />
       {SEGS.filter((x) => x > -34 && x < 36).map((x) => (
         <React.Fragment key={x}>
-          <Dust p={[x - 2, 0, 1.5]} k={prog(t, segStart(x), segStart(x) + 1.6)} s={4.5} />
-          <Dust p={[x + 2, 0, 2.5]} k={prog(t, segStart(x) + 0.15, segStart(x) + 1.7)} s={3.5} />
+          <Dust p={[x, 0, 1.5]} k={prog(t, segStart(x), segStart(x) + 1.6)} s={4.5} />
         </React.Fragment>
       ))}
     </>
@@ -174,12 +173,12 @@ function shotRise(t: number) {
 // A2: облёт вдоль гребня стены
 function shotFly(t: number) {
   const a = Wc().start + 2.5, b = C1().start - 0.1, k = prog(t, a, b);
-  const pos: V3 = [lerp(-36, -22, k), lerp(27, 25, k), lerp(20, 17, k)];
-  const look: V3 = [lerp(-4, 8, k), lerp(14, 12, k), 0];
+  const pos: V3 = [lerp(-34, -20, k), WH + lerp(7, 5, k), lerp(16, 13, k)];
+  const look: V3 = [lerp(-4, 8, k), WH - 6, -1];
   return (
     <>
       <Cam pos={pos} look={look} fov={50} roll={0.08 - k * 0.05} />
-      <World t={t} x0={-45} x1={50} crowd={beachState(t)} fog={[40, 95, "#2b2632"]} pop />
+      <World t={t} x0={-45} x1={50} crowd={beachState(t)} fog={[30, 70, "#1e1a22"]} pop />
     </>
   );
 }
@@ -230,7 +229,7 @@ function shotCmdFront(t: number, tight = false) {
 }
 // B2: толпа внизу задирает головы, сверху «падают» звуковые волны мегафона
 function shotCmdBack(t: number) {
-  const c = C1(), a = c.start + 2.0, k = prog(t, a, c.end - 1.3);
+  const c = C1(), a = c.start + 4.6, k = prog(t, a, c.end - 1.3);
   const [sx, sy] = shake(t, a + 0.05, 0.1, 0.5);
   const waves: React.ReactNode[] = [];
   for (let i = 0; i < 4; i++) {
@@ -260,27 +259,27 @@ function fireTracers(t: number, n: number, from: (i: number) => V3, to: (i: numb
   return els;
 }
 const FIRE_LINE = [-3.4, -1.1, 1.2, 3.5, 5.8];
-function shotFire(t: number) {
-  const s = S(), k = prog(t, s.start, s.start + 1.5);
-  const [sx, sy] = shake(t, s.start + 0.05, 0.25, 1.5, 22);
+function shotFire(t: number, aim = false) {
+  const s = S(), k = aim ? prog(t, C1().start + 3.4, C1().start + 4.6) : prog(t, s.start, s.start + 1.3);
+  const [sx, sy] = aim ? [0, 0] : shake(t, s.start + 0.05, 0.25, 1.5, 22);
   const vis = SOLDIERS.map((x, i) => [x, i] as const).filter(([x]) => x > -9 && x < 14);
   return (
     <>
       <Cam pos={[-1.5 + k * 1.2 + sx, WH - 0.6 + sy, 6.6 - k * 0.8]} look={[1.0, WH + 1.9, -0.4]} fov={50} />
-      <World t={t} x0={-20} x1={30} crowd={beachState(t)} fog={[40, 100, "#2b2632"]} noSoldiers turretFire />
+      <World t={t} x0={-20} x1={30} crowd={beachState(t)} fog={[40, 100, "#2b2632"]} noSoldiers turretFire={!aim} />
       {FIRE_LINE.map((x, i) => {
-        const fl = Math.floor(t * 15 + i * 0.7) % 2 === 0 ? 1.2 + hash(Math.floor(t * 15) + i) * 0.6 : 0;
-        return <Character key={i} {...CAST.soldier} position={[x, WH + 0.68, -0.4]} eyes="angry" mouth="teethGrit" armR={0.75 + (fl ? 0.08 : 0)} armL={0.95} bodyTilt={fl ? -0.05 : 0}
+        const fl = !aim && Math.floor(t * 15 + i * 0.7) % 2 === 0 ? 1.2 + hash(Math.floor(t * 15) + i) * 0.6 : 0;
+        return <Character key={i} {...CAST.soldier} position={[x, WH + 1.12, -0.4]} eyes="angry" mouth="teethGrit" armR={0.75 + (fl ? 0.08 : 0)} armL={0.95} bodyTilt={fl ? -0.05 : 0}
           handR={<Rifle rot={-0.75} flash={fl} />} />;
       })}
-      {fireTracers(t, FIRE_LINE.length, (i) => [FIRE_LINE[i] + 1.0, WH + 1.15, 0.0], (i, j) => [FIRE_LINE[i] + (hash(j * 1.7 + i) - 0.2) * 10, 0, 6 + hash(j * 3.3 + i) * 14])}
+      {!aim && fireTracers(t, FIRE_LINE.length, (i) => [FIRE_LINE[i] + 1.0, WH + 1.6, 0.0], (i, j) => [FIRE_LINE[i] + (hash(j * 1.7 + i) - 0.2) * 10, 0, 6 + hash(j * 3.3 + i) * 14])}
     </>
   );
 }
 
 // C2: вид со стены вниз — передние ряды падают, задние бегут по трупам
 function shotMow(t: number) {
-  const s = S(), a = s.start + 1.5, k = prog(t, a, a + 1.5);
+  const s = S(), a = s.start + 1.3, k = prog(t, a, a + 0.9);
   const [sx, sy] = shake(t, a, 0.12, 1.5, 18);
   const crowd = beachState(t);
   const hits: React.ReactNode[] = [];
@@ -302,12 +301,12 @@ function shotMow(t: number) {
 
 // C3: живая пирамида у стены + катапульты (сбоку)
 const PYR_ROWS = 12;
-const pyrStart = () => S().start + 2.7;
+const pyrStart = () => S().start + 3.6;
 function pyramid(t: number): PM[] {
   const out: PM[] = [];
   const r = rng(77);
   for (let row = 0; row < PYR_ROWS; row++) {
-    const n = PYR_ROWS - row; const t0 = pyrStart() + row * 0.13;
+    const n = PYR_ROWS - row; const t0 = pyrStart() + row * 0.09;
     const k = easeOutBack(prog(t, t0, t0 + 0.25));
     for (let i = 0; i < n; i++) {
       const id = Math.floor(r() * 12);
@@ -316,7 +315,7 @@ function pyramid(t: number): PM[] {
     }
   }
   // лезущий наверх
-  const kc = prog(t, pyrStart() + 1.5, pyrStart() + 2.3);
+  const kc = prog(t, pyrStart() + 1.05, pyrStart() + 1.4);
   if (kc > 0) out.push({ x: -4, y: PYR_ROWS * 1.45 + kc * 5.5, z: 0.6, ry: Math.PI, rz: Math.sin(t * 20) * 0.2, front: cell(1, 3), back: cell(3, 3) });
   return out;
 }
@@ -341,15 +340,15 @@ function flyers(t: number, x0 = -100): PM[] {
   return out;
 }
 /** Катапульта: картон в плоскости YZ (бросает в −Z) */
-const Catapult: React.FC<{ p: V3; t: number; ph: number }> = ({ p, t, ph }) => {
+const Catapult: React.FC<{ p: V3; t: number; ph: number; angle?: number }> = ({ p, t, ph, angle }) => {
   const lt = ((t - catT0() - ph) % CAT_PERIOD + CAT_PERIOD) % CAT_PERIOD;
-  const ang = t < catT0() + ph ? -0.9 : lt < 0.12 ? lerp(-0.9, 1.0, easeOut(lt / 0.12)) : lerp(1.0, -0.9, easeInOut((lt - 0.12) / (CAT_PERIOD - 0.12)));
+  const ang = t < catT0() + ph ? 1.0 : lt < 0.12 ? lerp(1.0, -0.9, easeOut(lt / 0.12)) : lerp(-0.9, 1.0, easeInOut((lt - 0.12) / (CAT_PERIOD - 0.12)));
   return (
     <group position={p} rotation={[0, Math.PI / 2, 0]}>
       <mesh geometry={geo.rrect(3.6, 0.5, 0.1, 0.25)} material={paper("#8a5a2b")} position={[0, 0.5, 0]} />
       {[-1.3, 1.3].map((x) => <mesh key={x} geometry={geo.ellipse(0.45, 0.45, 0.25)} material={paper("#3b2a1a")} position={[x, 0.45, 0.2]} />)}
       <mesh geometry={geo.poly("cat_frame", [[-0.6, 0], [0.6, 0], [0.15, 2.0], [-0.15, 2.0]], 0.05, 0.2)} material={paper("#9c6a35")} position={[0, 0.7, -0.1]} />
-      <group position={[0, 2.5, 0.15]} rotation={[0, 0, ang]}>
+      <group position={[0, 2.5, 0.15]} rotation={[0, 0, angle ?? ang]}>
         <mesh geometry={geo.rrect(3.4, 0.22, 0.08, 0.15)} material={paper("#b07a40")} position={[-1.2, 0, 0]} />
         <mesh geometry={geo.arc(0.45, 0.35, Math.PI, Math.PI * 2, 0.2)} material={paper("#6b4423")} position={[-2.8, 0.25, 0]} />
       </group>
@@ -360,7 +359,7 @@ const Catapult: React.FC<{ p: V3; t: number; ph: number }> = ({ p, t, ph }) => {
   );
 };
 function shotPyramid(t: number) {
-  const s = S(), a = s.start + 3.0, k = prog(t, a, a + 1.6);
+  const s = S(), a = s.start + 4.1, k = prog(t, a, a + 0.9);
   const crowd = [...beachState(t), ...pyramid(t), ...flyers(t)];
   return (
     <>
@@ -379,11 +378,9 @@ const WIRE_BODIES = [
   { x: 1.7, look: { outfit: "tshirt" as const, color: "#8e44ad", hat: "beanie" as const, hatColor: "#f39c12" }, rz: -1.6 },
   { x: 3.9, look: { outfit: "hoodie" as const, color: "#2980b9", hat: "curly" as const, hairColor: "#111" }, rz: 1.42 },
 ];
-const GearBack: React.FC<{ kind: number }> = ({ kind }) => kind % 2 === 0
-  ? <group><mesh geometry={geo.rrect(0.9, 0.6, 0.04, 0.08)} material={paper("#222")} /><mesh geometry={geo.rrect(0.8, 0.5, 0.03, 0.08)} material={paper("#3d5a8a")} position={[0, 0, 0.02]} /></group>
-  : <group><mesh geometry={geo.rrect(0.42, 0.75, 0.12, 0.1)} material={paper("#f4f4f2")} /><mesh geometry={geo.rrect(0.12, 0.75, 0.02, 0.1)} material={paper("#141414")} position={[0, 0, 0.02]} /></group>;
+const GearBack: React.FC<{ kind: number }> = ({ kind }) => <Gear3D kind={kind} />;
 function shotWire(t: number) {
-  const s = S(), a = s.start + 4.6, k = prog(t, a, CH().start);
+  const s = S(), a = s.start + 5.0, k = prog(t, a, CH().start);
   const els: React.ReactNode[] = [];
   WIRE_BODIES.forEach((w, i) => {
     const t0 = a + 0.05 + i * 0.28, kk = prog(t, t0, t0 + 0.4);
@@ -466,25 +463,117 @@ function shotChant(t: number) {
       <World t={t} x0={-24} x1={24} crowd={chantCrowd(t)} fog={ci === 3 ? [60, 130, "#2b2632"] : [30, 70, "#2b2632"]} scared />
       {FRONT_ROW.map((fr, i) => (
         <Character key={i} {...fr.look} adult position={[fr.x, up ? 0.25 + 0.15 * Math.sin(i + syl) : 0, fr.z]} rotationY={Math.PI} eyes={i % 2 ? "crazy" : "angry"} mouth="scream" mouthOpen={Math.max(0.5, m)}
-          armL={up ? 2.75 + (i % 2) * 0.15 : 1.7} armR={up ? 2.6 : 1.5} bodyTilt={up ? (i % 2 ? 0.08 : -0.08) : 0} back={<GearBack kind={fr.gear} />} sweat={1} legs={up ? "run" : "stand"} legPhase={1 + i} />
+          armL={up ? 2.75 + (i % 2) * 0.15 : 1.7} armR={up ? 2.6 : 1.5} bodyTilt={up ? (i % 2 ? 0.08 : -0.08) : 0} back={<GearBack kind={fr.gear} />} sweat={1} legs={up ? "run" : "stand"} legPhase={1 + i}
+          front={<mesh geometry={geo.rrect(1.0, 0.12, 0.02, 0.02)} material={paper("#d9b866")} position={[0, 0.62, 0.09]} rotation={[0, 0, i % 2 ? 0.6 : -0.6]} />} />
       ))}
     </>
   );
 }
 
+
+// B2a: герой со спины (консоль на спине), снизу вверх на гигантскую стену с командиром
+const HERO: V3 = [0.4, 0, 6.0];
+function shotHero(t: number) {
+  const a = C1().start + 2.0, k = prog(t, a, a + 1.4);
+  const tw = twos(t);
+  const crowd = beachState(t, { armsAll: true }).filter((m) => !(Math.abs(m.x - HERO[0]) < 1.6 && m.z > HERO[2] - 1.2));
+  return (
+    <>
+      <Cam pos={[1.3 - k * 0.3, 1.1, 9.0 - k * 0.5]} look={[0.2, 5.5 + k * 1.5, 0]} fov={66} roll={-0.05} />
+      <World t={t} x0={-24} x1={24} crowd={crowd} fog={[25, 60, "#2b2632"]} />
+      <Commander t={t} open={mouthFor(P, ["p1_cmd1"], t)} />
+      <Character {...{ outfit: "hoodie" as const, color: "#d35400", hat: "messyHair" as const, hairColor: "#2b1b10" }} adult position={HERO} rotationY={Math.PI}
+        armL={2.5 + Math.sin(tw * 11) * 0.25} armR={2.7 - Math.sin(tw * 11) * 0.25} back={<Gear3D kind={0} />} legs="stand" />
+    </>
+  );
+}
+
+// C2b: на уровне земли — бегут прямо по телам
+const TRAMPLE_BODIES = [
+  { x: -1.3, z: 3.3, rz: 1.57, look: { outfit: "tshirt" as const, color: "#27ae60", hat: "cap" as const, hatColor: "#222" } },
+  { x: 0.6, z: 3.6, rz: -1.57, look: { outfit: "hoodie" as const, color: "#8e44ad", hat: "curly" as const, hairColor: "#111" } },
+  { x: 2.3, z: 3.2, rz: 1.5, look: { outfit: "tshirt" as const, color: "#f39c12", hat: "beanie" as const, hatColor: "#2c3e50" } },
+];
+const RUNNERS = [
+  { x: -1.0, ph: 0, look: { outfit: "hoodie" as const, color: "#c0392b", hat: "messyHair" as const, hairColor: "#2b1b10" }, gear: 2 },
+  { x: 0.9, ph: 0.3, look: { outfit: "tshirt" as const, color: "#2980b9", hat: "cap" as const, hatColor: "#e84393" }, gear: 0 },
+  { x: 2.4, ph: 0.55, look: { outfit: "hoodie" as const, color: "#16a085", hat: "beanie" as const, hatColor: "#f1c40f" }, gear: 3 },
+];
+function shotTrample(t: number) {
+  const a = S().start + 2.2, lt = t - a, k = prog(t, a, a + 0.9);
+  const tw = twos(t);
+  const crowd = beachState(t).filter((m) => !(Math.abs(m.x) < 4.5 && m.z > 1.5 && m.z < 11));
+  return (
+    <>
+      <Cam pos={[0.6, 1.5, 10.5 - k * 0.6]} look={[0.4, 1.1, 2]} fov={50} />
+      <World t={t} x0={-20} x1={20} crowd={crowd} fog={[25, 70, "#2b2632"]} />
+      {TRAMPLE_BODIES.map((b, i) => (
+        <group key={i} position={[b.x, 0.5, b.z]} rotation={[0, 0, b.rz]}>
+          <Character {...b.look} adult position={[0, -0.95, 0]} eyes="dead" mouth="wavy" armL={2.6} armR={2.2} shadow={false} blood={0.6} />
+        </group>
+      ))}
+      {RUNNERS.map((r, i) => {
+        const z = 6.2 - (lt + r.ph) * 4.5;
+        const over = Math.max(0, 1 - Math.abs(z - 3.4) / 1.2);
+        const hop = Math.sin(over * Math.PI / 2) * 1.1 + Math.abs(Math.sin(tw * 12 + i)) * 0.12;
+        return <Character key={i} {...r.look} adult position={[r.x, hop, z]} rotationY={Math.PI} legs="run" legPhase={tw * 16 + i} armL={2.4} armR={2.6} back={<Gear3D kind={r.gear} />} bodyTilt={(i % 2 ? 0.1 : -0.1)} />;
+      })}
+      {fireTracers(t, 3, (i) => [-2 + i * 2.5, WH, -1], (i, j) => [-2 + i * 2 + (hash(j) - 0.5) * 3, 0, 2 + hash(j * 2.2) * 4], 0.12, 0.3)}
+    </>
+  );
+}
+
+// C3a: катапульта крупно — геймер с консолью улетает через стену
+const CP: V3 = [5, 0, 13];
+function shotCatapult(t: number) {
+  const a = S().start + 3.1, lt = t - a, k = prog(t, a, a + 1.0);
+  const tw = twos(t);
+  const L = 0.3;
+  const ang = lt < L ? 1.0 : lerp(1.0, -0.9, easeOut(Math.min(1, (lt - L) / 0.12)));
+  const bucket = (an: number): V3 => {
+    const lx = -2.8 * Math.cos(an) - 0.25 * Math.sin(an), ly = 2.5 - 2.8 * Math.sin(an) + 0.25 * Math.cos(an);
+    return [CP[0] + 0.15, ly, CP[2] - lx];
+  };
+  const rel = bucket(-0.9);
+  let gp: V3; let rz = 0;
+  if (lt < L + 0.1) gp = bucket(ang);
+  else { const ft = lt - L - 0.1; gp = [rel[0], rel[1] + 13 * ft - 6 * ft * ft, rel[2] - 9 * ft]; rz = ft * 9; }
+  const [sx, sy] = shake(t, a + L, 0.15, 0.5);
+  const crowd = beachState(t).map((m) => ({ ...m, ry: Math.PI / 2, front: m.front, back: m.front })).filter((m) => !(Math.abs(m.z - CP[2]) < 4 && m.x > CP[0] - 1));
+  return (
+    <>
+      <Cam pos={[CP[0] + 8.5 + sx, 2.6 + sy, CP[2] + 0.3]} look={[CP[0], 2.6 + Math.max(0, gp[1] - 3) * 0.55, CP[2] - 0.6 - Math.max(0, CP[2] - gp[2]) * 0.4]} fov={52} />
+      <World t={t} x0={-20} x1={30} crowd={crowd} fog={[25, 70, "#2b2632"]} />
+      <Catapult p={CP} t={t} ph={0} angle={ang} />
+      <group position={gp} rotation={[0, 0, rz]}>
+        <Character {...{ outfit: "tshirt" as const, color: "#e84393", hat: "cap" as const, hatColor: "#222" }} adult position={[0, -0.3, 0]} rotationY={Math.PI / 2} eyes="crazy" mouth="scream" mouthOpen={1}
+          legs={lt < L ? "sit" : "run"} legPhase={tw * 20} armL={2.7} armR={2.4} back={<Gear3D kind={1} />} shadow={false} />
+      </group>
+      {[0, 1].map((i) => (
+        <Character key={i} {...{ outfit: "hoodie" as const, color: i ? "#2980b9" : "#27ae60", hat: i ? "beanie" as const : "messyHair" as const, hatColor: "#c0392b", hairColor: "#3a2414" }} adult
+          position={[CP[0] + 0.3, 0, CP[2] + 3.4 + i * 1.3]} rotationY={Math.PI / 2} eyes="crazy" mouth="grin" armL={lt > L ? 2.8 : 1.4} armR={lt > L ? 2.8 : 1.4} back={<Gear3D kind={i ? 2 : 3} />} />
+      ))}
+      {lt > L && lt < L + 0.5 && <Puff position={[CP[0], 0.4, CP[2] + 1.5]} scale={1 + (lt - L) * 2} color="#e3d6b0" opacity={1 - (lt - L) * 2} />}
+    </>
+  );
+}
+
 // ======================= СЦЕНЫ =======================
-const by = (fn: (t: number) => React.ReactNode) => (t: number) => fn(t);
 export const SCENES: SceneDef[] = [
-  { id: "p1_wall_rise", get from() { return Wc().start; }, get to() { return Wc().start + 2.5; }, bg: SKY, render3d: by(shotRise) },
-  { id: "p1_wall_fly", get from() { return Wc().start + 2.5; }, get to() { return C1().start - 0.1; }, bg: SKY, render3d: by(shotFly) },
-  { id: "p1_wall_cmd_front", get from() { return C1().start - 0.1; }, get to() { return C1().start + 2.0; }, bg: SKY, render3d: (t) => shotCmdFront(t) },
-  { id: "p1_wall_cmd_back", get from() { return C1().start + 2.0; }, get to() { return C1().end - 1.3; }, bg: SKY, render3d: by(shotCmdBack) },
-  { id: "p1_wall_cmd_tight", get from() { return C1().end - 1.3; }, get to() { return S().start; }, bg: SKY, render3d: (t) => shotCmdFront(t, true) },
-  { id: "p1_wall_fire", get from() { return S().start; }, get to() { return S().start + 1.5; }, bg: SKY, render3d: by(shotFire), overlay: (t) => <MuzzleFlashOverlay t={t} a={S().start} b={S().start + 1.5} /> },
-  { id: "p1_wall_mow", get from() { return S().start + 1.5; }, get to() { return S().start + 3.0; }, bg: SKY, render3d: by(shotMow) },
-  { id: "p1_wall_pyramid", get from() { return S().start + 3.0; }, get to() { return S().start + 4.6; }, bg: SKY, render3d: by(shotPyramid) },
-  { id: "p1_wall_wire", get from() { return S().start + 4.6; }, get to() { return CH().start; }, bg: SKY, render3d: by(shotWire) },
-  { id: "p1_wall_chant", get from() { return CH().start; }, get to() { return G().start; }, bg: SKY, render3d: by(shotChant), overlay: (t) => <ChantOverlay t={t} /> },
+  { id: "p1_wall_rise", from: Wc().start, to: Wc().start + 2.5, bg: SKY, render3d: shotRise },
+  { id: "p1_wall_fly", from: Wc().start + 2.5, to: C1().start - 0.1, bg: SKY, render3d: shotFly },
+  { id: "p1_wall_cmd_front", from: C1().start - 0.1, to: C1().start + 2.0, bg: SKY, render3d: (t) => shotCmdFront(t) },
+  { id: "p1_wall_cmd_hero", from: C1().start + 2.0, to: C1().start + 3.4, bg: SKY, render3d: shotHero },
+  { id: "p1_wall_cmd_aim", from: C1().start + 3.4, to: C1().start + 4.6, bg: SKY, render3d: (t) => shotFire(t, true) },
+  { id: "p1_wall_cmd_back", from: C1().start + 4.6, to: C1().end - 1.3, bg: SKY, render3d: shotCmdBack },
+  { id: "p1_wall_cmd_tight", from: C1().end - 1.3, to: S().start, bg: SKY, render3d: (t) => shotCmdFront(t, true) },
+  { id: "p1_wall_fire", from: S().start, to: S().start + 1.3, bg: SKY, render3d: (t) => shotFire(t), overlay: (t) => <MuzzleFlashOverlay t={t} a={S().start} b={S().start + 1.3} /> },
+  { id: "p1_wall_mow", from: S().start + 1.3, to: S().start + 2.2, bg: SKY, render3d: shotMow },
+  { id: "p1_wall_trample", from: S().start + 2.2, to: S().start + 3.1, bg: SKY, render3d: shotTrample },
+  { id: "p1_wall_catapult", from: S().start + 3.1, to: S().start + 4.1, bg: SKY, render3d: shotCatapult },
+  { id: "p1_wall_pyramid", from: S().start + 4.1, to: S().start + 5.0, bg: SKY, render3d: shotPyramid },
+  { id: "p1_wall_wire", from: S().start + 5.0, to: CH().start, bg: SKY, render3d: shotWire },
+  { id: "p1_wall_chant", from: CH().start, to: G().start, bg: SKY, render3d: shotChant, overlay: (t) => <ChantOverlay t={t} /> },
 ];
 
 // лёгкие вспышки кадра при стрельбе

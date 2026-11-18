@@ -10,9 +10,9 @@ import { hash, twos, prog, easeOutBack, clamp01 } from "../../kit/anim";
 export const AD = { head: 1.405, mouth: 1.2, eyes: 1.46, shoulder: 1.0, top: 1.95 };
 
 // ---------- стена ----------
-export const WH = 22;   // высота стены
+export const WH = 30;   // высота стены
 export const WT = 4;    // толщина
-export const SEG = 8;   // ширина секции
+export const SEG = 4;   // ширина секции
 
 // ==================== БУМАЖНАЯ ТОЛПА ====================
 const NID = 12; // личностей; позы: 0 спереди руки вниз, 1 спереди кулаки вверх, 2 спина, 3 спина руки вверх, 4 труп
@@ -59,7 +59,7 @@ function drawPerson(g: CanvasRenderingContext2D, u: number, cx: number, cy: numb
   const X = (x: number) => cx + x * u, Y = (y: number) => cy + y * u;
   const fillStroke = (c: string) => { g.fillStyle = c; g.fill(); g.strokeStyle = O; g.lineWidth = 1.5 * u; g.stroke(); };
   // техника за спиной выглядывает из-за плеч (спереди)
-  if (front) drawGear(g, u, P.gear, X(0), Y(38), 0.95);
+  if (front) drawGear(g, u, P.gear, X(P.gear === 2 || P.gear === 4 ? 0 : (id % 2 ? 15 : -15)), Y(P.gear === 2 ? 22 : 30), 1.08);
   // ноги
   for (const s of [-1, 1]) {
     g.save(); g.translate(X(s * 7.5), Y(76)); if (dead) g.rotate(s * 0.35);
@@ -82,9 +82,11 @@ function drawPerson(g: CanvasRenderingContext2D, u: number, cx: number, cy: numb
   g.beginPath(); g.moveTo(X(-17), Y(78)); g.lineTo(X(17), Y(78)); g.lineTo(X(13), Y(42)); g.lineTo(X(-13), Y(42)); g.closePath(); fillStroke(P.shirt);
   if (!front) {
     // со спины: техника примотана скотчем
-    drawGear(g, u, P.gear, X(0), Y(58), 0.82);
-    g.fillStyle = "rgba(214,182,104,0.92)";
-    g.save(); g.translate(X(0), Y(58)); for (const a of [0.7, -0.7]) { g.save(); g.rotate(a); g.fillRect(-24 * u, -2.6 * u, 48 * u, 5.2 * u); g.restore(); } g.fillRect(-19 * u, 9 * u, 38 * u, 4.5 * u); g.restore();
+    drawGear(g, u, P.gear, X(0), Y(P.gear === 2 ? 48 : 54), 1.18);
+    // скотч — короткими полосками по краям, чтобы техника читалась
+    g.fillStyle = "rgba(214,182,104,0.95)";
+    g.fillRect(X(-22), Y(41), 9 * u, 4 * u); g.fillRect(X(13), Y(41), 9 * u, 4 * u);
+    g.fillRect(X(-22), Y(70), 9 * u, 4 * u); g.fillRect(X(13), Y(70), 9 * u, 4 * u);
   }
   // голова
   g.beginPath(); g.ellipse(X(0), Y(26), 16 * u, 15 * u, 0, 0, 7); fillStroke(P.skin);
@@ -244,8 +246,10 @@ export const WallSeg: React.FC<{ x: number; k: number; seed: number; parapet?: b
       {/* потёки/пятна */}
       <Box p={[(hash(seed) - 0.5) * 4, WH * 0.55, 0.3]} s={[0.35, WH * 0.3, 0.02]} c="#8a8880" />
       <Box p={[0, WH + 0.15, -WT / 2]} s={[SEG, 0.3, WT]} c="#77766f" />
-      {parapet && [-3, -1, 1, 3].map((dx, i) => <Box key={"m" + i} p={[dx, WH + 0.75, -0.4]} s={[1.5, 1.0, 0.8]} c="#9c9a93" />)}
-      {parapet && <Box p={[0, WH + 0.45, -0.4]} s={[SEG, 0.45, 0.8]} c="#9c9a93" />}
+      {parapet && <Box p={[0, WH + 0.6, -0.4]} s={[SEG, 0.9, 0.8]} c="#9c9a93" />}
+      {parapet && <Box p={[0, WH + 1.08, -0.4]} s={[SEG, 0.08, 0.9]} c="#7d7c77" />}
+      {/* горизонтальные «этажные» швы — масштаб небоскрёба */}
+      {Array.from({ length: 9 }, (_, i) => <Box key={"f" + i} p={[0, 3 + i * 3, 0.31]} s={[SEG, 0.12, 0.04]} c="#8c8a83" />)}
     </group>
   );
 };
@@ -289,7 +293,7 @@ export function starG(n: number, R: number, r: number) {
 
 /** Турель на стене */
 export const Turret: React.FC<{ p: [number, number, number]; yaw?: number; pitch?: number; flash?: boolean }> = ({ p, yaw = 0, pitch = -0.35, flash }) => (
-  <group position={p}>
+  <group position={p} scale={1.9}>
     <Box p={[0, 0.5, 0]} s={[2.0, 1.0, 2.0]} c="#4f5640" />
     <group position={[0, 1.2, 0]} rotation={[0, yaw, 0]}>
       <mesh material={paper("#66704f")} scale={[1, 0.8, 1]}><sphereGeometry args={[0.95, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
@@ -430,6 +434,51 @@ export const SpitSpray: React.FC<{ o: [number, number, number]; dir: [number, nu
     }
   }
   return <>{els}</>;
+};
+
+/** Крупная узнаваемая техника, примотанная к спине (для props back у Character). Читается и спереди (торчит из-за плеч), и со спины. */
+const torusCache = new Map<number, THREE.BufferGeometry>();
+const torusG = (r: number) => { let g = torusCache.get(r); if (!g) { g = new THREE.TorusGeometry(r, 0.045, 4, 24); torusCache.set(r, g); } return g; };
+const TAPE = "#d9b866";
+export const Gear3D: React.FC<{ kind: number }> = ({ kind }) => {
+  const k = kind % 4;
+  const tape = (y: number, w: number, x = 0, r = 0) => <mesh geometry={geo.rrect(w, 0.11, 0.02, 0.02)} material={paper(TAPE)} position={[x, y, -0.07]} rotation={[0, 0, r]} />;
+  if (k === 0) return ( // PS5: белые «крылья», чёрная середина, синяя подсветка
+    <group position={[0.52, 0.42, 0]} rotation={[0, 0, -0.16]}>
+      <mesh geometry={geo.poly("ps5w", [[-0.34, -0.62], [0.34, -0.62], [0.4, 0.2], [0.26, 0.66], [-0.26, 0.66], [-0.4, 0.2]], 0.08, 0.1)} material={paper("#f6f6f3")} />
+      {[0.06, -0.06].map((z) => <mesh key={z} geometry={geo.rrect(0.15, 1.2, 0.03, 0.02)} material={paper("#151515")} position={[0, 0.02, z]} />)}
+      {[0.08, -0.08].map((z) => <mesh key={"l" + z} geometry={geo.rrect(0.03, 1.0, 0.01, 0.01)} material={glow("#3f7dff")} position={[0, 0.02, z]} />)}
+      {tape(0.35, 0.95, 0, 0.1)}{tape(-0.35, 0.95, 0, -0.1)}
+    </group>
+  );
+  if (k === 1) return ( // Xbox: чёрный короб с зелёным кругом + геймпад
+    <group position={[-0.5, 0.3, 0]} rotation={[0, 0, 0.14]}>
+      <mesh geometry={geo.rrect(0.62, 0.78, 0.05, 0.1)} material={paper("#1c1c1c")} />
+      {[0.06, -0.06].map((z) => <mesh key={z} geometry={geo.ellipse(0.13, 0.13, 0.02)} material={paper("#3cb043")} position={[0, 0.2, z]} />)}
+      {[0.06, -0.06].map((z) => [0, 1, 2].map((i) => <mesh key={z + "_" + i} geometry={geo.rrect(0.4, 0.03, 0.01, 0.01)} material={paper("#3a3a3a")} position={[0, -0.12 - i * 0.09, z]} />))}
+      {tape(0.0, 0.85, 0, 0.5)}{tape(0.0, 0.85, 0, -0.5)}
+    </group>
+  );
+  if (k === 2) return ( // телевизор
+    <group position={[0, 0.62, 0]}>
+      <mesh geometry={geo.rrect(1.75, 1.05, 0.05, 0.1)} material={paper("#202020")} />
+      <mesh geometry={geo.rrect(1.6, 0.9, 0.03, 0.02)} material={glow("#4f78b8")} position={[0, 0, 0.06]} />
+      <mesh geometry={geo.poly("tvglare", [[-0.7, 0.4], [-0.35, 0.4], [-0.62, -0.15]], 0, 0.01)} material={glow("#b9d3ff", 0.6)} position={[0, 0, 0.075]} />
+      <mesh geometry={geo.rrect(1.2, 0.7, 0.05, 0.02)} material={paper("#3a3a3a")} position={[0, -0.05, -0.06]} />
+      {[-0.45, 0.45].map((x) => <mesh key={x} geometry={geo.rrect(0.08, 0.25, 0.02, 0.06)} material={paper("#333")} position={[x, -0.6, 0]} rotation={[0, 0, x > 0 ? -0.4 : 0.4]} />)}
+      {tape(0.3, 1.9)}{tape(-0.3, 1.9)}
+    </group>
+  );
+  return ( // бухта удлинителя + тройник
+    <group position={[-0.42, 0.42, 0]}>
+      {[0.42, 0.34, 0.26].map((r, i) => <mesh key={r} geometry={torusG(r)} material={paper("#ff7f11")} position={[i * 0.03, i * 0.02, 0]} />)}
+      <group position={[0.1, -0.42, 0.04]} rotation={[0, 0, 0.2]}>
+        <mesh geometry={geo.rrect(0.75, 0.16, 0.04, 0.06)} material={paper("#f3f1ea")} />
+        {[0, 1, 2, 3, 4].map((i) => [0.04, -0.04].map((z) => <mesh key={i + "_" + z} geometry={geo.ellipse(0.035, 0.04, 0.01)} material={paper("#2a2a2a")} position={[-0.26 + i * 0.13, 0, z]} />))}
+      </group>
+      {tape(0.1, 1.0, 0, 0.6)}
+    </group>
+  );
 };
 
 export { easeOutBack, prog, clamp01 };

@@ -246,8 +246,8 @@ export const BigScreen: React.FC<{ t: number; alarm?: number; stamp?: boolean; w
   return (
     <group>
       <Piece g={geo.rrect(w + 0.25, mapH + cntH + 0.35, 0.06, 0.08)} c="#1a1d1c" p={[0, 0, -0.06]} />
-      <CanvasPlane texKey={`cnt_${v}_${Math.round(rate / 1000)}_${blink}`} w={w} h={cntH} px={768} draw={drawCounter(v, rate, blink)} position={[0, mapH / 2 + 0.05, 0]} />
-      <CanvasPlane texKey={`map_${Math.floor(n / 6)}_${blink}_${stamp ? 1 : 0}`} w={w} h={mapH} px={640} draw={drawMap(Math.floor(n / 6) * 6, blink, stamp)} position={[0, -cntH / 2 - 0.05, 0]} />
+      <CanvasPlane texKey={`cnt_${v}_${Math.round(rate / 1000)}_${blink}`} w={w} h={cntH} px={768} draw={drawCounter(v, rate, blink)} position={[0, mapH / 2 + 0.05, 0.03]} />
+      <CanvasPlane texKey={`map_${Math.floor(n / 6)}_${blink}_${stamp ? 1 : 0}`} w={w} h={mapH} px={640} draw={drawMap(Math.floor(n / 6) * 6, blink, stamp)} position={[0, -cntH / 2 - 0.05, 0.03]} />
       {/* свечение экрана */}
       <mesh position={[0, 0, -0.1]} material={glow(alarm > 0 ? "#ff3030" : "#6fd6ff", 0.12)}>
         <planeGeometry args={[w + 1.4, mapH + cntH + 1.4]} />
