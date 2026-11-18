@@ -19,7 +19,7 @@ const d_boe = subT("p1_def1", "Боинги"), d_fer = subT("p1_def1", "Паро
 const a_each = subT("p1_agri1", "На каждую"), a_15 = subT("p1_agri1", "пятнадцать"), a_out = subT("p1_agri1", "выгоняют"), a_st = subT("p1_agri1", "стойла");
 const q_3 = subT("p1_pm2", "Третья"), q_wall = subT("p1_pm2", "Строим"), q_now = subT("p1_pm2", "Немедленно");
 
-const T_REL = O.start + 2.0;          // кружка выскальзывает
+const T_REL = O.start + 2.15;          // кружка выскальзывает
 const T_HIT = O.end - 0.05;           // удар об пол
 const T_SLAM = lerp(q_wall.start, q_wall.end, 0.5); // кулак об стол (на «стену»)
 const T_DOOR = AI.start + 0.12;
@@ -159,8 +159,8 @@ shots.push({
     const a = 1.55;
     const [hx, hy] = handPos(1, a);
     return <>
-      <Cam pos={[0.42, 1.75, lerp(-0.2, -0.6, k)]} look={[0.38, 1.1, -3.55]} fov={40} />
-      <Room t={t} hide={["old", "slick"]}
+      <Cam pos={[0.3, 1.75, lerp(-0.2, -0.6, k)]} look={[0.4, 1.12, -3.55]} fov={40} />
+      <Room t={t} hide={["old", "slick", "curly"]}
         pm={{ eyes: "wide", lookY: 0.9, mouth: "o", brow: 1, armR: a, armL: 0.2, sweat: t > T_REL ? 0.5 : 0, handR: t < T_REL ? <group position={[0.02, 0.06, 0.08]} rotation={[0, 0, -2.25 + 2.25]}><Mug /></group> : undefined }}
         mug={<MugCrash x={PM_POS[0] + hx + 0.02} y0={hy + 0.06} z={PM_POS[2] + 0.12} tRelease={T_REL} tHit={T_HIT} t={t} />} />
     </>;
@@ -174,7 +174,7 @@ shots.push({
     const [hx, hy] = handPos(1, 1.55);
     const [sx, sy] = camShake(t, [[T_HIT, 0.03]]);
     return <>
-      <Cam pos={[1.15 + sx, 0.5 + sy, -2.55]} look={[0.45, 0.25, -3.5]} fov={42} />
+      <Cam pos={[1.05 + sx, 0.62 + sy, -2.45]} look={[0.62, 0.12, -3.45]} fov={42} />
       <Room t={t} pm={{ eyes: "wide", armR: 1.55 }} mug={<MugCrash x={PM_POS[0] + hx + 0.02} y0={hy + 0.06} z={PM_POS[2] + 0.12} tRelease={T_REL} tHit={T_HIT} t={t} />} />
     </>;
   },

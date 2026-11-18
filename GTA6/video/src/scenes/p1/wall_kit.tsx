@@ -150,7 +150,7 @@ void main(){ vUv = uv; vFront = aFront; vBack = aBack; vShade = aShade;
 const FS = `
 uniform sampler2D map; uniform vec3 uFog; uniform float uNear; uniform float uFar;
 varying vec2 vUv; varying float vFront; varying float vBack; varying float vShade; varying float vDepth;
-void main(){ float c = gl_FrontFacing ? vFront : vBack; vec2 uv = vUv; if(!gl_FrontFacing) uv.x = 1.0 - uv.x;
+void main(){ float c = floor((gl_FrontFacing ? vFront : vBack) + 0.5); vec2 uv = vUv; if(!gl_FrontFacing) uv.x = 1.0 - uv.x;
   vec2 cl = vec2(mod(c, 8.0), 7.0 - floor(c / 8.0)); vec4 tx = texture2D(map, (uv * 0.985 + 0.0075 + cl) / 8.0);
   if (tx.a < 0.5) discard; vec3 col = tx.rgb * vShade; col = mix(col, uFog, smoothstep(uNear, uFar, vDepth)); gl_FragColor = vec4(col, 1.0); }`;
 
@@ -207,13 +207,18 @@ export const CrowdMass: React.FC<{ x0: number; x1: number; z0: number; z1: numbe
 // ==================== ПЛЯЖНАЯ ТОЛПА: генерация и состояние во времени ====================
 export interface Body0 { x: number; z: number; id: number; s: number; ph: number; armsUp: boolean; die: number; shade: number }
 export function makeBeach(n: number, x0: number, x1: number, z0: number, z1: number, seed: number): Body0[] {
+  // ряды через 0.25 м, внутри ряда люди не перекрываются (иначе соседние плоскости мерцают)
   const r = rng(seed); const out: Body0[] = [];
-  for (let i = 0; i < n; i++) {
-    // плотнее у стены
-    const q = r(); const z = z0 + (z1 - z0) * Math.pow(q, 1.35);
-    out.push({ x: x0 + r() * (x1 - x0), z, id: Math.floor(r() * NID), s: 0.9 + r() * 0.2, ph: r() * 10, armsUp: r() < 0.35, die: r(), shade: 0.85 + r() * 0.15 });
+  const rows = Math.max(1, Math.round((z1 - z0) / 0.25));
+  const step = ((x1 - x0) * rows) / Math.max(1, n); // средний шаг по x внутри ряда
+  for (let row = 0; row < rows; row++) {
+    const z = z0 + row * 0.25 + (r() - 0.5) * 0.04;
+    let x = x0 + r() * step;
+    while (x < x1) {
+      out.push({ x, z, id: Math.floor(r() * NID), s: 0.9 + r() * 0.2, ph: r() * 10, armsUp: r() < 0.35, die: r(), shade: 0.85 + r() * 0.15 });
+      x += Math.max(1.05, step * (0.5 + r()));
+    }
   }
-  out.sort((a, b) => a.z - b.z);
   return out;
 }
 

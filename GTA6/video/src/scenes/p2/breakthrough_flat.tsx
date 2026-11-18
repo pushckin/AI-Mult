@@ -138,23 +138,29 @@ const MEN = (() => {
   const outfits = ["hoodie", "tshirt", "tshirt", "hoodie", "flannel"] as const;
   const hats = ["messyHair", "cap", "beanie", "curly", "headset", "none", "slickHair"] as const;
   const cols = ["#c0392b", "#2c3e50", "#16a085", "#8e44ad", "#d35400", "#2980b9", "#7f8c8d", "#27ae60", "#34495e", "#f39c12"];
-  const targets: [number, number][] = [[-0.85, -2.35], [0.8, -2.4], [-0.35, -2.3], [0.4, -2.15], [-1.3, -2.0], [1.25, -1.75], [-0.75, -2.55], [0.75, -2.6], [0.05, -2.0], [-0.1, -2.7]];
+  const targets: [number, number][] = [[-0.85, -2.35], [0.8, -2.4], [-0.35, -2.3], [0.4, -2.15], [-1.05, 0.35], [1.3, -2.1], [-0.55, -1.95], [0.6, -1.9], [0.05, -2.0], [-0.1, -2.7]];
   return targets.map(([x, z], i) => ({
     x, z, delay: i * 0.09, outfit: outfits[i % 5], hat: hats[Math.floor(r() * hats.length)], color: cols[i], hatColor: cols[(i + 4) % 10],
     hair: ["#2b1b10", "#4a2f1b", "#111", "#c9a227"][i % 4], skin: ["#f6d1a8", "#e8b98f", "#c68b59", "#f3c9a0", "#d9a37a"][i % 5], gear: i, scream: r() < 0.5,
   }));
 })();
 
-const Men: React.FC<{ t: number }> = ({ t }) => {
+const Men: React.FC<{ t: number; backOnly?: boolean }> = ({ t, backOnly }) => {
   const t0 = DOOR_HIT() + 0.2;
   const tq = twos(t);
   return (
     <>
       {MEN.map((mn, i) => {
         const ts = t0 + mn.delay;
-        if (t < ts) return null;
-        const u = easeOut(prog(t, ts, ts + 0.5));
-        const x = lerp(0, mn.x, u), z = lerp(-3.2, mn.z, u);
+        if (t < ts || (backOnly && mn.z > -1)) return null;
+        const front = mn.z > -1;
+        const u = easeOut(prog(t, ts, ts + (front ? 0.8 : 0.5)));
+        let x = lerp(0, mn.x, u), z = lerp(-3.2, mn.z, u);
+        if (front) { // обегают стол сбоку
+          const side = mn.x < 0 ? -1.75 : 1.75;
+          if (u < 0.5) { const v = u / 0.5; x = lerp(0, side, v); z = lerp(-3.2, -1.9, v); }
+          else { const v = (u - 0.5) / 0.5; x = lerp(side, mn.x, v); z = lerp(-1.9, mn.z, v); }
+        }
         const running = u < 1;
         const busy = !running;
         const grabbing = (i === 0 && t > FRIDGE_OFF() - 0.1) || (i === 1 && t > VENT_OFF() - 0.1);
@@ -194,9 +200,10 @@ export const FlatWide: React.FC<{ t: number }> = ({ t }) => {
   const [sx, sy] = shake(t, h, 0.18, 0.6);
   const [sx2, sy2] = shake(t, VENT_OFF(), 0.06, 0.3);
   const panic = t > h + 0.05;
+  const z = easeOut(prog(t, h + 0.05, h + 0.35));
   return (
     <>
-      <Cam pos={[sx + sx2, 4.0 + sy + sy2, lerp(5.9, 5.3, easeInOut(k))]} look={[0, 1.0, -1.4]} fov={50} />
+      <Cam pos={[sx + sx2, lerp(3.1, 4.0, z) + sy + sy2, lerp(4.0, lerp(5.9, 5.3, easeInOut(k)), z)]} look={[0, lerp(1.25, 1.0, z), lerp(-1.3, -1.4, z)]} fov={lerp(44, 50, z)} />
       <Room t={t} />
       <Men t={t} />
       <Family t={t} grandpaMood={t > VENT_OFF() ? "shock" : panic ? "shock" : "calm"} panic={panic} />
@@ -295,7 +302,7 @@ export const DedShot: React.FC<{ t: number }> = ({ t }) => {
     <>
       <Cam pos={[GRANDPA_P[0] - 0.4 + sx, 1.8 + sy, lerp(2.9, 2.4, easeOut(k))]} look={[GRANDPA_P[0] - 0.05, 1.0, GRANDPA_P[2]]} fov={40} />
       <Room t={t} />
-      <Men t={t} />
+      <Men t={t} backOnly />
       <Family t={t} grandpaMood="yell" panic />
       <Table t={t} />
     </>
@@ -325,7 +332,7 @@ function drawTv(g: CanvasRenderingContext2D, W: number, H: number, on: boolean) 
   g.fillStyle = "#000"; g.fillRect(8, 8, W * 0.3, H * 0.14);
   g.fillStyle = "#39ff7a"; g.fillText("60 FPS", 16, 8 + H * 0.07);
 }
-const TV_P: V3 = [-0.7, 0.76, -0.95];
+const TV_P: V3 = [-0.4, 0.76, -1.0];
 const TvOnTable: React.FC<{ on: boolean; boot: number }> = ({ on, boot }) => (
   <group position={TV_P}>
     <mesh position={[0, 0.05, 0]} geometry={geo.rrect(0.4, 0.08, 0.02, 0.15)} material={paper("#222")} />
@@ -355,14 +362,14 @@ export const GamerShot: React.FC<{ t: number }> = ({ t }) => {
   );
   return (
     <>
-      <Cam pos={[0.25 + sx, 1.95 + sy, lerp(3.7, 3.3, easeInOut(k))]} look={[0.25, 1.05, -0.8]} fov={44} />
+      <Cam pos={[0.0 + sx, 1.9 + sy, lerp(5.2, 4.8, easeInOut(k))]} look={[0.0, 1.0, -0.5]} fov={44} />
       <Room t={t} />
-      <Men t={t + 10} />
+      <Men t={t + 10} backOnly />
       <Family t={t} grandpaMood="shock" panic />
       <Table t={t} tv />
       <TvOnTable on={on} boot={prog(t, HDMI_AT(), HDMI_AT() + 0.25)} />
-      <Cable pts={[[-0.05, 1.35, -0.85], [0.1, 0.9, -0.6], [0.3, 0.6, -0.3], [0.5, 0.4, -0.1]]} r={0.022} color="#151515" />
-      <Character {...CAST.gamer2} position={[0.45, 0, -0.2]} mouth="talk" mouthOpen={m} eyes="squint" lookX={0.9} headTilt={-0.08 + Math.sin(tq * 2.5) * 0.04}
+      <Cable pts={[[-0.2, 1.03, 0.25], [0.0, 0.5, 0.35], [0.3, 0.05, 0.5], [0.9, 0.03, 0.6]]} r={0.022} color="#151515" />
+      <Character {...CAST.gamer2} position={[0.5, 0, 0.2]} mouth="talk" mouthOpen={m} eyes="squint" lookX={0.9} headTilt={-0.08 + Math.sin(tq * 2.5) * 0.04}
         armL={1.45 - push * 0.08} handL={hdmi} armR={0.9 + Math.sin(tq * 6) * 0.15} back={<BackGear kind={0} />} />
     </>
   );
@@ -375,7 +382,7 @@ export const ReactShot: React.FC<{ t: number }> = ({ t }) => {
     <>
       <Cam pos={[GRANDPA_P[0] - 0.15, 1.65, lerp(2.2, 1.8, easeOut(k))]} look={[GRANDPA_P[0] - 0.05, 1.05, GRANDPA_P[2]]} fov={40} />
       <Room t={t} />
-      <Men t={t + 10} />
+      <Men t={t + 10} backOnly />
       <Family t={t} grandpaMood="blue" panic />
       <Table t={t} tv />
     </>

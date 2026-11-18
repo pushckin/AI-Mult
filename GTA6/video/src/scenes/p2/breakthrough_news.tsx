@@ -15,8 +15,8 @@ const C = () => cue("p2", "p2_cord").start;
 const N2 = () => cue("p2", "p2_news2");
 const D = () => C() - N();
 export const NEWS_START = () => N() - 0.05;
-export const NEWS_CUT1 = () => N() + D() * 0.37;     // крупный → общий
-export const CRASH_AT = () => N() + D() * 0.44;      // мужик влетает в окно
+export const CRASH_AT = () => N() + Math.min(3.2, D() * 0.44); // мужик влетает в окно (sfx glass_break: news1+3.2)
+export const NEWS_CUT1 = () => CRASH_AT() - 0.5;     // крупный → общий
 export const CORD_IN = () => C() - 0.12;             // врезка: шнур
 export const CORD_OUT = () => C() + 0.62;            // назад в эфир, глюки
 export const NEWS_END = () => N2().end;
@@ -93,7 +93,7 @@ const Desk: React.FC = () => (
     <CanvasPlane texKey="bt_desk" w={2.0} h={0.5} px={600} position={[0, 0.48, 0.41]} draw={(g, W, H) => {
       g.fillStyle = "#c62828"; g.fillRect(0, 0, W, H);
       g.fillStyle = "#fff"; g.fillRect(0, H * 0.78, W, H * 0.08);
-      drawText(g, W, H * 0.8, "НЗ-24  НОВОСТИ", { fg: "#fff", size: 70 });
+      drawText(g, W, H * 0.8, "НЗ-24", { fg: "#fff", size: 90 });
     }} />
     {/* бумаги и кружка */}
     <mesh position={[0.75, 0.97, 0.15]} geometry={geo.rrect(0.16, 0.14, 0.03, 0.12)} material={paper("#e8e8e8")} />
@@ -131,7 +131,7 @@ export const NewsClose: React.FC<{ t: number }> = ({ t }) => {
   const k = prog(t, NEWS_START(), NEWS_CUT1());
   return (
     <>
-      <Cam pos={[0.3, 1.75, lerp(4.6, 4.0, easeInOut(k))]} look={[0.3, 1.12, 0]} fov={34} />
+      <Cam pos={[0.3, 1.8, lerp(5.6, 4.9, easeInOut(k))]} look={[0.3, 1.18, 0]} fov={34} />
       <Studio t={t} broken={false} />
       <Desk />
       <Anchor t={t} />
@@ -190,21 +190,21 @@ export const CordInsert: React.FC<{ t: number }> = ({ t }) => {
   const tq = twos(t);
   const yank = easeOut(prog(t, c, c + 0.14));
   const [sx, sy] = shake(t, c, 0.06, 0.4);
-  const plugHome: V3 = [-0.42, 1.12, 0.1];
-  const handP: V3 = [lerp(-0.42, -1.15, yank), lerp(1.12, 1.85, yank), 0.15];
+  const plugHome: V3 = [-0.68, 1.0, 0.1];
+  const handP: V3 = [lerp(-0.68, -0.89, yank), lerp(1.0, 1.36, yank), 0.15];
   return (
     <>
-      <Cam pos={[-0.6 + sx, 1.6 + sy, lerp(5.4, 5.0, prog(t, CORD_IN(), CORD_OUT()))]} look={[-0.6, 1.05, 0]} fov={40} />
+      <Cam pos={[-1.0 + sx, 1.6 + sy, lerp(5.4, 5.0, prog(t, CORD_IN(), CORD_OUT()))]} look={[-1.0, 1.05, 0]} fov={40} />
       <PaperLights intensity={0.95} />
       <Sheet w={12} h={7} color="#16244a" position={[0, 3, -2]} />
       {[-2.2, -0.6, 1.0, 2.6].map((x, i) => <mesh key={i} position={[x, 3.1, -1.95]} material={glow("#fff5c8", 0.9)}><circleGeometry args={[0.16, 18]} /></mesh>)}
       <Sheet w={12} h={8} color="#24305a" position={[0, 0, 1]} rotation={[-Math.PI / 2, 0, 0]} />
-      <group position={[0.3, -0.3, 0]} scale={0.75}><StudioCam tally={t < c + 0.05} /></group>
+      <group position={[-0.03, -0.45, 0]} scale={0.75}><StudioCam tally={t < c + 0.05} /></group>
       {/* кабель от камеры к руке/полу */}
-      <Cable pts={t < c ? [plugHome, [-0.7, 0.7, 0.2], [-0.9, 0.08, 0.3], [-2.4, 0.05, 0.4]] : [handP, [lerp(-0.6, -1.4, yank), lerp(0.9, 1.3, yank), 0.3], [-1.3, 0.1, 0.35], [-2.4, 0.05, 0.4]]} r={0.035} color="#111" />
+      <Cable pts={t < c ? [plugHome, [-0.6, 0.6, 0.2], [-0.4, 0.08, 0.3], [-2.4, 0.05, 0.4]] : [handP, [lerp(-0.6, -0.7, yank), 0.8, 0.3], [-0.5, 0.1, 0.35], [-2.4, 0.05, 0.4]]} r={0.035} color="#111" />
       <mesh position={t < c ? plugHome : handP} geometry={geo.rrect(0.16, 0.12, 0.03, 0.08)} material={paper("#333")} />
-      <Sparks t={t} t0={c} origin={[-0.42, 1.12, 0.2]} n={16} dur={0.5} />
-      <group position={[-1.25, 0, -0.3]}>
+      <Sparks t={t} t0={c} origin={[-0.68, 1.0, 0.2]} n={16} dur={0.5} />
+      <group position={[-1.35, 0, -0.3]}>
         <PlasmaGuy t={t} pose={t < c ? "stare" : "yank"} arm={lerp(1.35, 2.5, yank)} />
       </group>
     </>

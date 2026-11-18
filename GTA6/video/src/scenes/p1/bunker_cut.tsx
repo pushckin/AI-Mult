@@ -417,7 +417,7 @@ export const BarnInterior: React.FC<{ t: number; men: number; sheep?: boolean; l
         g.fillStyle = "#1f2a24"; g.fillRect(0, 0, W, H); g.strokeStyle = "#8a6a3a"; g.lineWidth = 14; g.strokeRect(0, 0, W, H);
         g.font = `900 ${Math.floor(H * 0.3)}px ${FONT}`; g.fillStyle = "#f4f4f4"; g.textAlign = "center"; g.textBaseline = "middle";
         g.fillText("1 ОВЦА = 15", W / 2, H * 0.36); g.font = `800 ${Math.floor(H * 0.17)}px ${FONT}`; g.fillText("ПОТНЫХ МУЖИКОВ", W / 2, H * 0.72);
-      }} position={[2.1, 2.4, -3.55]} />
+      }} position={[1.15, 2.75, -3.55]} />
       {/* лампа */}
       <group position={[0, 3.3, -0.6]} rotation={[0, 0, Math.sin(t * 1.8) * 0.12]}>
         <mesh position={[0, 0.4, 0]} material={paper("#111")}><boxGeometry args={[0.02, 0.8, 0.02]} /></mesh>

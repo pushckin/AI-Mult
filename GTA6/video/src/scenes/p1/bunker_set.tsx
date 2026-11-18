@@ -510,7 +510,7 @@ export const Room: React.FC<RoomState> = (s) => {
           <Folder position={[-0.32, 0.66, -1.3]} rot={0.2} />
           <Folder position={[0.3, 0.66, 0.1]} rot={-0.3} color="#2c3e66" />
           <Folder position={[-0.3, 0.66, 1.0]} rot={0.1} color="#c0392b" />
-          <RedPhone position={[0.35, 0.65, -2.0]} t={t} ring={alarmOn} />
+          <RedPhone position={[-0.35, 0.65, -2.0]} t={t} ring={alarmOn} />
           <group position={[-0.38, 0.73, 0.3]} rotation={[0, 0, jump * 8]}><Mug /></group>
           <group position={[0.36, 0.73, 1.25]} rotation={[0, 0, -jump * 6]}><Mug coffee={false} /></group>
           {[-1.5, -0.1].map((z, i) => (
@@ -522,7 +522,7 @@ export const Room: React.FC<RoomState> = (s) => {
         </group>
       </group>
       {/* кресла */}
-      {Object.entries(SEATS).map(([k, p]) => (
+      {Object.entries(SEATS).filter(([k]) => !hide.has(k)).map(([k, p]) => (
         <group key={k} position={[p[0], 0, p[2] - 0.22]}>
           <Piece g={geo.rrect(0.95, 1.15, 0.12, 0.1)} c="#2a2320" p={[0, 1.0, 0]} />
           <mesh position={[0, 0.3, 0.25]} material={paper("#2a2320")}><boxGeometry args={[0.85, 0.1, 0.5]} /></mesh>

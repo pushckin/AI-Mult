@@ -112,7 +112,7 @@ function beachState(t: number, opt: { chant?: boolean; armsAll?: boolean } = {})
     if (dies(b) && t >= deathT(b)) {
       const td = deathT(b), k = easeIn(prog(t, td, td + 0.22));
       const z = Math.max(0.9, b.z - adv(td)) + k * 0.6;
-      out.push({ x: b.x, z, y: 0.02 + (b.z % 0.3) * 0.05, ry: Math.PI, rx: -Math.PI / 2 * k, rz: (hash(b.ph) - 0.5) * 1.2 * k, s: b.s, front: cell(4, b.id), back: cell(4, b.id), shade: b.shade });
+      out.push({ x: b.x, z, y: 0.02 + Math.round(b.ph * 100) % 9 * 0.012, ry: Math.PI, rx: -Math.PI / 2 * k, rz: (hash(b.ph) - 0.5) * 1.2 * k, s: b.s, front: cell(4, b.id), back: cell(4, b.id), shade: b.shade });
       continue;
     }
     const a = adv(t);
@@ -123,7 +123,7 @@ function beachState(t: number, opt: { chant?: boolean; armsAll?: boolean } = {})
       const c = CH(); const ph = prog(t, c.start, c.end) * 9 - hash(b.ph) * 0.12; const f = ph - Math.floor(ph);
       if (t <= c.end + 0.05) { up = f < 0.7; y += Math.sin(Math.PI * Math.min(1, f / 0.7)) * 0.35; } else up = true;
     }
-    out.push({ x: b.x + noise1(b.ph + t * 0.6) * 0.15, y, z: Math.max(0.9 + (b.ph % 1) * 0.4, b.z - a), ry: Math.PI, s: b.s, front: cell(up ? 1 : 0, b.id), back: cell(up ? 3 : 2, b.id), shade: b.shade });
+    out.push({ x: b.x + noise1(b.ph + t * 0.6) * 0.15, y, z: Math.max(0.9 + Math.round(b.ph * 100) % 8 * 0.06, b.z - a), ry: Math.PI, s: b.s, front: cell(up ? 1 : 0, b.id), back: cell(up ? 3 : 2, b.id), shade: b.shade });
   }
   for (const b of SWIM) {
     out.push({ x: b.x, y: -1.0 + Math.sin(t * 3 + b.ph) * 0.1, z: b.z, ry: Math.PI, rz: Math.sin(t * 2 + b.ph) * 0.15, s: b.s, front: cell(1, b.id), back: cell(3, b.id), shade: b.shade });
@@ -228,18 +228,20 @@ function shotCmdFront(t: number, tight = false) {
     </>
   );
 }
-// B2: из-за спины командира на толпу
+// B2: толпа внизу задирает головы, сверху «падают» звуковые волны мегафона
 function shotCmdBack(t: number) {
   const c = C1(), a = c.start + 2.0, k = prog(t, a, c.end - 1.3);
-  const m = mouthFor(P, ["p1_cmd1"], t);
-  const pos: V3 = [CMD_POS[0] + 3.5 - k * 1.5, WH - 6 + k * 1.5, 15 - k * 3];
-  const look: V3 = [CMD_POS[0], WH - 0.5, -1];
+  const [sx, sy] = shake(t, a + 0.05, 0.1, 0.5);
+  const waves: React.ReactNode[] = [];
+  for (let i = 0; i < 4; i++) {
+    const f = (t * 1.4 + i / 4) % 1;
+    waves.push(<mesh key={i} geometry={geo.arc(2.5 + f * 5, 1.2 + f * 2.6, Math.PI * 1.05, Math.PI * 1.95, 0.05)} material={glow("#ffffff", 0.8 * (1 - f))}
+      position={[0.3, 9.5 - f * 7, 4 + f * 6]} rotation={[-0.9, 0, 0]} />);
+  }
   return (
     <>
-      <Cam pos={pos} look={look} fov={60 - k * 8} />
-      <World t={t} x0={-24} x1={30} crowd={beachState(t, { armsAll: true })} fog={[60, 140, "#2b2632"]} />
-      <Commander t={t} open={m} />
-      <Waves t={t} o={[CMD_POS[0] + 1.2, CMD_POS[1] + 1.1, CMD_POS[2] + 0.6]} dir={[0.3, -0.45, 1]} s={1.6} />
+      <Cam pos={[0.5 + sx, 7.6 - k * 0.8 + sy, 1.6 + k * 0.8]} look={[0, 0.8, 11]} fov={54 - k * 6} />
+      <World t={t} x0={-24} x1={24} crowd={beachState(t, { armsAll: true })} fog={[30, 70, "#2b2632"]} />
     </>
   );
 }
@@ -443,12 +445,12 @@ function shotChant(t: number) {
     [[0, 10.5, 0.4], [0, 0.8, 15], 54],
     [[0.4, 3.2, 2.0], [0, 1.0, 12], 46],
     [[0.2, 2.0, 4.0], [0.05, 1.25, 8.5], 50],
-    [[4, 3.2, 21], [0, 9.5, 0], 62],
+    [[4, 2.6, 19], [0, 5.5, 0], 64],
     [[-7, 4.5, 2.5], [2, 1.2, 12], 50],
-    [[-1.45, 2.0, 5.3], [-1.75, 1.55, 8.1], 46],
+    [[-1.45, 2.0, 5.3], [-1.75, 0.85, 8.1], 46],
     [[0, 0.9, 5.2], [0, 3.6, 20], 62],
-    [[0.2, 2.0, 4.9], [0.1, 1.3, 8.3], 46],
-    [[0.62, 2.05, 6.0], [0.62, 1.55, 8.05], 44],
+    [[0.2, 2.0, 4.9], [0.1, 1.1, 8.3], 46],
+    [[0.62, 2.05, 6.0], [0.62, 1.1, 8.05], 44],
   ];
   const sylDur = (c.end - c.start) / 9;
   const perSyl = sylDur > 0.8;           // длинный хор: смена плана на каждый слог
