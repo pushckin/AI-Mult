@@ -53,6 +53,7 @@ export interface CharacterProps {
   front?: React.ReactNode; // доп. детали поверх туловища
   shadow?: boolean;
   seed?: number;
+  adult?: boolean;     // взрослые пропорции: длиннее туловище и ноги
 }
 
 const D = 0.035; // толщина картона
@@ -64,11 +65,11 @@ const Piece: React.FC<{ g: THREE.BufferGeometry; c: string; p?: [number, number,
 
 // ---------- глаза ----------
 const EyesPart: React.FC<{ kind: Eyes; lookX: number; lookY: number; brow: number; tears: number; skin: string }> = ({ kind, lookX, lookY, brow, tears, skin }) => {
-  const ex = 0.122, ey = 1.17;
+  const ex = 0.118, ey = 1.17;
   const wide = kind === "wide" || kind === "crazy";
-  const rx = wide ? 0.15 : 0.13, ry = wide ? 0.17 : kind === "squint" ? 0.075 : kind === "tiny" ? 0.1 : 0.15;
+  const rx = wide ? 0.155 : 0.138, ry = wide ? 0.185 : kind === "squint" ? 0.08 : kind === "tiny" ? 0.11 : 0.165;
   const eyeWhite = geo.ellipse(rx, ry, 0.02);
-  const pupilR = kind === "wide" ? 0.025 : kind === "crazy" ? 0.022 : 0.036;
+  const pupilR = kind === "wide" ? 0.022 : kind === "crazy" ? 0.02 : 0.03;
   const pupil = geo.ellipse(pupilR, pupilR, 0.015);
   const els: React.ReactNode[] = [];
   for (const side of [-1, 1]) {
@@ -83,7 +84,7 @@ const EyesPart: React.FC<{ kind: Eyes; lookX: number; lookY: number; brow: numbe
       els.push(<Piece key={"x2" + side} g={geo.rrect(0.16, 0.025, 0.01, 0.015)} c="#111" p={[x, ey, Z(7)]} r={-0.78} />);
       continue;
     }
-    els.push(<Piece key={"w" + side} g={eyeWhite} c="#fbfbf6" p={[x, ey, Z(5)]} />);
+    els.push(<Piece key={"w" + side} g={eyeWhite} c="#fbfbf6" p={[x, ey, Z(5) + (side > 0 ? 0.002 : 0)]} r={side * 0.12} />);
     const crazyOff = kind === "crazy" ? side * 0.03 : 0;
     const px = x + THREE.MathUtils.clamp(lookX, -1, 1) * (rx - pupilR - 0.015) * 0.85 + crazyOff - side * 0.012;
     const py = ey + THREE.MathUtils.clamp(lookY, -1, 1) * (ry - pupilR - 0.015) * 0.8;
@@ -205,8 +206,8 @@ const HatPart: React.FC<{ hat: Hat; hairColor: string; hatColor: string; skin: s
     );
     case "cap": return (
       <group>
-        <Piece g={geo.arc(0.49, 0.3, 0, Math.PI, D)} c={hatColor} p={[0, 1.32, Z(3)]} />
-        <Piece g={geo.rrect(0.62, 0.08, 0.04, D)} c={shade(hatColor, -0.2)} p={[0.24, 1.33, Z(4)]} />
+        <Piece g={geo.arc(0.49, 0.3, 0, Math.PI, D)} c={hatColor} p={[0, 1.38, Z(3)]} />
+        <Piece g={geo.rrect(0.5, 0.07, 0.035, D)} c={shade(hatColor, -0.2)} p={[0.3, 1.39, Z(4)]} />
       </group>
     );
     case "militaryCap": return (
@@ -270,6 +271,7 @@ const Arm: React.FC<{ side: -1 | 1; angle: number; sleeve: string; skin: string;
       <Piece g={geo.rrect(0.15, len, 0.06, D)} c={sleeve} p={[side * 0.035, -len / 2, 0]} r={side * 0.18} />
       <group position={[side * 0.07, -len - 0.02, Z(1)]}>
         <Piece g={geo.ellipse(0.085, 0.085, D)} c={mitten ?? sleeve} />
+        <Piece g={geo.ellipse(0.035, 0.05, D)} c={mitten ?? sleeve} p={[-side * 0.075, 0.035, Z(0.5)]} r={side * 0.6} />
         <group rotation={[0, 0, -side * angle]}>{children}</group>
       </group>
     </group>
@@ -297,6 +299,9 @@ export const Character: React.FC<CharacterProps> = (p) => {
   // туловище — трапеция
   const bodyG = geo.poly("body", [[-0.4, 0], [0.4, 0], [0.31, 0.62], [-0.31, 0.62]], 0.1, D);
   const legL = legs === "run" ? Math.sin(p.legPhase ?? 0) * 0.5 : 0;
+  const LEG = p.adult && legs !== "sit" ? 0.13 : 0; // удлинение ног
+  const TK = p.adult ? 1.3 : 1;                      // растяжение туловища
+  const TOP = (TK - 1) * 0.62;                       // насколько поднимается голова/плечи
   return (
     <group position={p.position} rotation={[0, p.rotationY ?? 0, 0]} scale={p.scale ?? 1}>
       {p.shadow !== false && (
@@ -309,9 +314,9 @@ export const Character: React.FC<CharacterProps> = (p) => {
         {legs !== "none" && legs !== "sit" && [-1, 1].map((s) => {
           const sw = legs === "run" ? (s === -1 ? legL : -legL) : 0;
           return (
-            <group key={s} position={[s * 0.15, 0.17, Z(-2)]} rotation={[0, 0, sw]}>
-              <Piece g={geo.rrect(0.2, 0.17, 0.03, D)} c={c2} p={[0, -0.06, 0]} />
-              <Piece g={geo.ellipse(0.15, 0.065, D)} c="#1b1b1b" p={[s * 0.03, -0.14, Z(1)]} />
+            <group key={s} position={[s * 0.15, 0.17 + LEG, Z(-2)]} rotation={[0, 0, sw]}>
+              <Piece g={geo.rrect(0.2, 0.17 + LEG, 0.03, D)} c={c2} p={[0, -0.06 - LEG / 2, 0]} />
+              <Piece g={geo.ellipse(0.15, 0.065, D)} c="#1b1b1b" p={[s * 0.03, -0.14 - LEG, Z(1)]} />
             </group>
           );
         })}
@@ -321,20 +326,24 @@ export const Character: React.FC<CharacterProps> = (p) => {
             <Piece g={geo.ellipse(0.14, 0.06, D)} c="#1b1b1b" p={[0, -0.07, Z(1)]} />
           </group>
         ))}
-        <group rotation={[0, 0, p.bodyTilt ?? 0]} position={[0, 0.12, 0]}>
+        <group rotation={[0, 0, p.bodyTilt ?? 0]} position={[0, 0.12 + LEG, 0]}>
           {/* что примотано к спине — выглядывает из-за плеч */}
-          {p.back && <group position={[0, 0.62, Z(-4)]}>{p.back}</group>}
+          {p.back && <group position={[0, 0.62 + TOP, Z(-4)]}>{p.back}</group>}
           <group position={[0, -0.12, 0]}>
             {/* руки за туловищем */}
-            <Arm side={-1} angle={p.armL ?? 0.12} sleeve={c1} skin={skin} mitten={outfit === "tactical" ? "#222" : undefined}>{p.handL}</Arm>
-            <Arm side={1} angle={p.armR ?? 0.12} sleeve={c1} skin={skin} mitten={outfit === "tactical" ? "#222" : undefined}>{p.handR}</Arm>
-            <Piece g={bodyG} c={c1} p={[0, 0.12, 0]} />
-            <OutfitDetails outfit={outfit} c1={c1} c2={c2} tie={p.tie} medals={p.medals} />
+            <group position={[0, TOP, 0]}>
+              <Arm side={-1} angle={p.armL ?? 0.12} sleeve={c1} skin={skin} mitten={outfit === "tactical" ? "#222" : undefined}>{p.handL}</Arm>
+              <Arm side={1} angle={p.armR ?? 0.12} sleeve={c1} skin={skin} mitten={outfit === "tactical" ? "#222" : undefined}>{p.handR}</Arm>
+            </group>
+            <group position={[0, 0.12 * (1 - TK), 0]} scale={[1, TK, 1]}>
+              <Piece g={bodyG} c={c1} p={[0, 0.12, 0]} />
+              <OutfitDetails outfit={outfit} c1={c1} c2={c2} tie={p.tie} medals={p.medals} />
+            </group>
             {p.front}
-            {(p.blood ?? 0) > 0.3 && <Piece g={geo.poly("bl1", [[-0.1, 0], [0.12, 0.03], [0.05, 0.12], [-0.06, 0.1]], 0.03, 0.02)} c="#b3121b" p={[0.14, 0.45, Z(4)]} />}
+            {(p.blood ?? 0) > 0.3 && <Piece g={geo.poly("bl1", [[-0.1, 0], [0.12, 0.03], [0.05, 0.12], [-0.06, 0.1]], 0.03, 0.02)} c="#b3121b" p={[0.14, 0.45 + TOP * 0.5, Z(4)]} />}
             {/* голова */}
-            <group position={[0, 0, 0]} rotation={[0, 0, p.headTilt ?? 0]}>
-              <group position={[0, 0.01, 0]}>
+            <group position={[0, TOP, 0]} rotation={[0, 0, p.headTilt ?? 0]}>
+              <group position={[0, -0.12, 0]} scale={1.08}>
                 {p.ears && [-1, 1].map((s) => (p.missingEar && s === 1)
                   ? <Piece key={s} g={geo.arc(0.07, 0.09, -Math.PI / 2, Math.PI / 2 - 0.9, D)} c={skin} p={[s * 0.47, 1.12, Z(-0.5)]} />
                   : <Piece key={s} g={geo.ellipse(0.075, 0.1, D)} c={skin} p={[s * 0.47, 1.12, Z(-0.5)]} />)}
@@ -411,8 +420,8 @@ const OutfitDetails: React.FC<{ outfit: Outfit; c1: string; c2: string; tie?: st
     [-0.06, 0.06].forEach((x, i) => els.push(<Piece key={"str" + i} g={geo.rrect(0.018, 0.18, 0.008, 0.015)} c="#eee" p={[x, y0 + 0.5, Z(3)]} />));
   }
   if (outfit === "flannel") {
-    [-0.24, -0.08, 0.08, 0.24].forEach((x, i) => els.push(<Piece key={"v" + i} g={geo.rrect(0.035, 0.6, 0.01, 0.015)} c={shade(c1, -0.3)} p={[x, y0 + 0.31, Z(2)]} />));
-    [0.12, 0.28, 0.44].forEach((y, i) => els.push(<Piece key={"h" + i} g={geo.rrect(0.66, 0.03, 0.01, 0.015)} c={shade(c1, -0.3)} p={[0, y0 + y, Z(2)]} />));
+    [-0.24, -0.08, 0.08, 0.24].forEach((x, i) => els.push(<Piece key={"v" + i} g={geo.rrect(0.035, 0.6, 0.01, 0.015)} c={shade(c1, -0.18)} p={[x, y0 + 0.31, Z(2)]} />));
+    [0.12, 0.28, 0.44].forEach((y, i) => els.push(<Piece key={"h" + i} g={geo.rrect(0.66, 0.03, 0.01, 0.015)} c={shade(c1, -0.18)} p={[0, y0 + y, Z(2)]} />));
   }
   if (outfit === "overalls") {
     els.push(<Piece key="bib" g={geo.rrect(0.36, 0.3, 0.04, 0.02)} c={shade(c1, 0.05)} p={[0, y0 + 0.38, Z(2)]} />);

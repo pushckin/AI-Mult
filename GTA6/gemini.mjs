@@ -1,6 +1,10 @@
 // Общий клиент Gemini. Ключ берётся из GEMINI_API_KEY; если его нет — запрос уходит с заглушкой,
 // и ключ подставляет сетевой прокси среды (Network secrets для generativelanguage.googleapis.com).
 import { GoogleGenAI } from '@google/genai';
+import fs from 'node:fs';
+// ключ из GTA6/.env (файл в .gitignore)
+const envFile = new URL('./.env', import.meta.url);
+if (!process.env.GEMINI_API_KEY && fs.existsSync(envFile)) for (const l of fs.readFileSync(envFile, 'utf8').split('\n')) { const m = l.match(/^\s*([A-Z_]+)\s*=\s*(.+)\s*$/); if (m) process.env[m[1]] ??= m[2]; }
 export const API_KEY = process.env.GEMINI_API_KEY || 'injected-by-proxy';
 export const client = new GoogleGenAI({ apiKey: API_KEY, apiVersion: 'v1beta', httpOptions: { apiVersion: 'v1beta' } });
 export async function rest(model, body) {

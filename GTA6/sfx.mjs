@@ -643,8 +643,8 @@ S('start_chime', 'Кайфовый звук запуска игры: вжух-р
 S('explosion_big', 'Чудовищный взрыв электростанций: удар, бабах, длинный хвост-рокот с обломками', () => {
   const L = 4.1, d = buf(L);
   add(d, burst(0.1, 0.01, (n) => hp(n, 1500)), 0, 1);
-  add(d, env(lp(white(2.5), (t) => 150 + 4500 * Math.exp(-t / 0.22)), (t) => dec(t, 0.55, 0.003)), 0, 1.4);
-  add(d, env(osc(2.5, (t) => 22 + 38 * Math.exp(-t / 0.3)), (t) => dec(t, 0.9, 0.005)), 0, 1.3);
+  add(d, env(lp(white(L), (t) => 150 + 4500 * Math.exp(-t / 0.22)), (t) => dec(t, 0.55, 0.003)), 0, 1.4);
+  add(d, env(osc(L, (t) => 22 + 38 * Math.exp(-t / 0.3)), (t) => dec(t, 0.9, 0.005)), 0, 1.3);
   const rum = lp(brown(L), 150); env(rum, (t) => smooth(t / 0.08) * Math.exp(-t / 1.4));
   add(d, rum, 0, 1.4);
   add(d, grains(L, 90, () => rr(0.25, 3.2), { fLo: 500, fHi: 3500, amp: (t) => 0.5 * Math.exp(-t / 1.2) }));
@@ -676,7 +676,7 @@ S('crickets', 'Сверчки в мёртвой тишине ночи (петл�
 S('fire_crackle', 'Треск горящих проводов/огня (петля 4 с)', () => {
   const L = 5, d = buf(L);
   const roar = norm(lp(lp(white(L), 300), 300)); const m = norm(lp(white(L), 2)); for (let i = 0; i < roar.length; i++) roar[i] *= 0.6 + 0.4 * Math.abs(m[i]);
-  add(d, roar, 0, 0.5);
+  add(d, roar, 0, 0.22);
   for (let k = 0; k < 260; k++) { const tau = rr(0.0005, 0.003); add(d, hp(burst(tau * 8, tau), 1500), u01() * L, 0.15 + 0.6 * Math.pow(u01(), 2)); }
   for (let k = 0; k < 14; k++) add(d, bp(burst(0.03, 0.004), rr(1500, 3000), 3), u01() * L, rr(0.5, 1));
   add(d, norm(hp(white(L), 4500)), 0, 0.03);
@@ -730,6 +730,7 @@ const only = process.argv.slice(2);
 const done = [];
 for (const r of REG) {
   if (only.length && !only.includes(r.name)) { if (fs.existsSync(path.join(OUT, `${r.name}.wav`))) done.push({ ...r, len: null }); continue; }
+  seed = [...r.name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 86000000); // детерминированно для каждого звука
   const len = save(r.name, r.fn(), r.opts);
   console.log('sfx', r.name.padEnd(18), len.toFixed(2) + 's');
   done.push({ ...r, len });

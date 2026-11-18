@@ -2,6 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { PartComposition } from "./PartComposition";
 import { TIMELINE, FPS } from "./data/timeline";
+import { CastSheet } from "./scenes/CastSheet";
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -11,5 +12,7 @@ export const RemotionRoot: React.FC = () => (
         <Composition id={pid === "p1" ? "Part1Censored" : "Part2Censored"} component={PartComposition} durationInFrames={TIMELINE[pid].totalFrames} fps={FPS} width={1080} height={1920} defaultProps={{ pid, censored: true }} />
       </React.Fragment>
     ))}
+    <Composition id="Cast1" component={CastSheet} durationInFrames={1} fps={FPS} width={1080} height={1920} defaultProps={{ sheet: "Cast1" as const }} />
+    <Composition id="Cast2" component={CastSheet} durationInFrames={1} fps={FPS} width={1080} height={1920} defaultProps={{ sheet: "Cast2" as const }} />
   </>
 );

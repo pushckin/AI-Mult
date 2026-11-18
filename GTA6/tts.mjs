@@ -31,16 +31,25 @@ async function viaRest(model, l) {
   if (!d) throw new Error('нет аудио');
   return Buffer.from(d, 'base64');
 }
+// Бесплатный тариф: ~3 запроса/мин на основную модель — идём последовательно и ждём при 429,
+// чтобы все голоса были из одной модели (качество одинаковое).
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function gen(l) {
-  for (const model of MODELS) for (const fn of [viaInteractions, viaRest]) {
+  for (let attempt = 0; attempt < 8; attempt++) {
     try {
-      let buf = await fn(model, l);
+      let buf = await viaInteractions(MODELS[0], l);
       if (buf.slice(0, 4).toString() !== 'RIFF') buf = pcmToWav(buf, 24000);
       fs.writeFileSync(path.join(voiceDir, `${l.id}.wav`), buf);
-      console.log('OK', l.id, model, fn.name, (buf.length / 48000).toFixed(2) + 's');
+      console.log('OK', l.id, MODELS[0], (buf.length / 48000).toFixed(2) + 's');
       return;
-    } catch (e) { console.error('ERR', l.id, model, fn.name, e.message.slice(0, 160)); }
+    } catch (e) {
+      const m = String(e.message).match(/retry in (\d+)/);
+      const wait = m ? (+m[1] + 2) * 1000 : 15000;
+      console.error('ERR', l.id, String(e.message).slice(0, 120), '→ жду', wait / 1000, 'с');
+      await sleep(wait);
+    }
   }
+  console.error('FAIL', l.id);
 }
-for (let i = 0; i < todo.length; i += 4) await Promise.all(todo.slice(i, i + 4).map(gen));
+for (const l of todo) await gen(l);
 console.log('done', todo.length);
