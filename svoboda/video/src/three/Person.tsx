@@ -18,11 +18,13 @@ export interface PP {
   brow: number; // -1 нахмурен .. 1 поднят
   cup: number; // наклон стакана (град)
   scale: number;
+  // сцена 2 (Cast.tsx): аксессуар (0 - как есть, 1 - снят/убран), слёзы (0..3 фаза капли), руки: 0 варежка, 1 палец, 2 кулак; наклон предмета в руке; сирена мегафона (0 выкл, 1..4 фаза)
+  acc: number; tear: number; hl: number; hr: number; hp: number; sir: number;
 }
 export const P0: PP = {
   x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, tl: 0, ty: 0, tz: 0, hx: 0, hy: 0, hz: 0, hdx: 0, hdy: 0,
   alx: 0, alz: 8, ale: 0, arx: 0, arz: 8, are: 0, llx: 0, llz: 4, llk: 0, lrx: 0, lrz: 4, lrk: 0,
-  mouth: 0, eyeL: 0, eyeR: 2, lx: 0, ly: 0, brow: 0, cup: 0, scale: 1,
+  mouth: 0, eyeL: 0, eyeR: 2, lx: 0, ly: 0, brow: 0, cup: 0, scale: 1, acc: 0, tear: 0, hl: 0, hr: 0, hp: 0, sir: 0,
 };
 export type PPatch = Partial<PP>;
 export const mixP = (...parts: Array<PPatch | undefined>): PP => Object.assign({}, P0, ...parts.filter(Boolean)) as PP;
