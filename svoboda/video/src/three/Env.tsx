@@ -302,7 +302,7 @@ export const Billboard: React.FC<{ state: "a" | "g1" | "g2" | "b" }> = ({ state 
 );
 
 // ---------- улица целиком ----------
-export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number }> = ({ pal, lampOn }) => {
+export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm?: boolean }> = ({ pal, lampOn, calm = false }) => {
   const seams = useMemo(() => Array.from({ length: 41 }).map((_, i) => -24 + i * 1.2), []);
   return (
     <group>
@@ -327,12 +327,16 @@ export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number }> = 
       <Palm x={9.6} z={-1.3} h={4.2} seed={4} />
       <Palm x={14.0} z={-1.5} h={4.5} seed={5} />
       <Lamp x={-3.6} z={1.45} on={lampOn} />
-      <Lamp x={7.6} z={1.45} on={lampOn} />
-      <Bin x={-4.4} z={-1.0} />
-      <Bin x={0.9} z={-1.45} color="#5a5f78" />
-      <Bin x={6.9} z={-1.2} />
-      <Hydrant x={-4.5} z={1.2} />
-      <Hydrant x={6.6} z={1.2} />
+      {!calm && <Lamp x={7.6} z={1.45} on={lampOn} />}
+      {!calm && (
+        <>
+          <Bin x={-4.4} z={-1.0} />
+          <Bin x={0.9} z={-1.45} color="#5a5f78" />
+          <Bin x={6.9} z={-1.2} />
+          <Hydrant x={-4.5} z={1.2} />
+          <Hydrant x={6.6} z={1.2} />
+        </>
+      )}
     </group>
   );
 };

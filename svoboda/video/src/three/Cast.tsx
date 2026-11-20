@@ -156,7 +156,7 @@ const SOUND_PTS = (r: number, a0: number): Array<[number, number]> => {
   return out;
 };
 export const Megaphone: React.FC<{ sir?: number }> = ({ sir = 0 }) => (
-  <group>
+  <group scale={0.78}>
     <group rotation={[Math.PI / 2, 0, 0]} position={[0, 0.03, 0.2]}>
       <Part geo={rcyl(0.06, 0.2, 0.52, 0.02, 24)} color="#e8263a" px={3.2} />
       <Part geo={rcyl(0.128, 0.152, 0.08, 0.01, 24)} color="#fbfbf6" px={0} position={[0, 0.02, 0]} scale={[1.03, 1, 1.03]} />
@@ -177,9 +177,9 @@ export const Megaphone: React.FC<{ sir?: number }> = ({ sir = 0 }) => (
 );
 const Placard: React.FC = () => (
   <group position={[0, 0.0, 0]}>
-    <Part geo={rcyl(0.028, 0.028, 1.5, 0.01, 10)} color="#9a6a3a" px={2.8} position={[0, 0.45, 0]} />
-    <Part geo={rbox(0.98, 0.74, 0.05, 0.015)} color="#d1a468" px={3.2} position={[0, 1.28, 0.03]} />
-    <TexPlane tex={placardTex()} w={0.92} h={0.69} position={[0, 1.28, 0.06]} />
+    <Part geo={rcyl(0.028, 0.028, 1.35, 0.01, 10)} color="#9a6a3a" px={2.8} position={[0, 0.38, 0]} />
+    <Part geo={rbox(0.9, 0.68, 0.05, 0.015)} color="#d1a468" px={3.2} position={[0.05, 0.92, 0.03]} />
+    <TexPlane tex={placardTex()} w={0.84} h={0.63} position={[0.05, 0.92, 0.06]} />
   </group>
 );
 const Shades: React.FC = () => (
@@ -365,7 +365,7 @@ const TonyBuild: Build = (() => {
     pelvisCol: c.shorts,
     torso: [0.96, 0.58, 0.54],
     torsoCol: c.tank,
-    arm: { sx: 0.62, up: 1.75, fo: 1.6, hand: 1.45, upCol: c.skin, foCol: c.skin, bicep: 1.55, delt: c.skin, skin: c.skin },
+    arm: { sx: 0.62, up: 1.5, fo: 1.4, hand: 1.25, upCol: c.skin, foCol: c.skin, bicep: 1.2, delt: c.skin, skin: c.skin },
     leg: {
       hipX: 0.21, th: 1.55, ca: 1.35, thCol: c.shorts, caCol: c.skin, sock: c.sock,
       shoe: (
@@ -465,14 +465,14 @@ const ChloeTorso: React.FC<{ p: PP }> = ({ p }) => {
   const [w, h, d] = ChloeBuild.torso;
   const front = d / 2 + 0.005;
   const badges: Array<[number, number, number, string]> = [
-    [-0.3, 0.52, 0.04, "#ff2fa8"], [-0.2, 0.55, 0.035, "#ffd23a"], [-0.09, 0.52, 0.04, "#fbfbf6"], [0.04, 0.55, 0.035, "#ff3b3b"], [0.15, 0.52, 0.04, "#7dff1a"],
-    [0.27, 0.55, 0.035, "#b06bff"], [0.34, 0.47, 0.03, "#ffd23a"], [-0.34, 0.46, 0.03, "#ff8a1c"], [0.21, 0.46, 0.028, "#ff2fa8"], [-0.14, 0.46, 0.028, "#2f6bf0"],
+    [-0.3, 0.53, 0.04, "#ff2fa8"], [-0.2, 0.56, 0.035, "#ffd23a"], [-0.1, 0.53, 0.04, "#fbfbf6"], [0.1, 0.55, 0.035, "#ff3b3b"], [0.2, 0.52, 0.04, "#7dff1a"],
+    [0.3, 0.55, 0.035, "#b06bff"], [0.36, 0.44, 0.03, "#ffd23a"], [-0.36, 0.44, 0.03, "#ff8a1c"], [0.34, 0.33, 0.028, "#ff2fa8"], [-0.34, 0.3, 0.028, "#2f6bf0"],
   ];
   return (
     <>
       <Part geo={rbox(w + 0.04, 0.1, d + 0.04, 0.04)} color={c.hoodDark} px={2.8} position={[0, 0.04, 0]} />
       <Part geo={rbox(0.54, 0.12, 0.04, 0.02)} color={c.hoodDark} px={2.4} position={[0, 0.14, front + 0.01]} />
-      <TexPlane tex={hoodTex()} w={0.52} h={0.4} position={[0, 0.34, front + 0.012]} cutout />
+      <TexPlane tex={hoodTex()} w={0.5} h={0.37} position={[0, 0.27, front + 0.012]} cutout />
       {badges.map(([x, y, r, col], i) => (
         <Dot key={i} w={w} d={d} x={x} y={y} r={r} color={col} ink lift={0.01} />
       ))}
@@ -480,8 +480,8 @@ const ChloeTorso: React.FC<{ p: PP }> = ({ p }) => {
       <Part geo={sphereGeo(20)} color={c.hoodDark} position={[0, 0.62, -0.17]} scale={[0.4, 0.2, 0.2]} />
       {([1, -1] as const).map((s) => (
         <group key={s}>
-          <Part geo={rcyl(0.014, 0.014, 0.22, 0.005, 8)} color="#fbfbf6" px={2} position={[s * 0.06, 0.5, front + 0.012]} />
-          <Part geo={sphereGeo(8)} color="#fbfbf6" px={2} position={[s * 0.06, 0.38, front + 0.012]} scale={0.022} />
+          <Part geo={rcyl(0.014, 0.014, 0.2, 0.005, 8)} color="#fbfbf6" px={2} position={[s * 0.06, 0.52, front + 0.012]} />
+          <Part geo={sphereGeo(8)} color="#fbfbf6" px={2} position={[s * 0.06, 0.42, front + 0.012]} scale={0.022} />
         </group>
       ))}
       {/* мегафон на шнурке (после «опускает») */}
@@ -500,8 +500,8 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
   const [tw, th, td] = b.torso;
   const sir = p.sir;
   // предметы в руках: правая рука (side -1) / левая (+1)
-  const compR = p.alx * 0 + p.arx + p.are + p.tl;
-  const compL = p.alx + p.ale + p.tl;
+  const compR = p.arx + p.are - p.tl;
+  const compL = p.alx + p.ale - p.tl;
   const heldR =
     kind === "tony" ? (p.acc === 1 ? <Shades /> : null) : kind === "chloe" ? (p.acc === 0 ? <Megaphone sir={sir} /> : null) : null;
   const heldRotR = kind === "chloe" ? compR + p.hp : kind === "tony" ? compR * 0.5 : 0;
