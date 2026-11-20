@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Процедурная генерация звука сцены 1 (SFX + music_s1) без внешних API.
 Запуск:  python3 svoboda/tools/synth_audio.py   (нужны numpy, scipy)
-Результат: svoboda/video/public/audio/{sfx_*.wav, music_s1.wav}  и  svoboda/out/s1_audio_preview.wav
+Результат: svoboda/video/public/audio/{sfx_*.wav, music_s1.wav}  и  svoboda/out/s1_audio_mix.wav
 Все файлы 44.1 кГц, 16 бит, стерео, пик около -3 dBFS.
 """
 import re
@@ -145,8 +145,10 @@ def save(name, x, loop=False, peak=PEAK):
     x = x - x.mean(axis=0, keepdims=True) if not loop else x
     m = np.abs(x).max()
     x = x * (peak / m)
-    AUDIO.mkdir(parents=True, exist_ok=True)
-    wavfile.write(AUDIO / f"{name}.wav", SR, (np.clip(x, -1, 1) * 32767).astype(np.int16))
+    # синтез-дубли ElevenLabs-звуков (одинаковое имя .mp3) живут в synth/, чтобы wav не перекрывал mp3
+    d = AUDIO / "synth" if (AUDIO / f"{name}.mp3").exists() else AUDIO
+    d.mkdir(parents=True, exist_ok=True)
+    wavfile.write(d / f"{name}.wav", SR, (np.clip(x, -1, 1) * 32767).astype(np.int16))
     print(f"{name}.wav  {len(x) / SR:.3f} s")
     return x
 
@@ -782,6 +784,20 @@ def read_wav(path):
     return a
 
 
+def load_cue_audio(base):
+    """Как Remotion probeAudio: wav, затем mp3 в public/audio/ (synth/ не участвует)."""
+    for ext in ("wav", "mp3"):
+        p = AUDIO / f"{base}.{ext}"
+        if p.exists():
+            if ext == "wav":
+                return read_wav(p)
+            import subprocess
+            raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(p), "-f", "f32le", "-ac", "2", "-ar", str(SR), "-"],
+                                 capture_output=True, check=True).stdout
+            return np.frombuffer(raw, dtype=np.float32).reshape(-1, 2).astype(np.float64)
+    return None
+
+
 def parse_cues():
     src = SCENE_TS.read_text()
     consts = dict(re.findall(r"export const (\w+)\s*=\s*(\d+)\s*;", src))
@@ -808,20 +824,17 @@ def parse_cues():
 
 def preview():
     cues, c = parse_cues()
-    # зуб ударяется об асфальт на SPIT_FRAME+22 (в AUDIO_CUES cue нет)
-    cues.append(("sfx_tooth_ping", c["SPIT_FRAME"] + 22, c["SPIT_FRAME"] + 22 + 22, 0.7, False))
     FPS = 24
-    total = int(30 * SR)
+    total = int(c["DURATION"] / FPS * SR)
     mix = np.zeros((total, 2))
     cache = {}
     for base, fr, to, vol, loop in cues:
-        p = AUDIO / f"{base}.wav"
-        if not p.exists():
+        if base not in cache:
+            cache[base] = load_cue_audio(base)
+        a = cache[base]
+        if a is None:
             print("  (нет файла, пропуск)", base)
             continue
-        if base not in cache:
-            cache[base] = read_wav(p)
-        a = cache[base]
         n = int((to - fr) / FPS * SR)
         if loop:
             a = np.tile(a, (n // len(a) + 1, 1))
@@ -834,7 +847,7 @@ def preview():
     if m > 0.98:
         mix *= 0.98 / m
     OUT.mkdir(parents=True, exist_ok=True)
-    wavfile.write(OUT / "s1_audio_preview.wav", SR, (np.clip(mix, -1, 1) * 32767).astype(np.int16))
+    wavfile.write(OUT / "s1_audio_mix.wav", SR, (np.clip(mix, -1, 1) * 32767).astype(np.int16))
     print(f"preview peak {20 * np.log10(np.abs(mix).max() + 1e-12):.1f} dBFS (scale {min(1, 0.98 / max(m, 1e-9)):.2f})")
 
 
