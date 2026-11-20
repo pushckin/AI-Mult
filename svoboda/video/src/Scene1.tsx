@@ -6,7 +6,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { useThree } from "@react-three/fiber";
 import { AudioAvail, AudioLayers } from "./engine/audio";
 import * as S from "./data/scene1";
-import { FOV, Shadow } from "./three/toon";
+import { FOV, Shadow, Flat, planeGeo } from "./three/toon";
 import { Person, Palette, GREG_COL } from "./three/Person";
 import { Street, Billboard, PAL_NIGHT, PAL_COLD } from "./three/Env";
 import { SuperCar, Rocket, Bike } from "./three/Vehicles";
@@ -66,27 +66,37 @@ const Car: React.FC<{ frame: number }> = ({ frame }) => {
   const st = A.carState(frame);
   if (!st.on) return null;
   const driver = A.alienPose(frame);
-  const puffs: React.ReactNode[] = [];
+  const trail: React.ReactNode[] = [];
   const dir = Math.abs(st.yaw) > 100 ? -1 : 1;
+  const zs = A.carZScale(st.z);
   if (st.fast || st.braking) {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       const k = A.carState(frame - 2 * (i + 1));
       if (!k.on) continue;
-      puffs.push(<Puff key={i} position={[k.x - dir * 2.3, 0.3 + i * 0.12, k.z + (i % 2 ? 0.5 : -0.5)]} r={0.28 + i * 0.08} color="#d5d3e2" />);
+      trail.push(<Puff key={i} position={[k.x - dir * (2.4 + i * 0.35), 0.35 + i * 0.12, k.z + (i % 2 ? 0.3 : -0.3)]} r={0.34 + i * 0.1} color="#d5d3e2" />);
     }
+  }
+  if (st.fast) {
+    // шлейф: длинные плоские полосы скорости за машиной
+    const w = hold(frame, 2) / 2;
+    [[0.42, 3.6], [0.78, 4.8], [1.12, 3.0]].forEach(([y, len], i) => {
+      const L = len + (w % 2 ? 0.7 : 0);
+      trail.push(<Flat key={`s${i}`} geo={planeGeo} color="#eef0ff" position={[st.x - dir * (2.5 + L / 2 + (i === 1 ? 0.4 : 0)), y, st.z - 0.35 * zs]} scale={[L, 0.14, 1]} />);
+    });
   }
   return (
     <>
-      <Shadow position={[st.x, 0.03, st.z]} w={2.2 * A.CAR_SCALE} d={1.1} />
-      <group position={[st.x, st.dy, st.z]} rotation={[0, st.yaw * D2R, 0]} scale={A.CAR_SCALE}>
+      <Shadow position={[st.x, 0.03, st.z]} w={2.3 * A.CAR_SCALE} d={1.1 * zs} />
+      <group position={[st.x, st.dy, st.z]} rotation={[0, st.yaw * D2R, 0]} scale={[A.CAR_SCALE, A.CAR_SCALE, A.CAR_SCALE * zs]}>
         <SuperCar spin={st.spin} driver={driver} wobble={st.pitch} />
       </group>
-      {puffs}
+      {trail}
     </>
   );
 };
 
 // ---------- Байк и ракеты ----------
+const BS = 1.6; // масштаб байка
 const Bikes: React.FC<{ frame: number }> = ({ frame }) => {
   const b = A.bikeState(frame);
   const hidden = A.podHidden(frame);
@@ -99,10 +109,10 @@ const Bikes: React.FC<{ frame: number }> = ({ frame }) => {
     const side = i % 2 === 0 ? 1 : -1;
     const ca = Math.cos(bs.yaw * D2R);
     const sa = Math.sin(bs.yaw * D2R);
-    const lx = 0.9;
-    const lz = side * 0.7;
+    const lx = 0.9 * (BS / 1.1);
+    const lz = side * 0.7 * (BS / 1.1);
     const sx = bs.x + lx * ca + lz * sa;
-    const sy = bs.y + 0.55;
+    const sy = bs.y + 0.62 * BS;
     const sz = bs.z - lx * sa + lz * ca;
     const [tx, ty, tz] = A.TARGETS[i];
     if (d <= A.ROCKET_DUR) {
@@ -118,7 +128,7 @@ const Bikes: React.FC<{ frame: number }> = ({ frame }) => {
       }
       rockets.push(
         <group key={`r${i}`} position={[x, y, z]} rotation={[0, yaw, pitch + (alt ? 0.06 : -0.06)]}>
-          <Rocket flame={alt ? 1 : 2} scale={1.25} />
+          <Rocket flame={alt ? 1 : 2} scale={1.5} />
         </group>,
       );
     } else {
@@ -127,7 +137,7 @@ const Bikes: React.FC<{ frame: number }> = ({ frame }) => {
   });
   return (
     <>
-      <group position={[b.x, b.y, b.z]} rotation={[0, b.yaw * D2R, 0]} scale={1.1}>
+      <group position={[b.x, b.y, b.z]} rotation={[0, b.yaw * D2R, 0]} scale={BS}>
         <group rotation={[0, 0, b.pitch * D2R]}>
           <group rotation={[b.roll * D2R, 0, 0]}>
             <Bike spin={hold(frame) * 25} flame={b.flame} rockets={hidden.map((h) => !h)} />
@@ -148,7 +158,7 @@ const Fires: React.FC<{ frame: number }> = ({ frame }) => (
       frame >= b.f ? (
         <React.Fragment key={i}>
           <Flame position={[b.x, 0.98, b.z]} scale={0.75} frame={frame} />
-          <SmokeColumn x={b.x + 0.1} y={1.5} z={b.z} frame={frame + i * 5} n={5} />
+          <SmokeColumn x={b.x + 0.1} y={1.3} z={b.z} frame={frame + i * 5} n={4} h={0.9} />
         </React.Fragment>
       ) : null,
     )}
@@ -156,7 +166,7 @@ const Fires: React.FC<{ frame: number }> = ({ frame }) => (
 );
 const Papers: React.FC<{ frame: number }> = ({ frame }) => (
   <>
-    {Array.from({ length: 8 }).map((_, i) => (
+    {Array.from({ length: 5 }).map((_, i) => (
       <Paper key={i} frame={frame} seed={i + 1} y={0.6 + hash(i, 3) * 3} z={i % 3 === 0 ? 1.8 : -0.4 + (i % 2)} v={0.22 + hash(i, 5) * 0.22} x0={hash(i, 7) * 22} />
     ))}
   </>
@@ -169,16 +179,24 @@ const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
   // контакт: небольшая звезда на стыке бампера и ног (2-3 кадра), не закрывает позу
   if (frame >= H && frame < S.FLIGHT_FROM) {
     const k = Math.floor((frame - H) / 2);
-    out.push(<Star key="st" position={[A.HIT_X - 0.62 + k * 0.1, 0.48 + k * 0.1, A.GZ + 0.9]} size={[0.42, 0.52, 0.36][k]} rot={[0.1, 0.4, -0.2][k]} seed={20 + k} n={8} />);
+    out.push(<Star key="st" position={[A.HIT_X - 0.1 + k * 0.08, 1.0 + k * 0.1, A.GZ - 0.3]} size={[0.95, 1.15, 0.8][k]} rot={[0.1, 0.4, -0.2][k]} seed={20 + k} n={8} />);
   }
   if (frame >= H && frame < H + 14) {
     const k = hold(frame) - H;
     for (let i = 0; i < 5; i++) out.push(<Chunk key={`d${i}`} position={[A.HIT_X - 0.4 + (i - 2) * 0.22 + k * 0.07 * (i - 1), 0.3 + k * 0.08 * (1 + (i % 3)) - k * k * 0.004, A.GZ + 0.7]} rot={[k * 0.2 + i, k * 0.3, i]} s={0.1 + (i % 3) * 0.03} color={i % 2 ? "#6c5a52" : "#d9c9a8"} />);
   }
+  // кофе из стаканчика: коричневые брызги тянутся за Грегом в полёте
+  if (frame >= S.FLIGHT_FROM + 4 && frame < S.LAND_FRAME - 6) {
+    const f4 = S.FLIGHT_FROM + Math.floor((frame - S.FLIGHT_FROM) / 4) * 4;
+    for (let i = 1; i <= 5; i++) {
+      const pf = A.flightPos(Math.max(S.FLIGHT_FROM, f4 - 4 * i));
+      out.push(<Puff key={`cf${i}`} position={[pf.x + 0.12 * ((i % 2) * 2 - 1) - 0.2 * i * 0.15, pf.y + 0.15 + 0.12 * (i % 3), pf.z + 0.5]} r={0.2 - i * 0.025} color="#6b3f23" px={2.6} />);
+    }
+  }
   // шлёп: пыль двумя облаками в стороны + короткая звезда-удар
-  if (frame >= S.LAND_FRAME && frame < S.LAND_FRAME + 16) out.push(<DustRing key="ld" at={[A.LIE_X - 0.1, 0, A.GZ + 0.95]} k={frame - S.LAND_FRAME} r={1.3} />);
+  if (frame >= S.LAND_FRAME && frame < S.LAND_FRAME + 16) out.push(<DustRing key="ld" at={[A.LIE_X - 0.1, 0, A.GZ - 0.3]} k={frame - S.LAND_FRAME} r={1.3} />);
   // плечо: маленькая вспышка у плеча (не у лица)
-  if (frame >= S.SHOULDER_FRAME && frame < S.SHOULDER_FRAME + 4) out.push(<Star key="pop" position={[A.STAND_X + 0.95, 1.35, A.GZ + 1.0]} size={0.28} rot={(frame - S.SHOULDER_FRAME) * 0.5} seed={40} n={7} />);
+  if (frame >= S.SHOULDER_FRAME && frame < S.SHOULDER_FRAME + 4) out.push(<Star key="pop" position={[A.STAND_X + 0.55, 1.4, A.GZ - 0.25]} size={0.5} rot={(frame - S.SHOULDER_FRAME) * 0.5} seed={40} n={7} />);
   // зуб: вылетает изо рта по дуге и лежит на тротуаре в кадре
   if (frame >= S.SPIT_FRAME) {
     const f = hold(frame);
@@ -190,7 +208,7 @@ const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
     const after = f - (S.SPIT_FRAME + T);
     if (after >= 0 && after < 6) y += [0, 0.22, 0.1, 0.0, 0.05, 0][after] ?? 0;
     if (t >= 1) y = Math.max(y, y0);
-    out.push(<Tooth key="tooth" position={[x, y, A.GZ + 0.45 - t * 0.1]} rot={t < 1 ? -t * 14 : 0.5} s={1.0 + 0.3 * t} />);
+    out.push(<Tooth key="tooth" position={[x, y, A.GZ + 0.45 - t * 0.1]} rot={t < 1 ? -t * 14 : 0.5} s={0.6 + 0.15 * t} />);
   }
   return <>{out}</>;
 };
@@ -198,13 +216,13 @@ const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
 // ---------- мир ----------
 const World: React.FC = () => {
   const frame = useCurrentFrame();
-  const cold = frame > S.VANISH_FRAME;
+  const cold = frame > S.VANISH_FRAME + 1;
   const pal = cold ? PAL_COLD : PAL_NIGHT;
   let bb: "a" | "g1" | "g2" | "b" = "a";
   if (frame >= S.BILLBOARD_FLIP) bb = "b";
   else if (frame >= S.BILLBOARD_GLITCH) bb = Math.floor(hold(frame) / 2) % 2 ? "g1" : "g2";
-  // ровно один кадр пустоты (холодный контрастный) на стыке исчезновения
-  if (frame === S.VANISH_FRAME) {
+  // два кадра пустоты на стыке исчезновения (один жёсткий стык)
+  if (frame === S.VANISH_FRAME || frame === S.VANISH_FRAME + 1) {
     return (
       <>
         <color attach="background" args={["#d4ecff"]} />
@@ -216,7 +234,7 @@ const World: React.FC = () => {
     <>
       <color attach="background" args={[pal.sky]} />
       <CameraRig />
-      <Street pal={pal} lampOn time={frame} />
+      <Street pal={pal} lampOn={false} time={frame} />
       <Billboard state={bb} />
       {!cold && <Fires frame={frame} />}
       {!cold && <Papers frame={frame} />}

@@ -17,12 +17,13 @@ export interface PP {
   lx: number; ly: number; // взгляд
   brow: number; // -1 нахмурен .. 1 поднят
   cup: number; // наклон стакана (град)
+  cs: number; // масштаб стакана
   scale: number;
 }
 export const P0: PP = {
   x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, tl: 0, ty: 0, tz: 0, hx: 0, hy: 0, hz: 0, hdx: 0, hdy: 0,
   alx: 0, alz: 8, ale: 0, arx: 0, arz: 8, are: 0, llx: 0, llz: 4, llk: 0, lrx: 0, lrz: 4, lrk: 0,
-  mouth: 0, eyeL: 0, eyeR: 2, lx: 0, ly: 0, brow: 0, cup: 0, scale: 1,
+  mouth: 0, eyeL: 0, eyeR: 2, lx: 0, ly: 0, brow: 0, cup: 0, cs: 1.35, scale: 1,
 };
 export type PPatch = Partial<PP>;
 export const mixP = (...parts: Array<PPatch | undefined>): PP => Object.assign({}, P0, ...parts.filter(Boolean)) as PP;
@@ -110,7 +111,7 @@ const Cup: React.FC = () => (
   </group>
 );
 
-const Arm: React.FC<{ side: 1 | -1; swing: number; abd: number; elbow: number; c: Palette; cup?: boolean; cupTilt?: number; cupFix?: number; sleeve?: boolean }> = ({ side, swing, abd, elbow, c, cup, cupTilt = 0, cupFix = 0, sleeve = true }) => (
+const Arm: React.FC<{ side: 1 | -1; swing: number; abd: number; elbow: number; c: Palette; cup?: boolean; cupTilt?: number; cupFix?: number; cs?: number; sleeve?: boolean }> = ({ side, swing, abd, elbow, c, cup, cupTilt = 0, cupFix = 0, cs = 1.35, sleeve = true }) => (
   <group position={[side * 0.35, 0.5, 0]} rotation={[-swing * D2R, 0, side * abd * D2R]}>
     {sleeve && <Part geo={rcyl(0.112, 0.105, 0.2, 0.035)} color={c.cuff} position={[0, -0.09, 0]} />}
     {!sleeve && <Part geo={rcyl(0.085, 0.08, 0.2, 0.035)} color={c.skin} position={[0, -0.09, 0]} />}
@@ -118,7 +119,7 @@ const Arm: React.FC<{ side: 1 | -1; swing: number; abd: number; elbow: number; c
       <Part geo={rcyl(0.078, 0.086, 0.24, 0.035)} color={c.skin} position={[0, -0.1, 0]} />
       <Part geo={sphereGeo(20)} color={c.skin} position={[0, -0.27, 0]} scale={[0.115, 0.12, 0.1]} />
       {cup && (
-        <group position={[0, -0.27, 0.0]} rotation={[(swing + elbow + cupFix) * D2R, 0, cupTilt * D2R]} scale={1.35}>
+        <group position={[0, -0.27, 0.0]} rotation={[(swing + elbow + cupFix) * D2R, 0, cupTilt * D2R]} scale={cs}>
           <Cup />
         </group>
       )}
@@ -190,7 +191,7 @@ export const Person: React.FC<{ pose: PP; kind?: "greg" | "alien" | "extra"; col
                 )}
                 {/* руки */}
                 <Arm side={1} swing={p.alx} abd={p.alz} elbow={p.ale} c={c} sleeve={!naked} />
-                <Arm side={-1} swing={p.arx} abd={p.arz} elbow={p.are} c={c} cup={kind === "greg"} cupTilt={p.cup} cupFix={p.tl} sleeve={!naked} />
+                <Arm side={-1} swing={p.arx} abd={p.arz} elbow={p.are} c={c} cup={kind === "greg"} cupTilt={p.cup} cupFix={p.tl} cs={p.cs} sleeve={!naked} />
                 {/* голова: эллипсоид + накладки */}
                 <group position={[p.hdx, 0.93 + p.hdy + (naked ? 0.05 : 0), 0]} rotation={[p.hx * D2R, p.hy * D2R, p.hz * D2R]}>
                   <Part geo={sphereGeo(32)} color={c.head} px={3.6} scale={[H.rx, H.ry, H.rz]} />
