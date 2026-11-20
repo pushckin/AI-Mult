@@ -1,8 +1,8 @@
 // Персонаж South Park из геометрии: голова-блин, тело, варежки, обрубки-ноги. Жёсткие части на шарнирах.
 import React from "react";
 import * as THREE from "three";
-import { Part, Flat, rbox, rcyl, sphereGeo, Shadow, INK } from "./toon";
-import { Decal, Line, basisAt } from "./decal";
+import { Part, Flat, rbox, rcyl, sphereGeo, Shadow } from "./toon";
+import { Decal, Line } from "./decal";
 import { D2R } from "./util";
 
 export interface PP {
@@ -34,34 +34,25 @@ export const GREG_COL: Palette = { skin: "#f4cfa4", shirt: "#e7d3a2", collar: "#
 export const ALIEN_COL: Palette = { skin: "#f2c49b", shirt: "#f2c49b", collar: "#f2c49b", tie: "#f2c49b", pants: "#f2c49b", belt: "#f2c49b", shoes: "#f2c49b", hair: "#9ba7ae", head: "#a8b8c0", cuff: "#f2c49b" };
 
 // ---- лицо Грега ----
-const HEAD_G = { rx: 0.56, ry: 0.45, rz: 0.37 };
-const HEAD_A = { rx: 0.4, ry: 0.52, rz: 0.36 };
-
-/** 3D-глаз: белая полусфера-«кружок» на поверхности головы, зрачок-точка, веко (кожа) для прищура/закрытия */
-const Eye3D: React.FC<{ lon: number; lat: number; st: number; p: PP; skin: string }> = ({ lon, lat, st, p, skin }) => {
-  const H = HEAD_G;
-  const q = React.useMemo(() => basisAt(lon, lat), [lon, lat]);
-  const lo = (lon * Math.PI) / 180, la = (lat * Math.PI) / 180;
-  const pos: [number, number, number] = [H.rx * Math.cos(la) * Math.sin(lo) * 0.97, H.ry * Math.sin(la) * 0.97, H.rz * Math.cos(la) * Math.cos(lo) * 0.97];
-  const r = st === 1 ? 0.2 : 0.18;
-  const ox = Math.max(-0.6, Math.min(0.6, p.lx * 0.12)) * r;
-  const oz = -Math.max(-0.6, Math.min(0.6, p.ly * 0.12)) * r;
-  const hh = 0.62 * r;
-  const py = hh * Math.sqrt(Math.max(0.05, 1 - (ox / r) ** 2 - (oz / r) ** 2)) + 0.004;
-  const pr = st === 1 ? 0.045 : 0.06;
-  return (
-    <group position={pos} quaternion={q}>
-      <Part geo={sphereGeo(20)} color="#fbfbf6" px={2.8} scale={[r, hh, r]} />
-      {st !== 3 && <Part geo={sphereGeo(12)} color={INK} px={0} position={[ox, py, oz]} scale={[pr, pr * 0.7, pr]} />}
-      {st === 2 && <Part geo={sphereGeo(20)} color={skin} px={2.6} position={[0, 0.012, -r * 0.58]} scale={[r * 1.12, hh * 1.12, r * 0.78]} />}
-      {st === 3 && <Part geo={sphereGeo(20)} color={skin} px={2.6} position={[0, 0.012, 0]} scale={[r * 1.1, hh * 1.2, r * 1.1]} />}
-    </group>
-  );
-};
-
-// ---- лицо Грега ----
 const GregFace: React.FC<{ p: PP; c: Palette }> = ({ p, c }) => {
   const eyeY = 8;
+  const eye = (side: 1 | -1, st: number) => {
+    const lon = side * 20;
+    const big = st === 1;
+    const rad = big ? 0.36 : 0.33;
+    const lx = p.lx * 0.1;
+    const ly = p.ly * 0.1;
+    return (
+      <group key={side}>
+        <Decal lon={lon} lat={eyeY} rx={rad} color="#fbfbf6" ring={0.04} lift={1.004} />
+        {/* зрачок на сфере головы, со смещением взгляда */}
+        <Decal lon={lon + (lx * 180) / Math.PI} lat={eyeY + (ly * 180) / Math.PI} rx={big ? 0.075 : 0.1} color="#0c0a10" lift={1.011} visible={st !== 3} />
+        {/* веко: кожа закрывает верх (прищур) или весь глаз (закрыт) */}
+        <Decal lon={lon} lat={eyeY + 9} rx={rad + 0.01} ry={rad * 0.62} color={c.skin} lift={1.014} ring={0.0} visible={st === 2 || st === 3} />
+        <Line lon={lon} lat={eyeY + (st === 3 ? 0 : 2)} pts={[[-0.3, 0], [0.3, 0]]} w={0.02} color="#0c0a10" lift={1.019} visible={st === 2 || st === 3} />
+      </group>
+    );
+  };
   const brow = (side: 1 | -1) => (
     <Line key={`b${side}`} lon={side * 20} lat={eyeY + 20} pts={[[-0.26, side * 0.0 - 0.02 * p.brow * side], [0.0, 0.03 + 0.03 * p.brow], [0.26, 0.0 + 0.06 * p.brow * -side * 0]]}
       w={0.038} color={c.hair} rot={side * (-12 + p.brow * -14)} lift={1.01} />
@@ -73,6 +64,8 @@ const GregFace: React.FC<{ p: PP; c: Palette }> = ({ p, c }) => {
       <Decal lon={84} lat={22} rx={0.5} ry={0.62} color={c.hair} ring={0.035} lift={1.012} />
       <Line lon={0} lat={62} pts={[[-0.5, -0.04], [-0.2, 0.06], [0.1, 0.07], [0.45, -0.02]]} w={0.022} color={c.hair} lift={1.008} />
       <Line lon={0} lat={70} pts={[[-0.4, 0.0], [-0.05, 0.08], [0.35, 0.02]]} w={0.02} color={c.hair} lift={1.008} />
+      {eye(1, p.eyeL)}
+      {eye(-1, p.eyeR)}
       {brow(1)}
       {brow(-1)}
       {/* морщины у глаза */}
@@ -143,6 +136,9 @@ const Leg: React.FC<{ side: 1 | -1; swing: number; spread: number; knee: number;
   </group>
 );
 
+const HEAD_G = { rx: 0.56, ry: 0.45, rz: 0.37 };
+const HEAD_A = { rx: 0.4, ry: 0.52, rz: 0.36 };
+
 // ---- лицо статиста ----
 const PlainFace: React.FC<{ p: PP; c: Palette }> = ({ p, c }) => (
   <>
@@ -197,13 +193,7 @@ export const Person: React.FC<{ pose: PP; kind?: "greg" | "alien" | "extra"; col
                 <Arm side={-1} swing={p.arx} abd={p.arz} elbow={p.are} c={c} cup={kind === "greg"} cupTilt={p.cup} cupFix={p.tl} sleeve={!naked} />
                 {/* голова: эллипсоид + накладки */}
                 <group position={[p.hdx, 0.93 + p.hdy + (naked ? 0.05 : 0), 0]} rotation={[p.hx * D2R, p.hy * D2R, p.hz * D2R]}>
-                  <Part geo={sphereGeo(48)} color={c.head} px={kind === "greg" ? 5 : 4} scale={[H.rx, H.ry, H.rz]} />
-                  {kind === "greg" && (
-                    <>
-                      <Eye3D lon={21} lat={8} st={p.eyeL} p={p} skin={c.skin} />
-                      <Eye3D lon={-21} lat={8} st={p.eyeR} p={p} skin={c.skin} />
-                    </>
-                  )}
+                  <Part geo={sphereGeo(32)} color={c.head} px={3.6} scale={[H.rx, H.ry, H.rz]} />
                   {/* уши */}
                   {!naked && [1, -1].map((s) => <Part key={s} geo={sphereGeo(14)} color={c.skin} px={2.8} position={[s * (H.rx + 0.005), -0.04, -0.02]} scale={[0.05, 0.1, 0.075]} />)}
                   <group scale={[H.rx, H.ry, H.rz]}>{kind === "greg" ? <GregFace p={p} c={c} /> : kind === "alien" ? <AlienFace p={p} /> : <PlainFace p={p} c={c} />}</group>

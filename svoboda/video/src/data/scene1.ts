@@ -18,7 +18,7 @@ export const SHOTS = [
 
 // ---------- Ключевые кадры ----------
 export const HIT_FRAME = 168;
-export const FLIGHT_FROM = 172;
+export const FLIGHT_FROM = 174;
 export const LAND_FRAME = 296;
 export const VANISH_FRAME = 456;
 export const RISE_FROM = 480;

@@ -6,13 +6,13 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { useThree } from "@react-three/fiber";
 import { AudioAvail, AudioLayers } from "./engine/audio";
 import * as S from "./data/scene1";
-import { FOV, Shadow, Lights } from "./three/toon";
+import { FOV, Shadow } from "./three/toon";
 import { Person, Palette, GREG_COL } from "./three/Person";
 import { Street, Billboard, PAL_NIGHT, PAL_COLD } from "./three/Env";
 import { SuperCar, Rocket, Bike } from "./three/Vehicles";
 import { Explosion, Flame, Paper, Puff, SmokeColumn, Star, Tooth, DustRing, Chunk } from "./three/Fx";
 import * as A from "./three/anim";
-import { clamp, hold, remap, lerp, hash, qf } from "./three/util";
+import { clamp, hold, remap, lerp, hash } from "./three/util";
 
 export type Scene1Props = { audio: AudioAvail };
 
@@ -69,10 +69,10 @@ const Car: React.FC<{ frame: number }> = ({ frame }) => {
   const puffs: React.ReactNode[] = [];
   const dir = Math.abs(st.yaw) > 100 ? -1 : 1;
   if (st.fast || st.braking) {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       const k = A.carState(frame - 2 * (i + 1));
       if (!k.on) continue;
-      puffs.push(<Puff key={i} position={[k.x - dir * 2.3, 0.3 + i * 0.12, k.z + (i % 2 ? 0.5 : -0.5)]} r={0.2 + i * 0.06} color="#d5d3e2" />);
+      puffs.push(<Puff key={i} position={[k.x - dir * 2.3, 0.3 + i * 0.12, k.z + (i % 2 ? 0.5 : -0.5)]} r={0.28 + i * 0.08} color="#d5d3e2" />);
     }
   }
   return (
@@ -93,7 +93,7 @@ const Bikes: React.FC<{ frame: number }> = ({ frame }) => {
   const rockets: React.ReactNode[] = [];
   const fx: React.ReactNode[] = [];
   A.FIRE_FRAMES.forEach((ff, i) => {
-    const d = qf(frame) - ff;
+    const d = hold(frame) - ff;
     if (d < 0) return;
     const bs = A.bikeState(ff);
     const side = i % 2 === 0 ? 1 : -1;
@@ -130,7 +130,7 @@ const Bikes: React.FC<{ frame: number }> = ({ frame }) => {
       <group position={[b.x, b.y, b.z]} rotation={[0, b.yaw * D2R, 0]} scale={1.1}>
         <group rotation={[0, 0, b.pitch * D2R]}>
           <group rotation={[b.roll * D2R, 0, 0]}>
-            <Bike spin={qf(frame) * 25} flame={b.flame} rockets={hidden.map((h) => !h)} />
+            <Bike spin={hold(frame) * 25} flame={b.flame} rockets={hidden.map((h) => !h)} />
           </group>
         </group>
       </group>
@@ -141,23 +141,22 @@ const Bikes: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ---------- Горящие урны, мусор ----------
-const BIN_FIRES = [{ f: 30, x: -4.4, z: -1.0 }, { f: 96, x: 0.9, z: -1.45 }];
+const BIN_FIRES = [{ f: 30, x: -4.4, z: -1.0 }, { f: 96, x: 0.6, z: -1.45 }];
 const Fires: React.FC<{ frame: number }> = ({ frame }) => (
   <>
     {BIN_FIRES.map((b, i) =>
       frame >= b.f ? (
         <React.Fragment key={i}>
           <Flame position={[b.x, 0.98, b.z]} scale={0.75} frame={frame} />
-          <SmokeColumn x={b.x + 0.1} y={1.5} z={b.z} frame={frame + i * 5} n={3} h={1.5} />
+          <SmokeColumn x={b.x + 0.1} y={1.5} z={b.z} frame={frame + i * 5} n={5} />
         </React.Fragment>
       ) : null,
     )}
   </>
 );
-const PAPERS_N = 5;
 const Papers: React.FC<{ frame: number }> = ({ frame }) => (
   <>
-    {Array.from({ length: PAPERS_N }).map((_, i) => (
+    {Array.from({ length: 8 }).map((_, i) => (
       <Paper key={i} frame={frame} seed={i + 1} y={0.6 + hash(i, 3) * 3} z={i % 3 === 0 ? 1.8 : -0.4 + (i % 2)} v={0.22 + hash(i, 5) * 0.22} x0={hash(i, 7) * 22} />
     ))}
   </>
@@ -167,31 +166,31 @@ const Papers: React.FC<{ frame: number }> = ({ frame }) => (
 const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
   const out: React.ReactNode[] = [];
   const H = S.HIT_FRAME;
-  // контакт: хит-стоп 4 кадра (168..171) - зубчатая звезда ЗА фигурами (за машиной и Грегом, перед фасадом)
-  if (frame >= H && frame < H + 4) {
-    out.push(<Star key="st" position={[A.HIT_X + 0.1, 1.3, -1.78]} size={2.5} rot={0.2} seed={21} n={9} />);
+  // контакт: небольшая звезда на стыке бампера и ног (2-3 кадра), не закрывает позу
+  if (frame >= H && frame < S.FLIGHT_FROM) {
+    const k = Math.floor((frame - H) / 2);
+    out.push(<Star key="st" position={[A.HIT_X - 0.62 + k * 0.1, 0.48 + k * 0.1, A.GZ + 0.9]} size={[0.42, 0.52, 0.36][k]} rot={[0.1, 0.4, -0.2][k]} seed={20 + k} n={8} />);
   }
-  // слоу-мо: пара обломков, шаг 4 кадра
-  if (frame >= H + 4 && frame < H + 24) {
-    const k = qf(frame) - H - 4;
-    for (let i = 0; i < 4; i++) out.push(<Chunk key={`d${i}`} position={[A.HIT_X - 0.1 + (i - 1.5) * 0.25 + k * 0.045 * (i - 1.5), 0.5 + k * 0.05 * (1 + (i % 3)) - k * k * 0.0016, A.GZ + 0.55]} rot={[k * 0.2 + i, k * 0.3, i]} s={0.1 + (i % 3) * 0.03} color={i % 2 ? "#6c5a52" : "#d9c9a8"} />);
+  if (frame >= H && frame < H + 14) {
+    const k = hold(frame) - H;
+    for (let i = 0; i < 5; i++) out.push(<Chunk key={`d${i}`} position={[A.HIT_X - 0.4 + (i - 2) * 0.22 + k * 0.07 * (i - 1), 0.3 + k * 0.08 * (1 + (i % 3)) - k * k * 0.004, A.GZ + 0.7]} rot={[k * 0.2 + i, k * 0.3, i]} s={0.1 + (i % 3) * 0.03} color={i % 2 ? "#6c5a52" : "#d9c9a8"} />);
   }
-  // шлёп: пыль двумя облаками в стороны
-  if (frame >= S.LAND_FRAME && frame < S.LAND_FRAME + 16) out.push(<DustRing key="ld" at={[A.LIE_X - 0.1, 0, A.GZ + 0.95]} k={frame - S.LAND_FRAME} r={1.1} />);
-  // плечо: короткая вспышка-«клац» у плеча
-  if (frame >= S.SHOULDER_FRAME && frame < S.SHOULDER_FRAME + 4) out.push(<Star key="pop" position={[A.STAND_X + 0.85, 1.55, A.GZ + 0.9]} size={0.3} rot={(frame - S.SHOULDER_FRAME) * 0.5} seed={40} n={7} />);
-  // зуб: вылетает изо рта по дуге, лежит на тротуаре в кадре (крупный, жёлтый, с толстым контуром)
+  // шлёп: пыль двумя облаками в стороны + короткая звезда-удар
+  if (frame >= S.LAND_FRAME && frame < S.LAND_FRAME + 16) out.push(<DustRing key="ld" at={[A.LIE_X - 0.1, 0, A.GZ + 0.95]} k={frame - S.LAND_FRAME} r={1.3} />);
+  // плечо: маленькая вспышка у плеча (не у лица)
+  if (frame >= S.SHOULDER_FRAME && frame < S.SHOULDER_FRAME + 4) out.push(<Star key="pop" position={[A.STAND_X + 0.95, 1.35, A.GZ + 1.0]} size={0.28} rot={(frame - S.SHOULDER_FRAME) * 0.5} seed={40} n={7} />);
+  // зуб: вылетает изо рта по дуге и лежит на тротуаре в кадре
   if (frame >= S.SPIT_FRAME) {
-    const f = qf(frame);
+    const f = hold(frame);
     const T = 22;
     const t = clamp((f - S.SPIT_FRAME) / T);
-    const x = lerp(A.STAND_X + 0.3, A.STAND_X + 1.7, t);
-    const y0 = 0.3;
-    let y = lerp(2.1, y0, t * t * 0.55 + t * 0.45) + 1.1 * 4 * t * (1 - t);
+    const x = lerp(A.STAND_X + 0.1, A.STAND_X + 1.9, t);
+    const y0 = 0.2;
+    let y = lerp(1.75, y0, t * t * 0.55 + t * 0.45) + 1.1 * 4 * t * (1 - t);
     const after = f - (S.SPIT_FRAME + T);
-    if (after >= 0 && after < 6) y += [0, 0.28, 0.12, 0.0, 0.06, 0][after] ?? 0;
+    if (after >= 0 && after < 6) y += [0, 0.22, 0.1, 0.0, 0.05, 0][after] ?? 0;
     if (t >= 1) y = Math.max(y, y0);
-    out.push(<Tooth key="tooth" position={[x, y, A.GZ + 0.7 - t * 0.35]} rot={t < 1 ? -t * 14 : 0.5} s={1.9 + 0.5 * t} />);
+    out.push(<Tooth key="tooth" position={[x, y, A.GZ + 0.45 - t * 0.1]} rot={t < 1 ? -t * 14 : 0.5} s={1.0 + 0.3 * t} />);
   }
   return <>{out}</>;
 };
@@ -204,11 +203,11 @@ const World: React.FC = () => {
   let bb: "a" | "g1" | "g2" | "b" = "a";
   if (frame >= S.BILLBOARD_FLIP) bb = "b";
   else if (frame >= S.BILLBOARD_GLITCH) bb = Math.floor(hold(frame) / 2) % 2 ? "g1" : "g2";
-  // 2 кадра пустоты (тот же цвет неба, ни улицы, ни людей), дальше - та же улица пустая
-  if (frame === S.VANISH_FRAME || frame === S.VANISH_FRAME + 1) {
+  // ровно один кадр пустоты (холодный контрастный) на стыке исчезновения
+  if (frame === S.VANISH_FRAME) {
     return (
       <>
-        <color attach="background" args={[pal.sky]} />
+        <color attach="background" args={["#d4ecff"]} />
         <CameraRig />
       </>
     );
@@ -217,7 +216,6 @@ const World: React.FC = () => {
     <>
       <color attach="background" args={[pal.sky]} />
       <CameraRig />
-      <Lights target={[0, 2, 0]} />
       <Street pal={pal} lampOn time={frame} />
       <Billboard state={bb} />
       {!cold && <Fires frame={frame} />}
@@ -237,7 +235,7 @@ const World: React.FC = () => {
 
 export const Scene1: React.FC<Scene1Props> = ({ audio }) => (
   <AbsoluteFill style={{ backgroundColor: "#14143e" }}>
-    <ThreeCanvas width={S.WIDTH} height={S.HEIGHT} flat shadows camera={{ fov: FOV, position: [0.4, 1.45, 8.5], near: 0.5, far: 400 }}>
+    <ThreeCanvas width={S.WIDTH} height={S.HEIGHT} flat camera={{ fov: FOV, position: [0.4, 1.45, 8.5], near: 0.5, far: 400 }}>
       <World />
     </ThreeCanvas>
     <AudioLayers cues={S.AUDIO_CUES} avail={audio} total={S.DURATION} />

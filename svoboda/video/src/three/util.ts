@@ -1,4 +1,3 @@
-import { HIT_FRAME, LAND_FRAME } from "../data/scene1";
 // Мелкие помощники анимации "на двойках".
 export const hold = (frame: number, step = 2) => Math.floor(frame / step) * step;
 export const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -31,11 +30,3 @@ export const holdKeys = <T extends { f: number }>(f: number, keys: ReadonlyArray
   return r;
 };
 export const D2R = Math.PI / 180;
-
-/** Единая частота обновления сцены: на двойках; хит-стоп (HIT..HIT+4) держит один кадр; слоу-мо (HIT+4..LAND) - шаг 4. */
-export const qf = (frame: number) => {
-  if (frame < HIT_FRAME) return Math.floor(frame / 2) * 2;
-  if (frame < HIT_FRAME + 4) return HIT_FRAME;
-  if (frame < LAND_FRAME) return HIT_FRAME + 4 + Math.floor((frame - HIT_FRAME - 4) / 4) * 4;
-  return Math.floor(frame / 2) * 2;
-};
