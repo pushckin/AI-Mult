@@ -169,7 +169,7 @@ const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
   const H = S.HIT_FRAME;
   // контакт: хит-стоп 4 кадра (168..171) - зубчатая звезда ЗА фигурами (за машиной и Грегом, перед фасадом)
   if (frame >= H && frame < H + 4) {
-    out.push(<Star key="st" position={[A.HIT_X - 0.25, 1.15, -1.78]} size={1.65} rot={0.2} seed={21} n={9} />);
+    out.push(<Star key="st" position={[A.HIT_X + 0.1, 1.3, -1.78]} size={2.5} rot={0.2} seed={21} n={9} />);
   }
   // слоу-мо: пара обломков, шаг 4 кадра
   if (frame >= H + 4 && frame < H + 24) {
@@ -185,13 +185,13 @@ const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
     const f = qf(frame);
     const T = 22;
     const t = clamp((f - S.SPIT_FRAME) / T);
-    const x = lerp(A.STAND_X + 0.3, A.STAND_X + 1.9, t);
+    const x = lerp(A.STAND_X + 0.3, A.STAND_X + 1.7, t);
     const y0 = 0.3;
     let y = lerp(2.1, y0, t * t * 0.55 + t * 0.45) + 1.1 * 4 * t * (1 - t);
     const after = f - (S.SPIT_FRAME + T);
     if (after >= 0 && after < 6) y += [0, 0.28, 0.12, 0.0, 0.06, 0][after] ?? 0;
     if (t >= 1) y = Math.max(y, y0);
-    out.push(<Tooth key="tooth" position={[x, y, A.GZ + 0.9 - t * 0.1]} rot={t < 1 ? -t * 14 : 0.5} s={1.9 + 0.5 * t} />);
+    out.push(<Tooth key="tooth" position={[x, y, A.GZ + 0.7 - t * 0.35]} rot={t < 1 ? -t * 14 : 0.5} s={1.9 + 0.5 * t} />);
   }
   return <>{out}</>;
 };

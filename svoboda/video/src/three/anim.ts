@@ -363,14 +363,14 @@ export const cameraAt = (frame: number) => {
   const f = qf(frame);
   const sh = shotAt(frame);
   if (sh === "wide") {
-    const camX = remap(f, [[0, -1.9], [S.VANISH_FRAME, 1.0], [S.RISE_FROM, 1.0]]);
+    const camX = remap(f, [[0, -0.7], [S.VANISH_FRAME, 0.9], [S.RISE_FROM, 0.9]]);
     return { camX, camY: 2.1, camZ: 9.3, tgtX: camX - 0.15, tgtY: 2.8 };
   }
   if (sh === "close") {
     const k = Math.floor((frame - 540) / 4) % 2;
     return { camX: -0.15 + (k ? 0.04 : 0), camY: 1.95, camZ: 3.7, tgtX: -0.15, tgtY: 2.0 };
   }
-  return { camX: -0.15, camY: 1.55, camZ: 8.6, tgtX: -0.15, tgtY: 3.0 };
+  return { camX: -0.15, camY: 1.65, camZ: 9.2, tgtX: -0.15, tgtY: 2.95 };
 };
 export const shakeAt = (frame: number): { x: number; y: number } => {
   const kick = (f0: number, amp: number, dur: number) => {
