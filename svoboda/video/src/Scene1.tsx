@@ -4,7 +4,7 @@ import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { AssetsProvider, useAssets, normalizeManifest } from "./engine/assets";
 import { AudioLayers, AudioAvail } from "./engine/audio";
-import { CAM_Z, DepthGroup, FOV, SceneCamera, addShake, impactShake, sampleCamera, shake } from "./engine/camera";
+import { CAM_Z, DepthGroup, FOV, SceneCamera, addShake, impactShake, sampleCamera } from "./engine/camera";
 import { PaperPuppet } from "./engine/PaperPuppet";
 import { Sprite } from "./engine/Sprite";
 import { clamp, easeOut, eyeTick, hash, hold, holdKeys, jerkWalk, jitter, mix, remap, track2 } from "./engine/motion";
@@ -30,10 +30,10 @@ export const gregPose = (frame: number): Pose => {
   if (frame < S.LAND_FRAME) {
     // позы-холды: положение и поза держатся, каждые 4 кадра внутри позы - жёсткая перестановка конечностей (alt)
     const k = holdKeys(frame, S.FLIGHT_KEYS) ?? S.FLIGHT_KEYS[0];
-    const { f: kf, x, cy, alt, ...patch } = k;
+    const { f: kf, alt, ...patch } = k;
     const odd = Math.floor((frame - kf) / 4) % 2 === 1;
-    const { x: ax = 0, cy: acy = 0, ...apatch } = (odd && alt ? alt : {}) as Partial<Pose> & { cy?: number };
-    return mix(base, { x: x + ax, y: cy + acy - S.CENTER_Y_PX * S.GREG_SCALE }, { ...patch, ...apatch });
+    const fp = S.flightPos(frame);
+    return mix(base, { x: fp.x + (odd ? 4 : 0), y: fp.cy + (odd ? 6 : 0) - S.CENTER_Y_PX * S.GREG_SCALE }, { ...patch, ...(odd && alt ? alt : {}) });
   }
   const k = holdKeys(frame, S.GREG_GROUND_KEYS) ?? S.GREG_GROUND_KEYS[0];
   const { f: _f, ...patch } = k;
@@ -48,8 +48,8 @@ export const gregPose = (frame: number): Pose => {
   if (frame >= S.GREG_LINE.from && frame < S.GREG_LINE.to) {
     const k0 = frame - S.GREG_LINE.from;
     const e = Math.max(S.VOICE_ENV[hold(k0)] ?? 0, S.VOICE_ENV[hold(k0) + 1] ?? 0);
-    const open = e > 0.1;
-    p = mix(p, { mouth: open ? "a" : "closed", head: e > 0.5 ? 3 : e > 0.25 ? -1.5 : 0, headDy: e > 0.5 ? -3 : 0 });
+    // рот по слогам: 3 спрайта (закрыт / «о» / широкий «а»)
+    p = mix(p, { mouth: e > 0.5 ? "a" : e > 0.12 ? "o" : "closed", head: e > 0.5 ? 3 : e > 0.25 ? -1.5 : 0, headDy: e > 0.5 ? -3 : 0 });
   }
   if (frame >= 604) {
     // шепчет, глядя в небо: тело не статично, жёсткие покачивания каждые 6 кадров
@@ -76,7 +76,7 @@ const carState = (frame: number): CarSt => {
   const x = remap(f, seg.keys);
   const dx = Math.abs(remap(f + 2, seg.keys) - x);
   const fast = dx > 60;
-  return { on: true, x, y: seg.y, flip: seg.flip, fast, front: seg.y < S.GROUND - 60, smoke: dx > 36 || (f > 200 && f < 292 && dx > 3) };
+  return { on: true, x, y: seg.y, flip: seg.flip, fast, front: seg.y < S.GROUND - 60, smoke: dx > 36 || (f > 186 && f < 296 && dx > 3) };
 };
 
 const bikeXY = (f: number): [number, number] => {
@@ -190,7 +190,7 @@ const Car: React.FC<{ frame: number }> = ({ frame }) => {
   if (!st.on) return null;
   const dir = st.flip ? -1 : 1;
   const odd = Math.floor(f / 2) % 2;
-  const braking = f > 236 && f < 296 && f < 290;
+  const braking = f > 236 && f < 290;
   const wob = st.fast ? (odd ? 4 : 0) : 0;
   const rot = st.fast ? (odd ? -1.2 : 0.8) : braking ? (odd ? -2.4 : -1) : 0;
   const shk = st.fast ? (odd ? 3 : -2) : 0;
@@ -202,7 +202,7 @@ const Car: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-/** Дымок из-под колёс и линии скорости */
+/** Дымок из-под колёс (непрозрачные плоские круги) и линии скорости */
 const CarFx: React.FC<{ frame: number }> = ({ frame }) => {
   const f = hold(frame);
   if (f >= S.VANISH_FRAME) return null;
@@ -211,17 +211,16 @@ const CarFx: React.FC<{ frame: number }> = ({ frame }) => {
     const k = f - 2 * i;
     const st = carState(k);
     if (!st.on || !st.smoke) continue;
-    const age = 2 * i;
     const dir = st.flip ? -1 : 1;
     out.push(
-      <Sprite key={`p${i}`} assetKey="fx_dust" w={260} x={st.x - dir * 380} y={st.y + 40 + age * 4} scale={0.35 + 0.05 * age} opacity={0.75 * (1 - age / 11)} order={st.front ? 445 : 215} />,
+      <Sprite key={`p${i}`} assetKey="fx_puff" w={60 + i * 12} x={st.x - dir * (400 + i * 20)} y={st.y + 20 + i * 7} order={st.front ? 445 : 215} />,
     );
   }
   const now = carState(f);
   if (now.on && now.fast) {
     const dir = now.flip ? -1 : 1;
     for (let i = 0; i < 2; i++) {
-      out.push(<Bar key={`s${i}`} x={now.x - dir * (520 + i * 70)} y={now.y + 50 + i * 40} w={420 - i * 40} h={6} color="#f4f0ff" opacity={0.5} order={now.front ? 449 : 219} />);
+      out.push(<Bar key={`s${i}`} x={now.x - dir * (560 + i * 80)} y={now.y + 70 + i * 50} w={420 - i * 40} h={8} color="#f4f0ff" order={now.front ? 449 : 219} />);
     }
   }
   return <>{out}</>;
@@ -232,60 +231,79 @@ const Bike: React.FC<{ frame: number }> = ({ frame }) => {
   if (f >= S.VANISH_FRAME) return null;
   const [x, y] = bikeXY(f);
   const [x2] = bikeXY(f + 2);
-  const tilt = clamp((x2 - x) / 40, -1, 1) * -6;
+  const tilt = clamp((x2 - x) / 40, -1, 1) * -6 + (Math.floor(f / 2) % 2 ? 1.5 : -1.5);
   return <Sprite assetKey="bike" w={S.BIKE_W} x={x} y={y} rotation={tilt} order={250} seed={6} />;
 };
 
-/** Ракеты: по одной за такт, круто вниз, хвост короткий; один взрыв за раз, дым недолгий */
+const BK = S.BIKE_W / 660;
+/** Ракеты: 2 позы пламени, покачивание, шлейф непрозрачных кругов; взрыв-звезда, обломки, дым кругами */
 const Rockets: React.FC<{ frame: number }> = ({ frame }) => {
   const f = hold(frame);
   const out: React.ReactNode[] = [];
   S.ROCKETS.forEach((R, i) => {
     const d = f - R.f;
-    if (d < 0 || d > S.ROCKET_DUR + 14) return;
+    if (d < 0 || d > S.ROCKET_DUR + 16) return;
     const [bx, by] = bikeXY(R.f);
-    const sx = bx + 200;
-    const sy = by - 30;
-    const tx = sx + R.dx;
-    const ty = R.ty;
+    const sx = bx + 160 * BK;
+    const sy = by - 82 * BK;
+    const { tx, ty } = R;
     const ang = (Math.atan2(ty - sy, tx - sx) * 180) / Math.PI;
     if (d <= S.ROCKET_DUR) {
+      const at = (t: number) => [sx + (tx - sx) * t, sy + (ty - sy) * t] as const;
       const t = d / S.ROCKET_DUR;
-      const x = sx + (tx - sx) * t;
-      const y = sy + (ty - sy) * t;
+      const [x, y] = at(t);
+      const alt = Math.floor(d / 2) % 2;
+      for (let j = 1; j <= 4; j++) {
+        const [px, py] = at(Math.max(0, t - 0.085 * j));
+        out.push(<Sprite key={`t${i}_${j}`} assetKey="fx_puff_white" w={44 + j * 16} x={px - 70} y={py + 4 + j * 3} order={299 - j} />);
+      }
       out.push(
-        <group key={`r${i}`} position={[x, y, 0]} rotation={[0, 0, (ang * Math.PI) / 180]}>
-          <Sprite assetKey="fx_trail" w={Math.min(190, 80 + d * 25)} x={-90} opacity={0.85} order={299} />
-          <Sprite assetKey="rocket" w={S.ROCKET_W} order={300} />
+        <group key={`r${i}`} position={[x, y, 0]} rotation={[0, 0, ((ang + (alt ? 5 : -5)) * Math.PI) / 180]}>
+          <Sprite assetKey={alt ? "prop_rocket_b" : "rocket"} w={S.ROCKET_W} order={300} />
         </group>,
       );
       return;
     }
     const k = d - S.ROCKET_DUR; // кадров после взрыва
     const key = (n: string) => `${n}${i}`;
-    if (k <= 6) {
-      const g = k / 6;
-      out.push(<Sprite key={key("b")} assetKey="fx_boom" w={300} x={tx} y={ty} scale={0.7 + g * 0.8} rotation={i * 40} opacity={1 - g * 0.5} order={305} />);
-      out.push(<Sprite key={key("x")} assetKey="fx_debris" w={340} x={tx} y={ty + k * 8} scale={0.5 + g * 0.7} opacity={1 - g} order={304} />);
-    }
-    if (k > 2 && k <= 12) {
+    if (k < 8) out.push(<Sprite key={key("b")} assetKey="fx_boom" w={260 + Math.min(k, 6) * 32} x={tx} y={ty + 40} rotation={i * 40 + k * 9} order={305} />);
+    if (k < 10) out.push(<Sprite key={key("x")} assetKey="fx_debris" w={340 + k * 20} x={tx + k * 12} y={ty + 60 + k * 9} rotation={k * 6} order={304} />);
+    if (k >= 2 && k < 16) {
       const a = k - 2;
-      out.push(<Sprite key={key("s")} assetKey="fx_smoke" w={260} x={tx + 12} y={ty + 40 + a * 5} scale={0.5 + a * 0.035} opacity={0.7 * (1 - a / 11)} order={303} />);
+      [-1, 0, 1].forEach((jx) => out.push(<Sprite key={`${key("s")}_${jx}`} assetKey="fx_puff_dark" w={90 + a * 7} x={tx + jx * 46 + a * 4} y={ty + 70 + a * 16 + Math.abs(jx) * 14} order={303} />));
     }
   });
   return <>{out}</>;
 };
 
-/** Горящие урны на тротуаре; пламя - лёгкое дрожание масштаба, цвет стабилен */
+/** Горящие урны (2 фазы пламени) и столбы дыма кругами - второй план */
 const Trashfires: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame >= S.VANISH_FRAME) return null;
   const f = hold(frame);
+  const out: React.ReactNode[] = [];
+  S.TRASHFIRES.forEach(([from, x], i) => {
+    if (f < from) return;
+    out.push(<Sprite key={`f${i}`} assetKey={Math.floor(f / 2) % 2 ? "fx_trashfire_b" : "fx_trashfire"} h={240} x={x} y={S.GROUND - 28} order={210} />);
+    for (let j = 0; j < 3; j++) {
+      const a = (Math.floor(f / 2) + j * 2 + i * 3) % 6; // возраст клуба 0..5, потом он «схлопывается» в начало
+      out.push(<Sprite key={`s${i}_${j}`} assetKey="fx_puff_dark" w={46 + a * 11} x={x + 20 + a * 7 + (a % 2 ? 6 : -6)} y={S.GROUND + 140 + a * 24} order={205} />);
+    }
+  });
+  return <>{out}</>;
+};
+
+/** Летящий по ветру мусор: бумажки кувыркаются на двойках (второй план) */
+const Trash: React.FC<{ frame: number }> = ({ frame }) => {
+  if (frame >= S.VANISH_FRAME) return null;
+  const f = hold(frame);
+  const bob = [0, 14, 22, 14, 0, -14, -22, -14];
   return (
     <>
-      {S.TRASHFIRES.map(([from, x], i) => {
-        if (f < from) return null;
-        const j = Math.floor(f / 2) % 2 ? 1.04 : 0.97;
-        return <Sprite key={i} assetKey="fx_trashfire" h={230} x={x} y={S.GROUND - 28} scale={j} order={210} />;
+      {S.TRASH.map((T, i) => {
+        const x = ((T.ph + T.v * f) % 2800) - 1400 + S.CX;
+        const y = T.y + bob[(Math.floor(f / 2) + i * 3) % 8];
+        const rot = (Math.floor(f / 2) * 38 + i * 50) % 360;
+        return <Sprite key={i} assetKey={T.a} w={T.w} x={x} y={y} rotation={rot} order={T.front ? 455 : 262} />;
       })}
     </>
   );
@@ -300,34 +318,35 @@ const Tooth: React.FC<{ frame: number }> = ({ frame }) => {
   let y = T.from[1] + (T.to[1] - T.from[1]) * t + T.arc * 4 * t * (1 - t);
   // подпрыгивает на асфальте
   const after = f - (T.f + T.life);
-  if (after >= 0 && after < 6) y += [0, 18, 0, 8, 0, 0][Math.floor(after / 1)] ?? 0;
-  const pop = t >= 1 && after < 4 ? 1.35 : 1;
-  return <Sprite assetKey="fx_tooth" w={S.TOOTH_W} x={x} y={y} rotation={t < 1 ? t * 540 : 25} scale={pop} order={460} />;
+  if (after >= 0 && after < 6) y += [0, 18, 0, 8, 0, 0][after] ?? 0;
+  // вылетает маленьким изо рта и «вырастает» (ближе к камере)
+  const sc = t < 1 ? 0.3 + 0.7 * t : 1;
+  return <Sprite assetKey="fx_tooth" w={S.TOOTH_W} x={x} y={y} rotation={t < 1 ? t * 720 : 25} scale={sc} order={460} />;
 };
 
-/** Эффекты удара: белая звезда-вспышка, взрывная звезда, обломки; пыль шлёпа; хруст плеча */
+/** Эффекты: 3 кадра плоской звезды-импакта + обломки; пыль шлёпа кругами; хруст плеча */
 const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
   const out: React.ReactNode[] = [];
   const H = S.HIT_FRAME;
   const hx = S.HIT_X - 25;
-  const hy = S.GROUND + 60;
-  if (frame >= H && frame < H + 10) {
+  const hy = S.GROUND + 70;
+  if (frame >= H && frame < H + 3) {
     const k = frame - H;
-    // вспышка-звезда только 2 кадра; взрывная звезда и обломки держатся на крупном плане
-    if (k < 2) out.push(<Sprite key="fl" assetKey="fx_flash" w={760} x={hx} y={hy} scale={1 + k * 0.1} opacity={1 - k * 0.45} order={600} />);
-    out.push(<Sprite key="bm" assetKey="fx_boom" w={380} x={hx} y={hy} scale={0.9 + Math.min(k, 6) * 0.06} rotation={k * 5} order={401} />);
-    out.push(<Sprite key="db" assetKey="fx_debris" w={520} x={hx + k * 14} y={hy + 30 + k * 6} scale={0.8 + k * 0.1} opacity={Math.max(0, 1 - k * 0.1)} order={402} />);
+    out.push(<Sprite key="st" assetKey={`fx_impact${k + 1}`} w={[520, 620, 470][k]} x={hx} y={hy} rotation={[0, 14, -10][k]} order={600} />);
+  }
+  if (frame >= H + 2 && frame < S.FLIGHT_FROM) {
+    const k = frame - H - 2;
+    out.push(<Sprite key="db" assetKey="fx_debris" w={420} x={hx + 20 + k * 24} y={hy + 20 + k * 12} scale={0.7 + k * 0.08} rotation={k * 8} order={402} />);
   }
   const L = S.LAND_FRAME;
-  if (frame >= L && frame < L + 18) {
-    const k = frame - L;
-    [-1, 1].forEach((s) => out.push(<Sprite key={`ld${s}`} assetKey="fx_dust" w={300} x={S.LAND_X + 20 + s * (90 + k * 9)} y={S.GROUND + 10 + k * 3} scale={0.5 + k * 0.05} opacity={Math.max(0, 1 - k / 18)} order={470} />));
-    if (k < 3) out.push(<Sprite key="lb" assetKey="fx_boom" w={260} x={S.LAND_X + 10} y={S.GROUND + 40} scale={0.8 + k * 0.2} order={471} />);
+  if (frame >= L && frame < L + 14) {
+    const k = hold(frame) - L;
+    [-1, 1].forEach((s) => out.push(<Sprite key={`ld${s}`} assetKey="fx_puff" w={60 + k * 4} x={S.LAND_X - 50 + s * (190 + k * 12)} y={S.GROUND + 22 + k * 4} order={470} />));
+    if (k < 4) out.push(<Sprite key="lb" assetKey="fx_boom" w={220 + k * 30} x={S.LAND_X - 40} y={S.GROUND + 40} order={471} />);
   }
   const P = S.SHOULDER_FRAME;
   if (frame >= P && frame < P + 6) {
-    // «хруст» плеча: крупная звезда у левого плеча (на экране - у дальнего от камеры плеча Грега)
-    out.push(<Sprite key="pop" assetKey="fx_boom" w={230} x={S.LAND_X - 22 - 100} y={S.GROUND + 215} scale={0.8 + (frame - P) * 0.2} rotation={(frame - P) * 20} opacity={1 - (frame - P) * 0.12} order={470} />);
+    out.push(<Sprite key="pop" assetKey="fx_boom" w={190 + (frame - P) * 30} x={S.LAND_X - 22 - 100} y={S.GROUND + 215} rotation={(frame - P) * 20} order={470} />);
   }
   return <>{out}</>;
 };
@@ -341,11 +360,11 @@ const Layer: React.FC<{ def: S.LayerDef }> = ({ def }) => {
   const w = a.texW * def.k;
   return (
     <DepthGroup depth={depth}>
-      <Sprite assetKey={def.asset} scale={def.k} center order={def.order} />
+      <Sprite assetKey={def.asset} scale={def.k} y={def.dy ?? 0} center order={def.order} />
       {def.tiles && (
         <>
-          <Sprite assetKey={def.asset} scale={def.k} x={-w} flipX center order={def.order} />
-          <Sprite assetKey={def.asset} scale={def.k} x={w} flipX center order={def.order} />
+          <Sprite assetKey={def.asset} scale={def.k} x={-w} y={def.dy ?? 0} flipX center order={def.order} />
+          <Sprite assetKey={def.asset} scale={def.k} x={w} y={def.dy ?? 0} flipX center order={def.order} />
         </>
       )}
     </DepthGroup>
@@ -363,21 +382,14 @@ const GroundFill: React.FC = () => (
 const World: React.FC = () => {
   const frame = useCurrentFrame();
   const camBase = sampleCamera(frame, S.CAMERA);
-  const sh = S.HANDHELD.filter((h) => frame >= h.from && frame < h.to).map((h) => shake(frame, h.amp, h.seed, h.roll));
-  const im = S.IMPACTS.map((i) => impactShake(frame, i.f, i.amp, i.dur, i.f));
-  const hd = frame - S.HIT_FRAME;
-  const punch = hd >= 0 && hd < S.HIT_PUNCH.dur ? { zoom: S.HIT_PUNCH.zoom * (1 - hd / S.HIT_PUNCH.dur) } : undefined;
-  const sd = frame - S.SHOULDER_FRAME;
-  const sPunch = sd >= 0 && sd < S.SHOULDER_PUNCH.dur ? { zoom: S.SHOULDER_PUNCH.zoom * (1 - sd / S.SHOULDER_PUNCH.dur) } : undefined;
-  const cam = addShake(camBase, ...sh, ...im, punch, sPunch);
-
-  const fo = S.FLASH[frame];
-  const flash = fo ? { color: "#ffffff", opacity: fo } : undefined;
+  const im = S.IMPACTS.map((i) => impactShake(frame, i.f, i.amp, i.dur, i.f)).map((c) => ({ x: c.x, y: c.y }));
+  const cam = addShake(camBase, ...im);
+  const cold = frame >= S.COLD.from ? { color: S.COLD.color, opacity: S.COLD.opacity } : undefined;
 
   const B = S.BILLBOARD;
   return (
     <>
-      <SceneCamera state={cam} flash={flash} />
+      <SceneCamera state={cam} flash={cold} grain={false} />
       <GroundFill />
       {S.LAYERS.map((L) => (
         <Layer key={L.id} def={L} />
@@ -387,6 +399,7 @@ const World: React.FC = () => {
         <BillboardScreen frame={frame} />
       </DepthGroup>
       <Trashfires frame={frame} />
+      <Trash frame={frame} />
       <Bike frame={frame} />
       <Rockets frame={frame} />
       <CarFx frame={frame} />

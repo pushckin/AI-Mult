@@ -59,7 +59,7 @@ const gregReal = (): Rig => {
       { id: "leg_l", attach: [-40 * k, hip + 5 * k], h: 252 * k, z: 2, joint: "legL", key: () => "greg_leg_left" },
       { id: "arm_l", parent: "torso", attach: [-90 * k, hip + 239 * k], h: 260 * k, z: 3, joint: "armL", key: () => "greg_arm_left" },
       { id: "torso", attach: [0, hip], h: 320 * k, z: 4, joint: "torso", key: () => "greg_torso" },
-      { id: "head", parent: "torso", attach: [0, hip + 273 * k], h: 340 * k, z: 6, joint: "head", key: (p) => (p.mouth === "closed" ? "greg_head_closed" : "greg_head_open") },
+      { id: "head", parent: "torso", attach: [0, hip + 273 * k], h: 340 * k, z: 6, joint: "head", key: (p) => (p.mouth === "closed" ? "greg_head_closed" : p.mouth === "o" ? "greg_head_o" : "greg_head_open") },
       // в правой руке стаканчик уже нарисован
       { id: "arm_r", parent: "torso", attach: [90 * k, hip + 239 * k], h: 290 * k, z: 9, joint: "armR", key: () => "greg_arm_right_coffee" },
     ],

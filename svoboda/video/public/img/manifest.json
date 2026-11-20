@@ -10,7 +10,7 @@
         0.5
       ],
       "group": "bg",
-      "note": "Небо: звёзды, луна, неоновые лучи. Непрозрачный.",
+      "note": "Небо: плоская заливка и луна. Непрозрачный.",
       "source": "svg-fallback",
       "z": 0,
       "parallax": 0.05
@@ -31,7 +31,7 @@
     },
     "bg_mid": {
       "file": "bg_mid.png",
-      "width": 2300,
+      "width": 2400,
       "height": 1080,
       "pivot": [
         0.5,
@@ -178,8 +178,8 @@
     },
     "prop_alien_driver": {
       "file": "prop_alien_driver.png",
-      "width": 200,
-      "height": 170,
+      "width": 220,
+      "height": 190,
       "pivot": [
         0.5,
         1
@@ -366,6 +366,139 @@
         "fw": 0.896,
         "fh": 0.603
       }
+    },
+    "greg_head_o": {
+      "file": "greg_head_o.png",
+      "width": 360,
+      "height": 340,
+      "pivot": [
+        0.5,
+        0.97
+      ],
+      "group": "greg",
+      "note": "Голова, рот - круглое «о». Pivot = шея.",
+      "source": "svg-fallback"
+    },
+    "prop_rocket_b": {
+      "file": "prop_rocket_b.png",
+      "width": 240,
+      "height": 72,
+      "pivot": [
+        0.75,
+        0.5
+      ],
+      "group": "prop",
+      "note": "Ракета, вторая поза пламени.",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "fx_impact1": {
+      "file": "fx_impact1.png",
+      "width": 600,
+      "height": 600,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Плоская зубчатая звезда удара, кадр 1 (жёлтая/белая, с контуром).",
+      "source": "svg-fallback"
+    },
+    "fx_impact2": {
+      "file": "fx_impact2.png",
+      "width": 600,
+      "height": 600,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Звезда удара, кадр 2 (оранжевая).",
+      "source": "svg-fallback"
+    },
+    "fx_impact3": {
+      "file": "fx_impact3.png",
+      "width": 600,
+      "height": 600,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Звезда удара, кадр 3 (красная, меньше).",
+      "source": "svg-fallback"
+    },
+    "fx_puff": {
+      "file": "fx_puff.png",
+      "width": 220,
+      "height": 220,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Плоский непрозрачный круг пыли.",
+      "source": "svg-fallback"
+    },
+    "fx_puff_dark": {
+      "file": "fx_puff_dark.png",
+      "width": 220,
+      "height": 220,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Плоский непрозрачный круг дыма.",
+      "source": "svg-fallback"
+    },
+    "fx_puff_white": {
+      "file": "fx_puff_white.png",
+      "width": 220,
+      "height": 220,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Плоский круг следа ракеты.",
+      "source": "svg-fallback"
+    },
+    "fx_paper1": {
+      "file": "fx_paper1.png",
+      "width": 150,
+      "height": 120,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Летящий лист бумаги.",
+      "source": "svg-fallback"
+    },
+    "fx_paper2": {
+      "file": "fx_paper2.png",
+      "width": 130,
+      "height": 110,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Летящий комок мусора.",
+      "source": "svg-fallback"
+    },
+    "fx_trashfire_b": {
+      "file": "fx_trashfire_b.png",
+      "width": 200,
+      "height": 300,
+      "pivot": [
+        0.5,
+        0.95
+      ],
+      "group": "fx",
+      "note": "Горящая урна, вторая фаза пламени.",
+      "source": "svg-fallback"
     }
   },
   "frame": {

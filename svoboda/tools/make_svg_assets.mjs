@@ -9,9 +9,9 @@ import { META } from './assets_meta.mjs';
 const INK = '#111111';
 let SW = 6; // толщина контура текущего ассета (задаётся в render по STROKES)
 const STROKES = {
-  greg_head_closed: 10, greg_head_open: 10, greg_torso: 10, greg_arm_left: 10, greg_arm_right_coffee: 10, greg_leg_left: 10, greg_leg_right: 10,
+  greg_head_closed: 10, greg_head_open: 10, greg_head_o: 10, greg_torso: 10, greg_arm_left: 10, greg_arm_right_coffee: 10, greg_leg_left: 10, greg_leg_right: 10,
   prop_supercar: 6, prop_alien_driver: 6, prop_oppressor: 6, prop_rocket: 6, prop_billboard: 8, prop_billboard_0000: 8, prop_dust: 7,
-  fx_boom: 7, fx_smoke: 7, fx_trashfire: 6, fx_debris: 6, fx_trail: 6, fx_tooth: 10, fx_flash: 0,
+  fx_boom: 7, fx_impact1: 9, fx_impact2: 9, fx_impact3: 9, fx_puff: 8, fx_puff_dark: 8, fx_puff_white: 8, fx_paper1: 5, fx_paper2: 5, prop_rocket_b: 6, fx_trashfire_b: 6, fx_smoke: 7, fx_trashfire: 6, fx_debris: 6, fx_trail: 6, fx_tooth: 10, fx_flash: 0,
   bg_sky: 0, bg_far: 5, bg_mid: 6, bg_fore: 6,
 };
 let seed = 7;
@@ -39,7 +39,8 @@ const limb = (d, w, fill) => LINE(d, INK, w + 2 * SW) + LINE(d, fill, w);
 // ================= ГРЕГ =================
 const SKIN = '#F6CFA6';
 const HAIR = '#6B4524';
-function head(open) {
+function head(mode) {
+  const open = mode !== 'closed';
   let s = '';
   const clip = '<clipPath id="hc"><ellipse cx="180" cy="174" rx="164" ry="156"/></clipPath>' +
     '<clipPath id="el"><ellipse cx="138" cy="166" rx="38" ry="44"/></clipPath>';
@@ -63,6 +64,8 @@ function head(open) {
   // рот
   if (!open) {
     s += LINE('M112 272 Q160 290 214 262', INK, 11);
+  } else if (mode === 'o') {
+    s += E(168, 282, 34, 30, '#2b0a10') + E(168, 296, 20, 9, '#E0607A', NOSTROKE);
   } else {
     s += P('M112 246 Q170 234 228 250 Q230 314 170 316 Q110 314 112 246 Z', '#2b0a10');
     s += R(128, 248, 38, 22, '#fff', 0, NOSTROKE) + R(188, 248, 34, 22, '#fff', 0, NOSTROKE); // зубы, выбитый - в зазоре
@@ -118,7 +121,7 @@ const blob = (cs, fill) =>
 
 // ---- Суперкар: 840x300, земля y=270 (pivot 0.5, 0.9), едет вправо. Кабина открытая: водитель - отдельный спрайт.
 const CAR_W = 840, CAR_H = 300;
-const DRV = { x: 340, y: 20, w: 200, h: 170 }; // окно водителя в координатах машины; низ-центр = (440,190)
+const DRV = { x: 330, y: 0, w: 220, h: 190 }; // окно водителя в координатах машины; низ-центр = (440,190)
 
 function carInterior() {
   return R(298, 96, 58, 66, '#3b4558', 14); // спинка сиденья
@@ -157,15 +160,15 @@ function supercar() {
 function driverFigure() {
   let s = '';
   s += limb('M430 140 L476 146 L504 138', 26, '#E7B58B'); // дальняя рука
-  s += R(396, 100, 84, 90, SKIN, 22); // торс-блок
+  s += R(396, 112, 84, 84, SKIN, 22); // торс-блок
   s += `<ellipse cx="516" cy="140" rx="10" ry="30" transform="rotate(20 516 140)" fill="none" stroke="${INK}" stroke-width="18"/>`;
   s += `<ellipse cx="516" cy="140" rx="10" ry="30" transform="rotate(20 516 140)" fill="none" stroke="#4a5266" stroke-width="9"/>`;
   s += limb('M452 122 L484 138 L506 134', 28, SKIN) + C(508, 134, 17, SKIN);
   // голова-блин, маска: серо-зелёная, огромные чёрные глаза
-  s += E(436, 68, 44, 44, '#B7CFC4');
-  s += E(418, 66, 15, 22, '#0d1013', NOSTROKE) + E(456, 66, 15, 22, '#0d1013', NOSTROKE);
-  s += C(414, 58, 5, '#fff', NOSTROKE) + C(452, 58, 5, '#fff', NOSTROKE);
-  s += LINE('M424 96 Q436 102 448 96', INK, 5);
+  s += E(436, 74, 62, 66, '#B7CFC4');
+  s += E(410, 72, 21, 32, '#0d1013', NOSTROKE) + E(464, 72, 21, 32, '#0d1013', NOSTROKE);
+  s += C(404, 60, 7, '#fff', NOSTROKE) + C(458, 60, 7, '#fff', NOSTROKE);
+  s += LINE('M418 114 Q436 122 454 114', INK, 6);
   return s;
 }
 function alienDriver() {
@@ -209,10 +212,12 @@ function oppressor() {
   return wrap(660, 380, `<g transform="translate(110 0)">${b}</g>`);
 }
 
-function rocket() {
+function rocket(v = 'a') {
   let s = '';
-  s += P('M60 36 L4 20 L24 36 L2 54 L60 46 Z', '#FF9A1F'); // пламя
-  s += P('M78 12 L124 34 L78 34 Z', '#8E1E26') + P('M78 60 L124 38 L78 38 Z', '#8E1E26'); // стабилизаторы
+  if (v === 'a') s += P('M60 36 L4 20 L24 36 L2 54 L60 46 Z', '#FF9A1F'); // пламя
+  else s += P('M60 32 L14 30 L30 40 L0 44 L30 50 L12 62 L60 48 Z', '#FFD43A') + P('M60 36 L30 40 L60 44 Z', '#FF8A1F', NOSTROKE);
+  if (v === 'a') s += P('M78 12 L124 34 L78 34 Z', '#8E1E26') + P('M78 60 L124 38 L78 38 Z', '#8E1E26'); // стабилизаторы
+  else s += P('M74 6 L120 34 L78 34 Z', '#8E1E26') + P('M74 66 L120 38 L78 38 Z', '#8E1E26');
   s += P('M56 20 L170 20 Q216 20 238 40 Q216 60 170 60 L56 60 Z', '#F4F6F8');
   s += P('M170 20 Q216 20 238 40 Q216 60 170 60 Z', '#E0312F');
   s += R(104, 20, 18, 40, '#E0312F', 0);
@@ -230,8 +235,6 @@ function billboard(dead) {
   for (const x of [200, 400, 600, 800]) {
     s += R(x - 5, 16, 10, 20, '#2d313f', 0) + R(x - 30, 2, 60, 20, '#2d313f', 5) + R(x - 20, 14, 40, 8, lens, 2, 'stroke="none"');
   }
-  // мостик под рамой
-  s += R(52, 458, 896, 18, '#2d313f', 4);
   s += R(30, 30, 940, 430, '#59607c', 12); // рама
   s += R(52, 52, 896, 386, dead ? '#050505' : '#0b0d14', 4); // экран
   if (dead) s += R(70, 70, 860, 350, 'none', 6, `stroke="#E0312F" stroke-width="8" fill="none"`); // красный контур горит, цифры рисует код
@@ -292,6 +295,43 @@ function fxTrail() {
   const cs = [[500, 65, 12], [455, 66, 18], [405, 62, 26], [345, 68, 34], [275, 60, 42], [200, 70, 50], [120, 62, 56], [60, 68, 48]];
   return wrap(540, 130, blob(cs, '#E6E6EE'));
 }
+function starJ(cx, cy, n, rOut, rIn, rot = 0, seedK = 1) {
+  let d = '';
+  for (let i = 0; i < n * 2; i++) {
+    const a = rot + (i * Math.PI) / n;
+    const j = 1 + 0.28 * Math.sin(i * 2.1 * seedK + 0.7) + 0.12 * Math.cos(i * 5.3);
+    const r = i % 2 ? rIn * (1 + 0.12 * Math.sin(i * 3.7)) : rOut * j;
+    d += (i ? 'L' : 'M') + (cx + Math.cos(a) * r).toFixed(1) + ' ' + (cy + Math.sin(a) * r).toFixed(1) + ' ';
+  }
+  return d + 'Z';
+}
+function fxImpact(k) {
+  const cfg = [
+    ['#FFE94A', '#FFFFFF', 13, 1.0],
+    ['#FF8A1F', '#FFE94A', 11, 0.82],
+    ['#E8402A', '#FF9D1C', 9, 0.66],
+  ][k - 1];
+  const R0 = 236 * cfg[3];
+  let s = P(starJ(300, 300, cfg[2], R0, R0 * 0.42, 0.2 * k, k), cfg[0]);
+  s += P(starJ(300, 300, cfg[2] - 1, R0 * 0.62, R0 * 0.3, 0.5 * k, k + 1), cfg[1], NOSTROKE);
+  return wrap(600, 600, s);
+}
+function fxPuff(fill) {
+  return wrap(220, 220, C(110, 110, 100, fill));
+}
+function fxPaper(v) {
+  if (v === 1) return wrap(150, 120, P('M10 34 L112 10 L138 84 L36 108 Z', '#F4F1E6') + LINE('M60 24 L84 98', '#B9B4A0', 5));
+  return wrap(130, 110, P('M14 20 L70 6 L120 30 L100 92 L40 100 L8 60 Z', '#D9D4C0') + LINE('M30 40 L90 62 M44 80 L98 40', '#9C9780', 5));
+}
+function fxTrashFireB() {
+  let s = '';
+  s += P('M50 150 Q22 120 46 84 Q58 104 70 98 Q62 60 82 30 Q94 62 110 66 Q124 40 118 20 Q164 76 154 150 Z', '#FF8A1F');
+  s += P('M74 150 Q58 124 80 104 Q88 124 100 118 Q106 96 118 88 Q134 116 128 150 Z', '#FFD43A');
+  s += P('M40 156 L160 156 L148 286 L52 286 Z', '#5E6B66');
+  s += R(30, 146, 140, 20, '#7C8A84', 6);
+  s += R(52, 200, 96, 18, '#46514d', 0, NOSTROKE);
+  return wrap(200, 300, s);
+}
 function fxTooth() {
   // крупный белый зуб с корнями, во весь холст
   let s = '';
@@ -301,15 +341,12 @@ function fxTooth() {
 }
 
 // ================= ФОН: грубые плоские блоки =================
-const W_SKY = 2000, W_FAR = 2100, W_MID = 2300, W_FORE = 2500, H = 1080;
+const W_SKY = 2000, W_FAR = 2100, W_MID = 2400, W_FORE = 2500, H = 1080;
 
 function sky() {
   let s = R(0, 0, W_SKY, H, '#1D2566', 0, NOSTROKE);
   // луна: плоский диск + 3 кратера
-  s += C(1380, 170, 80, '#F4E8A0', NOSTROKE) + C(1355, 150, 16, '#E0D388', NOSTROKE) + C(1408, 196, 12, '#E0D388', NOSTROKE) + C(1396, 140, 9, '#E0D388', NOSTROKE);
-  // крупные плоские звёзды-кружки
-  for (const [x, y, r] of [[120, 90, 11], [300, 220, 8], [520, 70, 12], [720, 180, 8], [880, 60, 11], [1060, 200, 8], [1180, 90, 12], [1620, 80, 9], [1740, 230, 12], [1880, 130, 9], [1920, 330, 8], [200, 430, 9], [980, 400, 8], [1280, 340, 9], [420, 330, 8], [1560, 400, 8]])
-    s += C(x, y, r, '#FFF0A0', NOSTROKE);
+  s += C(1640, 220, 80, '#F4E8A0', NOSTROKE) + C(1615, 200, 16, '#E0D388', NOSTROKE) + C(1668, 246, 12, '#E0D388', NOSTROKE) + C(1656, 190, 9, '#E0D388', NOSTROKE);
   return wrap(W_SKY, H, s);
 }
 
@@ -369,16 +406,30 @@ function building(x, top, w, color, o = {}) {
   return s;
 }
 
+function wall(x, w, top = 390) {
+  const base = 770;
+  let s = R(x, top, w, base - top, '#473A5C');
+  s += R(x - 8, top - 16, w + 16, 26, '#14142a'); // карниз
+  for (let y = top + 70; y < base - 20; y += 90) s += R(x + 6, y, w - 12, 10, '#3B2F4E', 0, NOSTROKE); // крупные плоские швы
+  s += R(x + w / 2 - 70, 560, 140, 210, '#22202F'); // тёмная дверь
+  s += R(x + w / 2 - 50, 580, 100, 40, '#2F2D40', 0, NOSTROKE);
+  s += R(x + 40, 470, 90, 70, '#1F3470') + R(x + w - 130, 470, 90, 70, '#1F3470'); // два окна
+  return s;
+}
+function lamp(x) {
+  return R(x - 7, 430, 14, 340, '#2d313f') + R(x - 7, 424, 70, 12, '#2d313f') + P(`M${x + 40} 436 L${x + 80} 436 L${x + 70} 462 L${x + 50} 462 Z`, '#FFE35A');
+}
 function mid() {
   let s = '';
-  s += building(40, 380, 340, '#5A3E7A', { sign: { t: 'LIQUOR', p: '#B03A8A', c: '#fff', s: 58 }, awning: ['#B03A8A', '#F4EEE0'] });
-  s += building(420, 330, 340, '#2F5D6B', { sign: { t: 'PIZZA', p: '#D3302B', c: '#fff', s: 66 }, awning: ['#D3302B', '#F4EEE0'] });
-  s += building(800, 300, 340, '#3E4B7A', { sign: { t: 'MOTEL', p: '#E8B923', c: '#1b1b1b', s: 62 }, awning: ['#3FA9C8', '#F4EEE0'] });
-  // кофейня
-  s += building(1180, 360, 420, '#7FB08E', { trim: '#1d3a2a', awning: ['#2E8A4A', '#F4FFF4'], sign: { t: 'COFFEE', p: '#2E8A4A', c: '#fff', s: 72 } });
-  s += building(1640, 370, 320, '#7A3B4B', { sign: { t: 'TATTOO', p: '#E07B1F', c: '#1b1b1b', s: 58 }, awning: ['#E8B923', '#222'] });
-  s += building(1990, 410, 310, '#4B3E7A', { sign: { t: 'BAR', p: '#6A4FB5', c: '#fff', s: 70 }, awning: ['#6A4FB5', '#F4EEE0'] });
-  for (const [x, h, l] of [[400, 530, 24], [780, 500, -22], [1160, 520, 20], [1620, 510, -24], [1975, 500, 22]]) s += palm(x, 770, h, l);
+  // мир = px - 1122 (CX = 130): свободное место для Грега в финале - стена без вывески, px 800..1360 (мир -322..238)
+  s += building(20, 400, 290, '#5A3E7A', { sign: { t: 'LIQUOR', p: '#B03A8A', c: '#fff', s: 56 }, awning: ['#B03A8A', '#F4EEE0'] });
+  s += building(330, 340, 460, '#2F5D6B', { sign: { t: 'PIZZA', p: '#D3302B', c: '#fff', s: 66 }, awning: ['#D3302B', '#F4EEE0'] });
+  s += wall(820, 520);
+  s += building(1390, 360, 420, '#7FB08E', { trim: '#1d3a2a', awning: ['#2E8A4A', '#F4FFF4'], sign: { t: 'COFFEE', p: '#2E8A4A', c: '#fff', s: 72 } });
+  s += building(1850, 370, 320, '#7A3B4B', { sign: { t: 'TATTOO', p: '#E07B1F', c: '#1b1b1b', s: 58 }, awning: ['#E8B923', '#222'] });
+  s += wall(2210, 190, 430);
+  s += lamp(770) + lamp(1350);
+  for (const [x, h, l] of [[322, 500, 22], [812, 480, -26], [1830, 510, -24], [2200, 500, 22]]) s += palm(x, 770, h, l);
   return wrap(W_MID, H, s);
 }
 
@@ -395,16 +446,16 @@ function fore() {
 
 // ================= сборка =================
 const GREG_PARTS = {
-  greg_head_closed: () => head(false), greg_head_open: () => head(true), greg_torso: torso,
+  greg_head_closed: () => head('closed'), greg_head_open: () => head('a'), greg_head_o: () => head('o'), greg_torso: torso,
   greg_arm_left: () => arm(false), greg_arm_right_coffee: () => arm(true),
   greg_leg_left: () => leg('left'), greg_leg_right: () => leg('right'),
 };
 const ALL = {
   bg_sky: sky, bg_far: far, bg_mid: mid, bg_fore: fore,
   ...GREG_PARTS,
-  prop_supercar: supercar, prop_alien_driver: alienDriver, prop_oppressor: oppressor, prop_rocket: rocket,
+  prop_supercar: supercar, prop_alien_driver: alienDriver, prop_oppressor: oppressor, prop_rocket: () => rocket('a'), prop_rocket_b: () => rocket('b'),
   prop_billboard: () => billboard(false), prop_billboard_0000: () => billboard(true), prop_dust: dust,
-  fx_boom: fxBoom, fx_flash: fxFlash, fx_smoke: fxSmoke, fx_trashfire: fxTrashFire, fx_debris: fxDebris, fx_trail: fxTrail, fx_tooth: fxTooth,
+  fx_boom: fxBoom, fx_impact1: () => fxImpact(1), fx_impact2: () => fxImpact(2), fx_impact3: () => fxImpact(3), fx_puff: () => fxPuff('#E6DCC4'), fx_puff_dark: () => fxPuff('#5B5B6A'), fx_puff_white: () => fxPuff('#F0F0F6'), fx_paper1: () => fxPaper(1), fx_paper2: () => fxPaper(2), fx_trashfire_b: fxTrashFireB, fx_flash: fxFlash, fx_smoke: fxSmoke, fx_trashfire: fxTrashFire, fx_debris: fxDebris, fx_trail: fxTrail, fx_tooth: fxTooth,
 };
 
 const only = process.argv.slice(2);
