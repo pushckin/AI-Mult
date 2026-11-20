@@ -60,7 +60,7 @@ export const AUDIO_CUES: AudioCue[] = [
   // Билборд 23:59 -> 00:00
   { base: "sfx_billboard_click", from: BILLBOARD_FLIP - 1, to: BILLBOARD_FLIP + 36, volume: 0.7 },
   // Исчезновение: всё хаотическое обрывается на VANISH_FRAME, остаётся только unplug/glitch
-  { base: "sfx_unplug_glitch", from: VANISH_FRAME, to: VANISH_FRAME + 60, volume: 0.45 },
+  { base: "sfx_unplug_glitch", from: VANISH_FRAME, to: VANISH_FRAME + 4, volume: 0.4, note: "короткий обрыв-глитч 0.17 с, дальше тишина" },
   // Пустая улица: сверчки и капли до конца
   { base: "sfx_crickets", from: 486, to: DURATION, volume: 0.5, note: "12 с > 234 кадров, без лупа" },
   { base: "sfx_water_drip", from: 500, to: DURATION, volume: 0.55, loop: true },

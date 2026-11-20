@@ -35,12 +35,10 @@ export const gregFlinch = (f: number) => {
 };
 
 // ---------------- Ракеты и цели ----------------
-const RAW_TARGETS: ReadonlyArray<readonly [number, number, number]> = [
+export const TARGETS: ReadonlyArray<readonly [number, number, number]> = [
   [-2.6, 2.0, -2.0], [1.8, 1.1, -2.0], [-1.2, 0.1, -1.2], [3.6, 2.6, -2.0], [-4.2, 1.5, -2.0], [5.0, 0.3, -1.0], [0.4, 2.8, -2.0],
   [-2.2, 0.2, -1.0], [4.4, 1.7, -2.0], [-3.0, 3.0, -2.0], [2.6, 0.2, -1.0], [1.0, 1.8, -2.0], [-0.6, 2.4, -2.0],
 ];
-/** взрывы ниже вывесок: y в диапазон 0.2-1.5 */
-export const TARGETS: ReadonlyArray<readonly [number, number, number]> = RAW_TARGETS.map(([x, y, z]) => [x, 0.15 + 0.45 * y, z] as const);
 export const FIRE_FRAMES = TARGETS.map((_, i) => 8 + 12 * i);
 export const ROCKET_DUR = 14;
 const EXPLOSIONS: ReadonlyArray<readonly [number, number]> = TARGETS.map((t, i) => [FIRE_FRAMES[i] + ROCKET_DUR, t[0]] as const);
@@ -76,15 +74,25 @@ export const flightPos = (f: number) => {
 };
 /** Контакт с машиной: 3 жёстких кадра (168, 170, 172) */
 const CONTACT: ReadonlyArray<readonly [number, number]> = [[HIT_X, 0.82], [HIT_X + 0.2, 0.98], [HIT_X + 0.4, 1.2]];
-/** Полёт: ключевая поза держится до следующего ключа (без интерполяции); каждые 4 кадра - альтернативная поза (рваный ритм) */
 const flightPatch = (frame: number): PPatch => {
   const F0 = S.FLIGHT_FROM;
   const f4 = F0 + Math.floor((frame - F0) / 4) * 4;
-  const k = holdKeys(f4, FLIGHT_KEYS) ?? FLIGHT_KEYS[0];
+  let k0 = FLIGHT_KEYS[0];
+  let k1 = FLIGHT_KEYS[FLIGHT_KEYS.length - 1];
+  for (let i = 0; i < FLIGHT_KEYS.length - 1; i++) {
+    if (FLIGHT_KEYS[i].f <= f4 && f4 <= FLIGHT_KEYS[i + 1].f) {
+      k0 = FLIGHT_KEYS[i];
+      k1 = FLIGHT_KEYS[i + 1];
+      break;
+    }
+  }
+  const t = k1.f === k0.f ? 1 : clamp((f4 - k0.f) / (k1.f - k0.f));
   const out: Record<string, number> = {};
-  for (const key of Object.keys(k) as Array<keyof FK>) {
+  for (const key of Object.keys(k1) as Array<keyof FK>) {
     if (key === "f" || key === "alt" || key === "px" || key === "py") continue;
-    out[key] = k[key] as number;
+    const a = (k0[key] as number | undefined) ?? 0;
+    const b = k1[key] as number;
+    out[key] = lerp(a, b, t);
   }
   return out as PPatch;
 };
@@ -142,12 +150,12 @@ export const RISE_KEYS: LK[] = [
   RK(530, { rx: -8, hy: 0, hx: 8, alx: 20, arx: 30, ale: 10, are: 70, tl: 14, y: 0.57, llx: 10, lrx: 14, llk: 6, lrk: 10, llz: 6, lrz: 6, ry: 22, x: -0.33 }),
   RK(534, { rx: 0, hy: 8, hx: 14, alx: 10, arx: 24, ale: 0, are: 74, tl: 8, y: STAND_Y, ry: 8, x: -0.4 }),
   RK(538, { rx: 0, hy: -8, hx: 6, alx: 8, arx: 20, ale: 0, are: 78, tl: 4, y: STAND_Y, ry: 2, x: STAND_X, eyeR: 2 }),
-  RK(542, { hy: 6, hx: 8, tl: 6, alx: 12, arx: 22, are: 80, ry: 46, x: STAND_X }), // отворачивается: плечо к зрителю
-  RK(546, { hy: -26, hx: 8, tl: 12, tz: 8, alx: 22, alz: 14, arx: 24, are: 80, ry: 46 }), // плечо: голова на плечо
-  RK(550, { hy: -30, hx: 10, tl: 16, tz: 14, alx: 34, alz: 18, ale: 20, arx: 24, are: 80, ry: 46 }),
-  RK(S.SHOULDER_FRAME, { hy: 26, hx: -4, tl: 30, tz: -14, alx: -118, alz: 44, ale: 0, arx: 24, are: 80, mouth: 1, eyeL: 1, eyeR: 1, brow: 1, ry: 0 }), // РЫВОК к камере
-  RK(554, { hy: -18, hx: -8, tl: -16, tz: 4, alx: 150, alz: 34, mouth: 1, ry: 0 }),
-  RK(556, { hy: 0, hx: 0, tl: 0, tz: 0, alx: 6, alz: 8, mouth: 0, ry: 0 }),
+  RK(542, { hy: 6, hx: 8, tl: 6, alx: 12, arx: 22, are: 80, ry: 0, x: STAND_X }),
+  RK(546, { hy: -26, hx: 8, tl: 12, tz: 8, alx: 22, alz: 14, arx: 24, are: 80, ry: 0 }), // плечо: голова на плечо
+  RK(550, { hy: -30, hx: 10, tl: 16, tz: 14, alx: 34, alz: 18, ale: 20, arx: 24, are: 80, ry: 0 }),
+  RK(S.SHOULDER_FRAME, { hy: 26, hx: -4, tl: 30, tz: -12, alx: -78, alz: 30, ale: 0, arx: 24, are: 80, mouth: 1, eyeL: 1, eyeR: 1, brow: 1 }), // РЫВОК
+  RK(554, { hy: -18, hx: -8, tl: -16, tz: 4, alx: 140, alz: 24, mouth: 1 }),
+  RK(556, { hy: 0, hx: 0, tl: 0, tz: 0, alx: 6, alz: 8, mouth: 0 }),
   RK(S.HEADJERK_FRAME, { hy: -44, hx: 4, tl: -4, alx: 6, mouth: 1 }),
   RK(560, { hy: 36, hx: -4, tl: 4, alx: 5, mouth: 0 }),
   RK(562, { hy: -8, hx: 2, tl: 0, mouth: 0 }),
@@ -196,8 +204,7 @@ export const gregPose = (frame: number): PP => {
     const odd = Math.floor((frame - S.FLIGHT_FROM) / 4) % 2 === 1;
     const k = holdKeys(frame, FLIGHT_KEYS) ?? FLIGHT_KEYS[0];
     const pos = flightPos(f);
-    const rzJ = odd ? 16 : 0;
-    return G({ ...patch, ...(odd ? k.alt : {}), rz: (patch.rz ?? 0) + rzJ, cs: 2.1, x: pos.x + (odd ? 0.04 : 0), y: pos.y + (odd ? 0.06 : 0), z: pos.z, rx: patch.rx ?? 0 });
+    return G({ ...patch, ...(odd ? k.alt : {}), x: pos.x + (odd ? 0.04 : 0), y: pos.y + (odd ? 0.06 : 0), z: pos.z, rx: patch.rx ?? 0 });
   }
   // ---- лежит и встаёт ----
   if (frame < S.RISE_FROM) {
@@ -209,20 +216,6 @@ export const gregPose = (frame: number): PP => {
       // дрожь на двойках: нет паузы без изменений
       const j = (s: number, a: number) => jitter(frame, s, 2) * a;
       p = { ...p, hy: p.hy + j(1, 2.5), hx: p.hx + j(2, 2), alx: p.alx + j(3, 4), llx: p.llx + j(4, 3), arx: p.arx + j(5, 3), lrx: p.lrx + j(6, 3) };
-      // крупное шевеление раз в 14 кадров (4 кадра держится): голова, нога, рука, спина
-      const t = frame - (S.LAND_FRAME + 18);
-      if (t >= 0 && !(frame >= S.BILLBOARD_FLIP - 2 && frame < S.BILLBOARD_FLIP + 8)) {
-        const e = Math.floor(t / 14);
-        const on = t % 14 < 4;
-        const sgn = e % 2 ? 1 : -1;
-        if (on) {
-          const ty = e % 4;
-          if (ty === 0) p = { ...p, hy: p.hy + 30, hx: p.hx + 22 * sgn, y: p.y + 0.05 };
-          else if (ty === 1) p = { ...p, llx: p.llx + 55, llk: 45, lrx: p.lrx + 15 };
-          else if (ty === 2) p = { ...p, alx: p.alx + 70, ale: 40, arx: p.arx + 40 };
-          else p = { ...p, tl: p.tl + 22, y: p.y + 0.09, hy: p.hy + 12, lrx: p.lrx + 40 };
-        }
-      }
     }
     return p;
   }
@@ -238,11 +231,7 @@ export const gregPose = (frame: number): PP => {
   if (frame >= S.GREG_LINE.from && frame < S.GREG_LINE.to) {
     const k0 = f - S.GREG_LINE.from;
     const e = S.VOICE_ENV[k0] ?? 0;
-    const pv = S.VOICE_ENV[k0 - 2] ?? 0;
-    const nx = S.VOICE_ENV[k0 + 2] ?? 0;
-    let m = e >= 0.45 ? 2 : e >= 0.1 ? 1 : 0;
-    if (m && e <= pv && e <= nx && e < 0.75 * Math.max(pv, nx)) m = 0; // рот закрывается между слогами
-    p = { ...p, mouth: m, hx: p.hx + (m === 2 ? 3 : 0) };
+    p = { ...p, mouth: e > 0.5 ? 2 : e > 0.24 ? 1 : 0, hx: p.hx + (e > 0.5 ? 3 : 0) };
   }
   if (frame >= 604) {
     const w = SWAY[Math.floor((f - 604) / 6) % SWAY.length];
@@ -254,30 +243,25 @@ export const gregPose = (frame: number): PP => {
 
 // ---------------- Суперкар ----------------
 export const CAR_Z = -0.2;
-export const CAR_SCALE = 1.05;
-const XO = 2.15 * 0.93 - 2.15 * CAR_SCALE; // нос машины в момент удара там же, где в v6
-const LANE = 1.25; // тротуар у бордюра (впереди Грега)
-/** сжатие машины по глубине: у бордюра тоньше, чтобы не пересекаться с Грегом */
-export const carZScale = (z: number) => lerp(0.85, 0.5, clamp((z - CAR_Z) / (LANE - CAR_Z)));
+export const CAR_SCALE = 0.93;
 export interface CarSt { on: boolean; x: number; z: number; yaw: number; dy: number; pitch: number; spin: number; fast: boolean; braking: boolean }
 const R = (arr: Array<[number, number]>, f: number) => remap(f, arr);
 export const carState = (frame: number): CarSt => {
   const f = hold(frame);
   if (f >= S.VANISH_FRAME) return { on: false, x: 0, z: 0, yaw: 0, dy: 0, pitch: 0, spin: 0, fast: false, braking: false };
-  let x = 0, z = LANE, yaw = 0, dy = 0, pitch = 0, fast = false, braking = false, on = true;
-  if (f >= 10 && f <= 46) { x = R([[10, 13], [46, -13]], f); yaw = 180; fast = true; }
-  else if (f >= 54 && f <= 90) { x = R([[54, -13], [90, 13]], f); fast = true; }
-  else if (f >= 96 && f <= 128) { x = R([[96, 13], [128, -13]], f); yaw = 180; fast = true; }
+  const lane = 3.5;
+  let x = 0, z = lane, yaw = 0, dy = 0, pitch = 0, fast = false, braking = false, on = true;
+  if (f >= 58 && f <= 92) { x = R([[58, -15], [92, 15]], f); fast = true; }
+  else if (f >= 98 && f <= 130) { x = R([[98, 15], [130, -15]], f); z = lane - 0.9; yaw = 180; fast = true; }
   else if (f >= 134 && f < S.HIT_FRAME) {
-    x = R([[134, -21], [146, -11.5], [154, -7.4], [160, -5.4], [164, -4.4], [S.HIT_FRAME - 1, -3.6]], f);
-    z = R([[134, LANE], [152, LANE], [156, 0.9], [160, 0.5], [163, 0.1], [165, CAR_Z], [S.HIT_FRAME - 1, CAR_Z]], f);
-    yaw = R([[134, 0], [152, 0], [156, 10], [160, 14], [163, 8], [165, 2], [S.HIT_FRAME - 1, 0]], f);
+    x = R([[134, -17], [150, -11], [156, -8.6], [160, -6.9], [164, -5.2], [166, -4.3], [S.HIT_FRAME - 1, -3.6]], f);
+    z = R([[134, lane], [152, lane], [156, 3.0], [160, 1.6], [163, 0.3], [165, CAR_Z], [S.HIT_FRAME - 1, CAR_Z]], f);
+    yaw = R([[134, 0], [152, 0], [156, 16], [160, 24], [163, 12], [165, 3], [S.HIT_FRAME - 1, 0]], f);
     dy = f >= 158 && f < 166 ? ([0.18, 0.05, 0.12, 0][Math.floor((f - 158) / 2)] ?? 0) : 0;
     fast = true;
-    x += XO * clamp((f - 150) / 14);
   } else if (f >= S.HIT_FRAME) {
     z = CAR_Z;
-    x = XO + R([[S.HIT_FRAME, -3.55], [S.FLIGHT_FROM - 1, -3.3], [186, -2.8], [206, -1.4], [230, 1.2], [254, 2.6], [276, 3.2], [S.LAND_FRAME, 3.35], [1000, 3.35]], f);
+    x = R([[S.HIT_FRAME, -3.55], [S.FLIGHT_FROM - 1, -3.3], [186, -2.8], [206, -1.4], [230, 1.2], [254, 2.6], [276, 3.2], [S.LAND_FRAME, 3.35], [1000, 3.35]], f);
     braking = f > 228 && f < S.LAND_FRAME;
     pitch = braking ? (Math.floor(f / 2) % 2 ? -3.2 : -1.6) : f >= S.FLIGHT_FROM && f < 230 ? 1.2 : 0;
     if (f >= S.HIT_FRAME && f < S.FLIGHT_FROM) { dy = Math.floor(f / 2) % 2 ? 0.05 : 0; pitch = -3; }
@@ -310,16 +294,16 @@ export const alienPose = (frame: number): PP => {
 // Летает в верхней части неба слева направо и обратно (дугами); два пролёта «за билбордом» (z<-5, билборд его закрывает, а не наоборот).
 type BK = readonly [number, number, number, number, number];
 const LOOP: ReadonlyArray<BK> = [
-  [0, -4.5, 4.5, -2.0, 0], [14, -4.4, 4.9, -2.0, 0], [28, -2.6, 5.1, -2.2, 0], [34, -1.8, 5.1, -2.4, 0],
-  [38, -1.6, 5.1, -2.5, 180], [64, -4.2, 4.6, -2.0, 180], [72, -4.5, 4.4, -2.0, 180], [76, -4.5, 4.4, -2.0, 0],
+  [0, -9.8, 5.5, -2.0, 0], [14, -5.2, 6.5, -2.0, 0], [28, -1.2, 6.9, -2.2, 0], [34, 0.3, 6.9, -2.4, 0],
+  [38, 0.5, 6.9, -2.5, 180], [64, -7.6, 5.9, -2.0, 180], [76, -10.6, 5.6, -2.0, 180], [77, -10.8, 5.5, -2.0, 0],
 ];
 const buildBikeKeys = (): BK[] => {
   const ks: BK[] = [];
   const add = (b: number, l: ReadonlyArray<BK>) => l.forEach(([f, x, y, z, yw]) => ks.push([b + f, x, y, z, yw]));
-  add(0, LOOP); // 0-76
-  // второй пролёт (78-170), весь в центре кадра
-  add(78, [[0, -4.5, 4.4, -2.0, 0], [10, -4.4, 4.8, -2.0, 0], [20, -2.6, 5.0, -2.2, 0], [28, -1.8, 5.1, -2.4, 0], [29, -1.6, 5.1, -2.4, 180],
-    [40, -2.4, 4.9, -2.2, 180], [60, -4.2, 4.6, -2.0, 180], [72, -4.5, 4.4, -2.0, 180], [76, -4.5, 4.4, -2.0, 0], [93, -4.5, 4.4, -2.0, 0]]);
+  add(0, LOOP.slice(0, 7)); // 0-76
+  // пролёт слева направо за билбордом, и обратно (78-170)
+  add(78, [[0, -10.8, 5.5, -2.0, 0], [10, -4.0, 6.4, -2.6, 0], [20, 0.4, 6.8, -5.4, 0], [38, 13, 6.2, -6.8, 0], [39, 13.4, 6.2, -6.8, 180],
+    [40, 13.4, 6.6, -6.8, 180], [62, 2.0, 6.9, -5.6, 180], [76, -3.0, 6.5, -2.4, 180], [88, -9.0, 5.6, -2.0, 180], [92, -11.0, 5.5, -2.0, 180], [93, -11.0, 5.5, -2.0, 0]]);
   for (let b = 172; b < 520; b += 77) add(b, LOOP);
   return ks.sort((a, b) => a[0] - b[0]);
 };
