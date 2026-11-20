@@ -165,11 +165,11 @@
     },
     "prop_supercar": {
       "file": "prop_supercar.png",
-      "width": 810,
-      "height": 240,
+      "width": 840,
+      "height": 300,
       "pivot": [
         0.5,
-        0.86
+        0.9
       ],
       "group": "prop",
       "note": "Хромированный суперкар сбоку, едет вправо. Pivot = точка контакта с землёй (центр).",
@@ -178,20 +178,20 @@
     },
     "prop_alien_driver": {
       "file": "prop_alien_driver.png",
-      "width": 240,
-      "height": 262,
+      "width": 200,
+      "height": 170,
       "pivot": [
         0.5,
-        0.95
+        1
       ],
       "group": "prop",
-      "note": "Водитель в маске пришельца, цельный спрайт (сидит, руки вперёд-вправо).",
+      "note": "Водитель в маске пришельца: торс+голова+руки на руле, окно кабины с передней частью кузова (стыкуется с prop_supercar при ALIEN_H=170, смещение (+20, 80 над землёй)).",
       "source": "svg-fallback"
     },
     "prop_oppressor": {
       "file": "prop_oppressor.png",
-      "width": 570,
-      "height": 230,
+      "width": 660,
+      "height": 380,
       "pivot": [
         0.5,
         0.5
@@ -258,6 +258,91 @@
       ],
       "group": "ref",
       "note": "Цельный образ-референс Грега.",
+      "source": "svg-fallback"
+    },
+    "fx_boom": {
+      "file": "fx_boom.png",
+      "width": 260,
+      "height": 260,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Взрыв-вспышка, плоская звезда, оранж/жёлтый.",
+      "source": "svg-fallback"
+    },
+    "fx_flash": {
+      "file": "fx_flash.png",
+      "width": 512,
+      "height": 512,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Белая вспышка-звезда (12 лучей), без контура; для исчезновения.",
+      "source": "svg-fallback"
+    },
+    "fx_smoke": {
+      "file": "fx_smoke.png",
+      "width": 340,
+      "height": 260,
+      "pivot": [
+        0.5,
+        0.8
+      ],
+      "group": "fx",
+      "note": "Клуб тёмного дыма, плоский.",
+      "source": "svg-fallback"
+    },
+    "fx_trashfire": {
+      "file": "fx_trashfire.png",
+      "width": 200,
+      "height": 300,
+      "pivot": [
+        0.5,
+        0.95
+      ],
+      "group": "fx",
+      "note": "Горящая урна; pivot = низ урны.",
+      "source": "svg-fallback"
+    },
+    "fx_debris": {
+      "file": "fx_debris.png",
+      "width": 420,
+      "height": 240,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Россыпь обломков (бетон, кирпич, металл, стекло, покрышка).",
+      "source": "svg-fallback"
+    },
+    "fx_trail": {
+      "file": "fx_trail.png",
+      "width": 540,
+      "height": 130,
+      "pivot": [
+        1,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Дымовой след ракеты; правый конец крепится к хвосту ракеты (летит вправо).",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "fx_tooth": {
+      "file": "fx_tooth.png",
+      "width": 48,
+      "height": 64,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Летящий зуб.",
       "source": "svg-fallback"
     }
   },

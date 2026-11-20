@@ -3,7 +3,7 @@
 // Запуск: node make_svg_assets.mjs [имя ...]
 import sharp from 'sharp';
 import path from 'node:path';
-import { IMG, upsertManifest, paperTexture } from './lib.mjs';
+import { IMG, upsertManifest } from './lib.mjs';
 import { META } from './assets_meta.mjs';
 
 const INK = '#1b1b1b';
@@ -13,12 +13,11 @@ const rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul
 const ri = (a, b) => Math.floor(a + rnd() * (b - a + 1));
 const pick = (arr) => arr[ri(0, arr.length - 1)];
 
-const wrap = (w, h, body, rough = 3) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-  <defs><filter id="rough" x="-3%" y="-3%" width="106%" height="106%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="3" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="${rough}" xChannelSelector="R" yChannelSelector="G"/></filter></defs>
-  <g filter="url(#rough)" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round" stroke-linecap="round">${body}</g></svg>`;
+// Плоская заливка, один тонкий тёмный контур, никаких фильтров/шума/градиентов.
+const wrap = (w, h, body, defs = '', view = null) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${view || `0 0 ${w} ${h}`}">
+  <defs>${defs}</defs>
+  <g stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round" stroke-linecap="round">${body}</g></svg>`;
 
 const fa = (fill, extra) => (extra.includes('fill="') ? '' : `fill="${fill}"`);
 const P = (d, fill, extra = '') => `<path d="${d}" ${fa(fill, extra)} ${extra}/>`;
@@ -83,8 +82,6 @@ function torso() {
   s += P('M134 130 L158 136', 'none', 'stroke="#7e1519" stroke-width="3" fill="none"');
   // короткие рукава (культи у плеч)
   s += P('M18 60 Q4 70 6 112 L52 112 L48 44 Z', '#E4D2A6') + P('M222 60 Q236 70 234 112 L188 112 L192 44 Z', '#E4D2A6');
-  // складки
-  s += P('M60 190 L80 232 M180 200 L168 240 M100 150 L88 178', 'none', 'stroke="#b9a678" stroke-width="3" fill="none"');
   return wrap(240, 320, s);
 }
 
@@ -121,92 +118,133 @@ function leg(side) {
 }
 
 // ================= РЕКВИЗИТ =================
-function supercar() {
+// Объединение кругов с единым внешним контуром (облака, дым, пыль): сначала тёмные круги r+SW/2, потом заливка r.
+const blob = (cs, fill) =>
+  cs.map(([x, y, r]) => C(x, y, r + SW / 2, INK, NOSTROKE)).join('') + cs.map(([x, y, r]) => C(x, y, r, fill, NOSTROKE)).join('');
+
+// ---- Суперкар: 840x300, земля y=270 (pivot 0.5, 0.9), едет вправо. Кабина открытая: водитель - отдельный спрайт.
+// Спрайт водителя = тот же SVG (интерьер + фигура + передняя часть кузова) в окне viewBox, поэтому стыкуется с машиной пиксель в пиксель.
+const CAR_W = 840, CAR_H = 300, CAR_GROUND = 270;
+const DRV = { x: 340, y: 20, w: 200, h: 170 }; // окно водителя в координатах машины; низ-центр = (440,190) = pivot машины + (20, 80)
+
+function carInterior() {
   let s = '';
-  // корпус: низкий клин, хром (плоские блики)
-  s += P('M22 168 L26 126 Q44 106 130 100 L300 94 Q350 46 450 40 L536 42 Q600 84 706 104 Q776 112 788 144 L790 172 L22 172 Z', '#CBD3DB');
-  s += P('M30 130 Q50 112 132 106 L300 100 Q352 56 450 48 L520 50 L470 56 Q380 64 322 108 L130 114 Q60 120 38 140 Z', '#F4F8FB', NOSTROKE); // верхний блик
-  s += P('M22 150 L788 150 L790 172 L22 172 Z', '#8DA0B6', NOSTROKE); // нижняя тёмная полоса
-  s += P('M60 138 L700 126 L760 134 L760 142 L60 150 Z', '#6E85A6', NOSTROKE); // синий отражённый горизонт
-  s += P('M22 168 L26 126 Q44 106 130 100 L300 94 Q350 46 450 40 L536 42 Q600 84 706 104 Q776 112 788 144 L790 172 L22 172 Z', 'none');
-  // кабина
-  s += P('M326 98 Q362 58 452 54 L528 56 Q572 82 626 100 L326 100 Z', '#2B3B57');
-  s += P('M372 94 Q392 68 440 62 L470 62 L420 96 Z', '#7FA0C8', NOSTROKE);
-  s += P('M470 62 L500 62 L470 96 L440 96 Z', '#7FA0C8', NOSTROKE, );
-  s += P('M326 98 Q362 58 452 54 L528 56 Q572 82 626 100 L326 100 Z', 'none');
+  s += R(300, 100, 52, 60, '#2B3340', 12); // спинка сиденья
+  s += R(306, 86, 38, 22, '#3a4456', 8); // подголовник
+  return s;
+}
+const BODY = 'M20 244 L14 170 Q16 146 46 140 L120 134 Q190 108 262 116 L306 150 L556 150 L600 148 Q660 118 724 140 Q800 168 826 206 Q832 232 812 244 Z';
+function carFront() {
+  let s = '';
+  const defs = `<clipPath id="bodyclip"><path d="${BODY}"/></clipPath>`;
+  s += P(BODY, '#B9C5D1');
+  s += `<g clip-path="url(#bodyclip)" stroke="none">`;
+  s += R(0, 196, 840, 60, '#8FA0B4', 0, NOSTROKE); // нижняя тёмная полоса хрома
+  s += R(0, 176, 840, 18, '#5E7FA8', 0, NOSTROKE); // отражённый «горизонт»
+  s += P('M0 100 L840 100 L840 152 L0 148 Z', '#F4F8FB', NOSTROKE); // верхний блик
+  s += P('M380 160 L424 160 L396 232 L352 232 Z', '#F4F8FB', NOSTROKE); // блик-полоса на двери
+  s += P('M440 160 L462 160 L434 232 L412 232 Z', '#F4F8FB', NOSTROKE);
+  s += `</g>`;
+  s += P(BODY, 'none');
   // дверь, ручка, воздухозаборник
-  s += P('M330 102 L330 160 M330 102 L600 108', 'none', 'stroke="' + INK + '" stroke-width="2.5" fill="none"');
-  s += R(420, 118, 36, 6, '#555e6b', 3);
-  s += P('M214 120 L280 116 L282 146 L218 150 Z', '#3a4452');
+  s += P('M330 156 L322 234 M330 156 L556 156', 'none', 'fill="none" stroke-width="2.5"');
+  s += R(470, 168, 38, 7, '#4a5568', 3);
+  s += P('M226 150 L290 150 L296 190 L232 190 Z', '#3a4456');
   // спойлер
-  s += R(14, 92, 26, 8, '#222') + R(24, 98, 6, 28, '#222', 0);
+  s += R(34, 112, 10, 34, '#222', 0) + P('M6 100 L124 92 L126 110 L6 118 Z', '#222');
   // фары
-  s += P('M742 118 L786 134 L780 146 L736 140 Z', '#FFE35A') + R(24, 132, 14, 18, '#E0312F', 3);
+  s += P('M778 164 L824 202 L810 210 L768 180 Z', '#FFE35A') + R(14, 150, 14, 22, '#E0312F', 3);
   // колёса
-  for (const x of [198, 622]) {
-    s += C(x, 168, 44, '#1d1d1d');
-    s += C(x, 168, 28, '#D8DEE5') + C(x, 168, 9, '#8B97A5');
-    for (let a = 0; a < 5; a++) { const r = (a * 72 * Math.PI) / 180; s += P(`M${x} 168 L${x + Math.cos(r) * 27} ${168 + Math.sin(r) * 27}`, 'none', 'stroke="#8B97A5" stroke-width="4" fill="none"'); }
+  for (const x of [190, 650]) {
+    s += C(x, 218, 52, '#1d1d1d');
+    s += C(x, 218, 34, '#E7ECF1') + C(x, 218, 14, '#9AA7B6');
+    for (let a = 0; a < 5; a++) { const r = (a * 72 * Math.PI) / 180; s += P(`M${x} 218 L${x + Math.cos(r) * 33} ${218 + Math.sin(r) * 33}`, 'none', 'stroke="#9AA7B6" stroke-width="6" fill="none"'); }
   }
-  // искры/блеск
-  s += P('M470 70 L476 82 L488 86 L476 90 L470 102 L464 90 L452 86 L464 82 Z', '#fff', 'stroke="none"');
-  return wrap(810, 240, s);
+  // лобовое стекло (спереди фигуры)
+  s += P('M604 150 L566 96 L582 94 L626 148 Z', '#9DC7EA');
+  s += P('M572 102 L580 100 L596 124 L588 126 Z', '#fff', NOSTROKE);
+  // блик-звезда
+  s += P('M700 142 L705 152 L716 156 L705 160 L700 170 L695 160 L684 156 L695 152 Z', '#fff', NOSTROKE);
+  return { s, defs };
 }
-
+function supercar() {
+  const f = carFront();
+  return wrap(CAR_W, CAR_H, carInterior() + f.s, f.defs);
+}
+// фигура: телесный силуэт без деталей, маска пришельца, руки на руле (координаты машины)
+function driverFigure() {
+  let s = '';
+  s += P('M440 126 L486 144 L508 140', 'none', `stroke="${INK}" stroke-width="22" fill="none"`) + P('M440 126 L486 144 L508 140', 'none', 'stroke="#E6B48A" stroke-width="16" fill="none"'); // дальняя рука
+  s += R(424, 94, 22, 20, SKIN, 6); // шея
+  s += P('M386 170 Q378 120 404 108 Q436 98 458 114 Q470 134 464 170 Z', SKIN); // торс
+  // руль (кольцо)
+  s += `<ellipse cx="516" cy="140" rx="8" ry="27" transform="rotate(22 516 140)" fill="none" stroke="${INK}" stroke-width="13"/>`;
+  s += `<ellipse cx="516" cy="140" rx="8" ry="27" transform="rotate(22 516 140)" fill="none" stroke="#454c5c" stroke-width="7" stroke-linecap="butt"/>`;
+  // ближняя рука
+  s += P('M448 122 L486 134 L510 132', 'none', `stroke="${INK}" stroke-width="22" fill="none"`) + P('M448 122 L486 134 L510 132', 'none', `stroke="${SKIN}" stroke-width="16" fill="none"`);
+  s += C(510, 134, 10, SKIN) + C(506, 146, 9, '#E6B48A');
+  // голова-маска (яйцо) + огромные чёрные глаза
+  s += P('M436 26 C472 26 480 56 466 80 C458 96 446 102 436 102 C426 102 414 96 406 80 C392 56 400 26 436 26 Z', '#B7C9C2');
+  s += P('M406 56 Q424 56 434 74 Q414 78 406 64 Z', '#101418') + P('M466 56 Q448 56 438 74 Q458 78 466 64 Z', '#101418');
+  s += P('M412 62 L418 60 M460 62 L454 60', 'none', 'stroke="#fff" stroke-width="3" fill="none"');
+  s += P('M428 90 Q436 94 444 90', 'none', `stroke="${INK}" stroke-width="2.5" fill="none"`);
+  return s;
+}
 function alienDriver() {
-  let s = '';
-  // руки вперёд (вправо) к рулю
-  s += P('M96 150 Q150 132 196 150 L196 176 Q150 164 100 184 Z', SKIN);
-  s += C(200, 164, 15, SKIN);
-  s += C(204, 168, 26, 'none', 'stroke="#5a3a22" stroke-width="7" fill="none"');
-  // торс (гладкий силуэт)
-  s += P('M40 250 Q34 160 80 134 Q130 126 150 160 L150 250 Z', SKIN);
-  // голова-маска пришельца
-  s += E(92, 78, 62, 70, '#AEBDC4');
-  s += P('M44 60 Q70 54 90 78 Q70 98 46 86 Q36 72 44 60 Z', '#101418');
-  s += P('M140 60 Q114 54 94 78 Q114 98 138 86 Q148 72 140 60 Z', '#101418');
-  s += P('M60 66 L68 62', 'none', 'stroke="#fff" stroke-width="4" fill="none"') + P('M122 66 L130 62', 'none', 'stroke="#fff" stroke-width="4" fill="none"');
-  s += P('M80 120 Q92 126 104 120', 'none', 'stroke="' + INK + '" stroke-width="3" fill="none"');
-  s += R(76, 138, 32, 14, SKIN, 5, NOSTROKE);
-  return wrap(240, 262, s);
+  const f = carFront();
+  return wrap(DRV.w, DRV.h, carInterior() + driverFigure() + f.s, f.defs, `${DRV.x} ${DRV.y} ${DRV.w} ${DRV.h}`);
 }
 
+// ---- Oppressor Mk II: 640x380, летит вправо, виден как БАЙК: два больших колеса, вилка, высокий руль, сиденье, хвостовое крыло, ракеты, огонь
 function oppressor() {
-  let s = '';
-  // пламя сопла (слева)
-  s += P('M40 130 L-0 120 L22 136 L-4 150 L40 150 Z', '#FF9A1F') + P('M40 134 L14 132 L40 146 Z', '#FFE35A', NOSTROKE);
-  // крылья (дальнее)
-  s += P('M250 96 L360 40 L430 40 L330 110 Z', '#8E1E26');
-  // основной корпус
-  s += P('M44 118 L70 100 L230 92 L380 108 L520 138 L548 150 L520 162 L380 164 L230 160 L60 156 L40 140 Z', '#2E3442');
-  s += P('M100 108 L230 100 L360 114 L300 120 L110 118 Z', '#566074', NOSTROKE);
-  // два двигателя (сопла)
-  s += R(36, 104, 62, 56, '#3d4558', 10) + E(40, 132, 14, 26, '#FF7A1A') + E(42, 132, 7, 14, '#FFE35A', NOSTROKE);
-  s += R(70, 98, 120, 16, '#8E1E26', 5);
-  // сиденье и руль
-  s += P('M220 96 Q250 70 300 84 L316 100 L224 102 Z', '#1b1b1b');
-  s += P('M356 104 L384 70 L404 72', 'none', 'stroke="' + INK + '" stroke-width="7" fill="none"');
-  // переднее крыло-канард и ракетная подвеска
-  s += P('M380 150 L470 118 L500 124 L440 164 Z', '#8E1E26');
-  s += R(240, 168, 150, 22, '#9aa3b2', 10) + C(246, 179, 4, INK, NOSTROKE) + C(386, 179, 4, INK, NOSTROKE);
-  s += P('M392 170 L440 179 L392 188 Z', '#E0312F');
-  // ближнее крыло
-  s += P('M200 150 L300 214 L380 214 L330 158 Z', '#A8262E');
-  s += P('M214 156 L296 206', 'none', 'stroke="#d95a60" stroke-width="3" fill="none"');
-  // ветровой дефлектор
-  s += P('M380 104 Q420 92 440 118 L388 124 Z', '#7FB4E6');
-  return wrap(570, 230, s);
+  let b = '';
+  // дальнее крыло-плавник (тёмное)
+  b += P('M300 170 L250 66 L206 72 L256 186 Z', '#7D161F');
+  // колёса
+  for (const [x, y, r] of [[170, 280, 70], [470, 290, 62]]) {
+    b += C(x, y, r, '#1d1d1d') + C(x, y, r * 0.52, '#B4BCC9') + C(x, y, r * 0.2, '#3d4558');
+    for (let a = 0; a < 5; a++) { const q = (a * 72 * Math.PI) / 180; b += P(`M${x} ${y} L${x + Math.cos(q) * r * 0.5} ${y + Math.sin(q) * r * 0.5}`, 'none', 'stroke="#6f7a8c" stroke-width="5" fill="none"'); }
+  }
+  // вилка и высокий руль
+  b += P('M440 160 L468 154 L488 284 L462 290 Z', '#9AA3B2');
+  b += P('M436 158 L420 100 L436 96 L456 154 Z', '#3d4558');
+  b += R(396, 86, 62, 14, '#222', 6) + R(450, 82, 16, 22, '#222', 5);
+  b += P('M458 112 L500 86 L526 90 L480 128 Z', '#8FC8F0'); // стекло
+  b += P('M470 196 L492 190 L496 214 L474 218 Z', '#FFE35A'); // фара
+  // ракетный подвес и две ракеты между колёсами
+  b += R(262, 236, 130, 14, '#8a93a4', 5);
+  for (const y of [254, 276]) {
+    b += P(`M270 ${y} L372 ${y} L372 ${y + 18} L270 ${y + 18} Z`, '#ECEFF2');
+    b += P(`M372 ${y} Q410 ${y + 9} 372 ${y + 18} Z`, '#E0312F');
+    b += P(`M270 ${y} L252 ${y - 4} L262 ${y + 9} L252 ${y + 22} L270 ${y + 18} Z`, '#E0312F');
+    b += P(`M252 ${y + 9} L230 ${y + 5} L238 ${y + 9} L230 ${y + 14} Z`, '#FF9A1F');
+  }
+  // корпус: бак + блок двигателя
+  b += P('M110 190 L150 150 L290 138 Q352 138 384 160 L448 172 Q486 180 486 198 L446 216 L300 228 L150 238 L110 226 Z', '#2F3646');
+  b += P('M154 156 L290 146 Q340 146 366 162 L300 160 L160 168 Z', '#6B778F', NOSTROKE);
+  b += R(112, 202, 370, 12, '#C8232C', 0, 'stroke="none"');
+  // сиденье
+  b += P('M196 142 Q236 120 306 130 L310 148 L198 154 Z', '#1b1b1b');
+  // сопла и пламя
+  b += P('M44 168 L-96 140 L-40 176 L-116 204 L-34 212 L-84 248 L44 224 Z', '#FF8A1F');
+  b += P('M44 176 L-34 160 L-6 186 L-52 204 L2 210 L-16 230 L44 220 Z', '#FFC42E');
+  b += P('M44 184 L2 180 L12 198 L-8 206 L44 212 Z', '#FFF2A0', NOSTROKE);
+  b += R(40, 158, 84, 36, '#4B5468', 8) + R(40, 202, 84, 36, '#4B5468', 8);
+  b += E(44, 176, 8, 16, '#FF7A1A') + E(44, 220, 8, 16, '#FF7A1A');
+  // ближнее крыло (красное), стреловидное назад-вверх
+  b += P('M350 178 L290 164 L150 64 L120 82 L220 196 Z', '#B3202A');
+  b += P('M300 172 L146 74', 'none', 'stroke="#E8626A" stroke-width="7" fill="none"');
+  return wrap(660, 380, `<g transform="translate(110 0)">${b}</g>`);
 }
 
 function rocket() {
   let s = '';
-  s += P('M60 36 L2 24 L26 36 L0 50 L60 44 Z', '#FF9A1F') + P('M60 37 L22 35 L60 43 Z', '#FFE35A', NOSTROKE);
+  s += P('M60 36 L2 22 L26 36 L0 52 L60 44 Z', '#FF9A1F') + P('M60 37 L22 35 L60 43 Z', '#FFE35A', NOSTROKE);
   s += P('M78 14 L120 34 L78 34 Z', '#8E1E26') + P('M78 58 L120 38 L78 38 Z', '#8E1E26');
   s += P('M56 22 L170 22 Q214 22 236 40 Q214 58 170 58 L56 58 Z', '#ECEFF2');
   s += P('M170 22 Q214 22 236 40 Q214 58 170 58 Z', '#E0312F');
   s += R(110, 22, 12, 36, '#E0312F', 0) + R(130, 22, 6, 36, '#222', 0);
-  s += P('M62 28 L168 28', 'none', 'stroke="#fff" stroke-width="4" fill="none"');
-  return wrap(240, 72, s, 2);
+  return wrap(240, 72, s);
 }
 
 function billboard() {
@@ -214,134 +252,151 @@ function billboard() {
   s += R(150, 450, 44, 190, '#4a4f5c') + R(806, 450, 44, 190, '#4a4f5c');
   s += R(110, 600, 124, 14, '#33373f') + R(766, 600, 124, 14, '#33373f');
   s += R(30, 30, 940, 430, '#3b404c', 10); // рама
-  s += R(40, 462, 920, 22, '#2c3038');
   s += R(52, 52, 896, 386, '#0b0d12', 4); // экран (пустой)
-  s += R(64, 64, 872, 362, 'none', 0, 'stroke="#1c2230" stroke-width="3"');
-  for (let i = 0; i < 12; i++) { const x = 90 + i * 76; s += R(x, 36, 26, 10, '#FFE9A0', 3, 'stroke="none"') + R(x + 2, 484, 20, 8, '#FFE9A0', 3, 'stroke="none"'); }
-  s += R(484, 440, 32, 12, '#2c3038');
   return wrap(1000, 640, s);
 }
 
 function dust() {
   const cs = [[160, 150, 60], [100, 160, 48], [220, 160, 48], [70, 190, 34], [250, 192, 36], [130, 110, 46], [195, 110, 46], [160, 80, 34], [160, 196, 46], [105, 196, 36], [215, 198, 36]];
-  let s = '';
-  for (const [x, y, r] of cs) s += C(x, y, r, '#D9CFBE');
-  for (const [x, y, r] of cs) s += C(x, y, r - 1.5, '#E9E1D1', NOSTROKE);
-  s += P('M110 120 Q150 100 190 118', 'none', 'stroke="#fff" stroke-width="5" fill="none" opacity="0.7"');
-  s += P('M120 168 Q150 160 176 170', 'none', 'stroke="#C4B9A6" stroke-width="4" fill="none"');
-  return wrap(320, 260, s);
+  return wrap(320, 260, blob(cs, '#E3DAC8'));
 }
 
-// ================= ФОН =================
+// ================= FX (плоские, для хаоса и исчезновения) =================
+function star(cx, cy, n, rOut, rIn, rot = 0) {
+  let d = '';
+  for (let i = 0; i < n * 2; i++) {
+    const a = rot + (i * Math.PI) / n, r = i % 2 ? rIn : rOut;
+    d += (i ? 'L' : 'M') + (cx + Math.cos(a) * r).toFixed(1) + ' ' + (cy + Math.sin(a) * r).toFixed(1) + ' ';
+  }
+  return d + 'Z';
+}
+function fxBoom() {
+  let s = '';
+  s += P(star(130, 130, 9, 124, 74, -0.2), '#E8402A');
+  s += P(star(130, 130, 8, 94, 56, 0.3), '#FF9D1C');
+  s += C(130, 130, 42, '#FFE45C');
+  return wrap(260, 260, s);
+}
+function fxFlash() {
+  // белая «звезда»: 12 тонких лучей (длинные/короткие), без контура
+  let d = '';
+  const N = 12, cx = 256, cy = 256;
+  for (let i = 0; i < N; i++) {
+    const a = (i * 2 * Math.PI) / N - Math.PI / 2, b = a + Math.PI / N;
+    const r = i % 2 ? 150 : 250;
+    d += `${i ? 'L' : 'M'}${(cx + Math.cos(a) * r).toFixed(1)} ${(cy + Math.sin(a) * r).toFixed(1)} L${(cx + Math.cos(b) * 26).toFixed(1)} ${(cy + Math.sin(b) * 26).toFixed(1)} `;
+  }
+  d += 'Z';
+  return wrap(512, 512, P(d, '#FFFFFF', NOSTROKE) + C(256, 256, 62, '#FFFFFF', NOSTROKE) + C(256, 256, 38, '#FFF6C8', NOSTROKE));
+}
+function fxSmoke() {
+  const a = [[100, 170, 62], [180, 140, 76], [250, 175, 58], [150, 90, 52], [215, 80, 44]];
+  return wrap(340, 260, blob(a, '#5B5B6A') + C(120, 150, 22, '#74748A', NOSTROKE) + C(190, 118, 26, '#74748A', NOSTROKE));
+}
+function fxTrashFire() {
+  let s = '';
+  // пламя
+  s += P('M54 150 Q30 110 52 70 Q56 100 74 96 Q70 50 96 14 Q102 56 120 74 Q134 52 130 36 Q166 80 150 150 Z', '#FF8A1F');
+  s += P('M76 150 Q64 120 84 96 Q90 118 102 112 Q104 90 114 78 Q138 110 124 150 Z', '#FFC42E');
+  s += P('M94 150 Q88 134 100 122 Q112 134 108 150 Z', '#FFF2A0', NOSTROKE);
+  // урна
+  s += P('M40 156 L160 156 L148 286 L52 286 Z', '#5E6B66');
+  s += R(30, 146, 140, 18, '#7C8A84', 6);
+  s += P('M82 170 L84 272 M118 170 L116 272', 'none', 'stroke="#3f4a46" stroke-width="3" fill="none"');
+  return wrap(200, 300, s);
+}
+function fxDebris() {
+  let s = '';
+  s += P('M30 120 L90 96 L128 130 L96 176 L40 170 Z', '#9A9AA6'); // бетон
+  s += P('M168 60 L238 48 L252 92 L186 104 Z', '#C0532F'); // кирпич
+  s += P('M270 150 L384 118 L392 140 L282 176 Z', '#7A8396'); // обломок металла
+  s += P('M150 190 L200 176 L214 210 L162 222 Z', '#9A9AA6');
+  s += P('M300 40 L340 20 L350 64 Z', '#9DC7EA'); // стекло
+  s += P('M60 36 L84 20 L96 52 L70 62 Z', '#9DC7EA');
+  s += P('M230 160 Q252 128 288 142 L276 156 Q256 146 244 170 Z', '#1d1d1d'); // дуга покрышки
+  s += P('M340 190 L372 174 L382 204 L350 214 Z', '#C0532F');
+  return wrap(420, 240, s);
+}
+function fxTrail() {
+  // след ракеты: цепочка кругов, крепится правым концом к хвосту ракеты
+  const cs = [[500, 65, 12], [455, 66, 18], [405, 62, 26], [345, 68, 34], [275, 60, 42], [200, 70, 50], [120, 62, 56], [60, 68, 48]];
+  return wrap(540, 130, blob(cs, '#E4E4EC'));
+}
+function fxTooth() {
+  let s = '';
+  s += P('M8 22 Q6 6 24 8 Q42 6 40 22 Q40 40 34 56 Q31 60 28 48 Q24 42 20 48 Q17 60 14 56 Q8 40 8 22 Z', '#FFFBE8');
+  s += C(24, 56, 4, '#C8404E', 'stroke="none"');
+  return wrap(48, 64, s);
+}
+
+// ================= ФОН: плоские слои, один контур, без шума и градиентов =================
 const W_SKY = 2000, W_FAR = 2100, W_MID = 2300, W_FORE = 2500, H = 1080;
 
 function sky() {
   let s = '';
-  const bands = [[0, '#0B0A24'], [210, '#16113A'], [390, '#271957'], [540, '#43237A'], [660, '#7A2E8E'], [750, '#C23C8C'], [830, '#E8588F']];
+  const bands = [[0, '#0F0E33'], [300, '#1C1650'], [520, '#2E1E6A'], [680, '#5A2A86'], [780, '#A93A8C']];
   bands.forEach(([y, c], i) => {
     const y2 = i + 1 < bands.length ? bands[i + 1][0] : H;
-    let d = `M0 ${y} `;
-    for (let x = 0; x <= W_SKY; x += 80) d += `L${x} ${y + (i ? ri(-7, 7) : 0)} `;
-    d += `L${W_SKY} ${y2 + 14} L0 ${y2 + 14} Z`;
-    s += P(d, c, 'stroke="none"');
+    s += R(0, y, W_SKY, y2 - y + 2, c, 0, NOSTROKE);
   });
-  // неоновые «прожекторы» (плоские треугольники)
-  s += P('M300 800 L220 0 L520 0 Z', '#3FE0E8', 'stroke="none" opacity="0.16"');
-  s += P('M1500 800 L1400 0 L1720 0 Z', '#FF4FB8', 'stroke="none" opacity="0.18"');
-  s += P('M900 800 L1040 100 L1180 100 Z', '#7CFF9B', 'stroke="none" opacity="0.10"');
-  // тучи
-  for (const [x, y, w] of [[260, 300, 260], [900, 230, 320], [1500, 400, 280], [1800, 260, 200]]) {
-    s += P(`M${x} ${y} q${w * 0.1} -50 ${w * 0.3} -30 q${w * 0.2} -60 ${w * 0.4} 0 q${w * 0.28} -20 ${w * 0.3} 30 Z`, '#2E1F66', 'stroke="#1b1236" stroke-width="3"');
-  }
-  // луна
-  s += C(1380, 160, 72, '#F6EDA8', 'stroke="#d9cf7a" stroke-width="3"') + C(1410, 144, 62, '#16113A', 'stroke="none"');
-  // звёзды
-  for (let i = 0; i < 110; i++) {
-    const x = ri(10, W_SKY - 10), y = ri(10, 600), r = pick([2, 2, 3, 4]);
-    s += rnd() < 0.35
-      ? P(`M${x} ${y - r * 2} L${x + r * 0.7} ${y - r * 0.7} L${x + r * 2} ${y} L${x + r * 0.7} ${y + r * 0.7} L${x} ${y + r * 2} L${x - r * 0.7} ${y + r * 0.7} L${x - r * 2} ${y} L${x - r * 0.7} ${y - r * 0.7} Z`, '#FFF6B0', 'stroke="none"')
-      : C(x, y, r, pick(['#FFFFFF', '#FFF6B0', '#BFE9FF']), 'stroke="none"');
-  }
-  // дымовые следы ракет (плоские белые полосы)
-  s += P('M1020 220 Q1150 190 1300 260', 'none', 'stroke="#d6c8ee" stroke-width="10" fill="none" opacity="0.5"');
-  return wrap(W_SKY, H, s, 0);
-}
-
-function windowsGrid(x, y, w, h, colsGap = 26) {
-  let s = '';
-  for (let wy = y; wy < y + h - 40; wy += 50)
-    for (let wx = x + 12; wx < x + w - 30; wx += colsGap + 20) {
-      const lit = rnd() < 0.32;
-      s += R(wx, wy, 20, 28, lit ? pick(['#FFD968', '#FFD968', '#7EE8F2', '#FF8FC8']) : '#15133A', 2, 'stroke="none"');
-    }
-  return s;
+  // два плоских облака
+  s += blob([[380, 330, 40], [440, 310, 54], [510, 332, 38]], '#2B2266') + blob([[1500, 430, 36], [1560, 412, 50], [1630, 432, 36]], '#3B2C80');
+  // луна (плоский диск)
+  s += C(1380, 170, 76, '#F6EDA8');
+  // несколько простых звёзд
+  for (const [x, y, r] of [[120, 90, 4], [300, 200, 3], [520, 70, 4], [700, 160, 3], [860, 60, 4], [1040, 180, 3], [1180, 80, 4], [1560, 90, 3], [1700, 210, 4], [1860, 120, 3], [1900, 300, 3], [200, 420, 3], [980, 380, 3], [1260, 330, 3]])
+    s += C(x, y, r, '#FFF6C8', NOSTROKE);
+  return wrap(W_SKY, H, s);
 }
 
 function far() {
   let s = '';
   const base = 790;
   let x = -20;
-  const cols = ['#1E1B4A', '#262157', '#2F2866', '#211D52'];
+  const cols = ['#262260', '#2E2970', '#211D55'];
   while (x < W_FAR) {
-    const w = ri(80, 160), h = ri(220, 520), top = base - h, c = pick(cols);
-    s += R(x, top, w, base - top + 300, c, 0, 'stroke-width="2.5"');
-    s += windowsGrid(x, top + 20, w, h - 20);
-    if (rnd() < 0.35) s += R(x + w / 2 - 3, top - 50, 6, 50, '#1b1236') + C(x + w / 2, top - 52, 6, '#FF3355', NOSTROKE);
-    if (rnd() < 0.25) s += R(x + 10, top + h * 0.3, 10, 80, pick(['#FF4FB8', '#3FE0E8']), 3, 'stroke="none"');
-    x += w - 4;
+    const w = ri(110, 190), h = ri(240, 520), top = base - h;
+    s += R(x, top, w, base - top + 300, pick(cols));
+    for (let k = 0; k < ri(1, 3); k++) s += R(x + ri(14, w - 50), top + ri(24, h - 80), 26, 34, '#F1D56A', 2, NOSTROKE);
+    x += w - 2;
   }
-  // высотка с шпилем
-  s += P('M1500 790 L1500 250 L1548 250 L1560 120 L1572 250 L1620 250 L1620 790 Z', '#2F2866', 'stroke-width="2.5"');
-  s += windowsGrid(1500, 270, 120, 500);
-  s += C(1560, 110, 7, '#FF3355', NOSTROKE);
-  return wrap(W_FAR, H, s, 2);
+  // высотка со шпилем
+  s += P('M1500 790 L1500 250 L1548 250 L1560 120 L1572 250 L1620 250 L1620 790 Z', '#332D75');
+  s += R(1522, 300, 28, 36, '#F1D56A', 2, NOSTROKE) + R(1572, 380, 28, 36, '#F1D56A', 2, NOSTROKE);
+  return wrap(W_FAR, H, s);
 }
 
 function palm(x, base, h, lean) {
   let s = '';
-  const w0 = 24, w1 = 12, tx = x + lean, ty = base - h;
-  s += P(`M${x - w0 / 2} ${base} Q${x + lean * 0.2 - 4} ${base - h * 0.5} ${tx - w1 / 2} ${ty} L${tx + w1 / 2} ${ty} Q${x + lean * 0.2 + 8} ${base - h * 0.5} ${x + w0 / 2} ${base} Z`, '#7A4F2B');
-  for (let k = 1; k < 9; k++) {
-    const t = k / 9, px = x + lean * t * t, py = base - h * t, ww = (w0 - (w0 - w1) * t) / 2;
-    s += P(`M${px - ww} ${py} L${px + ww} ${py - 4}`, 'none', 'stroke="#4c2f17" stroke-width="2.5" fill="none"');
-  }
-  const L = h * 0.36;
-  for (const [deg, col] of [[-170, '#1F7034'], [-140, '#2F9A45'], [-110, '#1F7034'], [-80, '#2F9A45'], [-50, '#1F7034'], [-20, '#2F9A45'], [10, '#1F7034'], [165, '#2F9A45'], [-90, '#2F9A45']]) {
+  const tx = x + lean, ty = base - h;
+  s += P(`M${x - 12} ${base} L${tx - 6} ${ty} L${tx + 6} ${ty} L${x + 12} ${base} Z`, '#7A4F2B');
+  const L = h * 0.34;
+  for (const [deg, col] of [[-165, '#2F9A45'], [-125, '#1F7034'], [-90, '#2F9A45'], [-55, '#1F7034'], [-15, '#2F9A45']]) {
     const a = (deg * Math.PI) / 180;
-    const ex = tx + Math.cos(a) * L, ey = ty + Math.sin(a) * L + L * 0.28 * Math.abs(Math.cos(a));
-    const nx = Math.cos(a - Math.PI / 2) * L * 0.16, ny = Math.sin(a - Math.PI / 2) * L * 0.16;
-    s += P(`M${tx} ${ty} Q${tx + Math.cos(a) * L * 0.55 + nx} ${ty + Math.sin(a) * L * 0.55 + ny} ${ex} ${ey} Q${tx + Math.cos(a) * L * 0.55 - nx} ${ty + Math.sin(a) * L * 0.55 - ny + 10} ${tx} ${ty} Z`, col);
+    const ex = tx + Math.cos(a) * L, ey = ty + Math.sin(a) * L + 20;
+    const nx = Math.cos(a - Math.PI / 2) * L * 0.2, ny = Math.sin(a - Math.PI / 2) * L * 0.2;
+    s += P(`M${tx} ${ty} Q${(tx + ex) / 2 + nx} ${(ty + ey) / 2 + ny} ${ex} ${ey} Q${(tx + ex) / 2 - nx} ${(ty + ey) / 2 - ny + 14} ${tx} ${ty} Z`, col);
   }
-  s += C(tx - 7, ty + 10, 7, '#5b3a1e') + C(tx + 8, ty + 12, 7, '#5b3a1e');
   return s;
-}
-
-function lamp(x, base) {
-  return R(x - 5, base - 300, 10, 300, '#3d4150') + P(`M${x - 5} ${base - 300} Q${x + 40} ${base - 330} ${x + 70} ${base - 300}`, 'none', 'stroke="#3d4150" stroke-width="9" fill="none"')
-    + R(x + 52, base - 304, 40, 14, '#3d4150', 5) + P(`M${x + 54} ${base - 290} L${x + 90} ${base - 290} L${x + 120} ${base - 150} L${x + 24} ${base - 150} Z`, '#FFE9A0', 'stroke="none" opacity="0.14"');
 }
 
 function neonSign(cx, cy, text, col, size = 44) {
   const w = text.length * size * 0.72 + 40;
-  return R(cx - w / 2, cy - size * 0.95, w, size * 1.5, '#12101f', 10)
-    + T(cx, cy + size * 0.2, text, col, size, `stroke="${col}" stroke-width="10" stroke-opacity="0.28"`)
-    + T(cx, cy + size * 0.2, text, '#fff', size, `stroke="${col}" stroke-width="2"`);
+  return R(cx - w / 2, cy - size * 0.95, w, size * 1.5, '#12101f', 10) + T(cx, cy + size * 0.2, text, col, size);
 }
 
 function building(x, top, w, color, o = {}) {
   const base = 770;
-  let s = R(x, top, w, base - top, color, 0, 'stroke-width="3"');
-  s += R(x - 8, top - 14, w + 16, 22, o.trim || '#1b1b2a', 0);
-  s += windowsGrid(x + 6, top + 36, w - 12, 520 - top, 24);
-  // витрина
-  s += R(x + 18, 575, w - 36, 175, o.glass || '#FFCF6E', 4);
-  for (let gx = x + 18 + 60; gx < x + w - 18; gx += 70) s += P(`M${gx} 575 L${gx} 750`, 'none', 'stroke="#c2923f" stroke-width="3" fill="none"');
-  s += P(`M${x + 30} 700 L${x + w - 30} 700`, 'none', 'stroke="#c2923f" stroke-width="3" fill="none"');
-  for (let gx = x + 40; gx < x + w - 60; gx += 80) s += R(gx, 664, 34, 36, pick(['#E0312F', '#3A7BD5', '#7BC144']), 2) + R(gx + 8, 622, 20, 42, '#7a5230', 6);
-  s += R(x + w - 80, 600, 52, 150, '#241830', 3);
-  // тент
+  let s = R(x, top, w, base - top, color);
+  s += R(x - 8, top - 14, w + 16, 22, o.trim || '#1b1b2a');
+  // витрина + дверь
+  s += R(x + 18, 575, w - 36, 175, o.glass || '#FFD36B');
+  s += R(x + w - 86, 600, 56, 150, '#2A1F3D');
+  s += P(`M${x + 18 + (w - 36) / 2 - 20} 575 L${x + 18 + (w - 36) / 2 - 20} 750`, 'none', 'stroke="#c2923f" stroke-width="3" fill="none"');
+  // тент: крупные полосы
   const aw = o.awning || ['#FF4FB8', '#FFF1F6'];
-  for (let i = 0, ax = x + 8; ax < x + w - 8; i++, ax += 36) s += P(`M${ax} 536 L${Math.min(ax + 36, x + w - 8)} 536 L${Math.min(ax + 40, x + w - 4)} 580 L${ax - 4} 580 Z`, aw[i % 2], 'stroke-width="2.5"');
+  const n = 8, sw = (w - 16) / n;
+  for (let i = 0; i < n; i++) s += P(`M${x + 8 + i * sw} 536 L${x + 8 + (i + 1) * sw} 536 L${x + 12 + (i + 1) * sw} 580 L${x + 4 + i * sw} 580 Z`, aw[i % 2]);
   if (o.sign) s += neonSign(x + w / 2, 475, o.sign.t, o.sign.c, o.sign.s || 44);
   if (o.sign2) s += neonSign(x + w / 2, 410, o.sign2.t, o.sign2.c, o.sign2.s || 30);
   return s;
@@ -351,7 +406,6 @@ function mid() {
   let s = '';
   s += building(40, 400, 340, '#5A3E7A', { sign: { t: 'LIQUOR', c: '#FF4FB8', s: 46 } });
   s += building(420, 330, 340, '#2F5D6B', { sign: { t: 'PIZZA', c: '#3FE0E8', s: 50 }, awning: ['#E0312F', '#fff'] });
-  // чистая стена под билборд (без витрины-неона сверху): здание повыше
   s += building(800, 300, 340, '#3E4B7A', { sign: { t: 'MOTEL', c: '#FFE35A', s: 46 }, sign2: { t: 'VACANCY', c: '#FF3355', s: 24 }, awning: ['#3FE0E8', '#fff'] });
   // кофейня
   const cx = 1180, cw = 420;
@@ -360,34 +414,18 @@ function mid() {
   s += R(cx + cw / 2 - 40, 346, 80, 70, '#FFF', 8) + P(`M${cx + cw / 2 - 30} 362 L${cx + cw / 2 + 20} 362 L${cx + cw / 2 + 12} 404 L${cx + cw / 2 - 22} 404 Z`, '#8A5A3A') + P(`M${cx + cw / 2 + 20} 370 q22 4 0 22`, 'none', 'stroke="#1b1b1b" stroke-width="4" fill="none"');
   s += building(1640, 380, 320, '#7A3B4B', { sign: { t: 'TATTOO', c: '#FF9A1F', s: 46 }, awning: ['#FFE35A', '#222'] });
   s += building(1990, 420, 310, '#4B3E7A', { sign: { t: 'BAR', c: '#B07CFF', s: 54 } });
-  // пальмы и фонари
   for (const [x, h, l] of [[400, 380, 24], [780, 360, -22], [1160, 340, 20], [1620, 370, -24], [1975, 350, 22]]) s += palm(x, 770, h, l);
-    return wrap(W_MID, H, s, 2);
+  return wrap(W_MID, H, s);
 }
 
 function fore() {
   let s = '';
   const sw0 = 770, sw1 = 930, rd0 = 965;
-  s += R(-10, sw0, W_FORE + 20, sw1 - sw0, '#8D8B98', 0, 'stroke="none"');
-  s += R(-10, sw0, W_FORE + 20, 22, '#6F6D7C', 0, 'stroke="none"'); // тень у стен
-  s += P(`M-10 ${sw0} L${W_FORE + 10} ${sw0}`, 'none', 'stroke="' + INK + '" stroke-width="3" fill="none"');
-  for (let x = 0; x < W_FORE; x += 170) s += P(`M${x} ${sw0} L${x} ${sw1}`, 'none', 'stroke="#6F6D7C" stroke-width="3" fill="none"');
-  s += P(`M-10 850 L${W_FORE + 10} 850`, 'none', 'stroke="#6F6D7C" stroke-width="3" fill="none"');
-  for (let i = 0; i < 16; i++) { const x = ri(0, W_FORE), y = ri(790, 920); s += P(`M${x} ${y} l${ri(10, 24)} ${ri(-6, 6)} l${ri(6, 18)} ${ri(4, 14)}`, 'none', 'stroke="#5b5967" stroke-width="2.5" fill="none"'); }
-  // бордюр
-  s += R(-10, sw1, W_FORE + 20, rd0 - sw1, '#C9C5BD', 0, 'stroke-width="3"');
-  s += R(-10, sw1, W_FORE + 20, 10, '#E4E0D7', 0, 'stroke="none"');
-  // асфальт
-  s += R(-10, rd0, W_FORE + 20, H - rd0 + 10, '#363641', 0, 'stroke="none"');
-  for (let x = 40; x < W_FORE; x += 300) s += R(x, 1030, 150, 14, '#F2C230', 2, 'stroke-width="2"');
-  s += E(700, 1010, 64, 12, '#25252e') + E(700, 1006, 44, 7, '#4a4a56', 'stroke="none"');
-  // лужи
-  for (const [x, y, rx] of [[420, 880, 120], [1480, 905, 150], [2150, 870, 90]]) s += E(x, y, rx, 14, '#5F7FA3', 'stroke-width="2.5"') + P(`M${x - rx * 0.5} ${y - 3} L${x - rx * 0.1} ${y - 3}`, 'none', 'stroke="#BFD8F2" stroke-width="3" fill="none"');
-  // решётка ливнёвки
-  s += R(960, 931, 110, 22, '#1c1c24') + [0, 1, 2, 3, 4, 5].map((i) => R(968 + i * 17, 934, 8, 16, '#4a4a56', 0, 'stroke="none"')).join('');
-  // мусор: стаканчик и бумажка
-  s += P('M1700 912 l30 -8 l8 26 l-30 4 Z', '#F5F5F0') + P('M300 920 l36 -10 l10 22 l-36 6 Z', '#E8E0B0');
-  return wrap(W_FORE, H, s, 2);
+  s += R(-10, sw0, W_FORE + 20, sw1 - sw0, '#8D8B98'); // тротуар
+  s += R(-10, sw1, W_FORE + 20, rd0 - sw1, '#C9C5BD'); // бордюр
+  s += R(-10, rd0, W_FORE + 20, H - rd0 + 10, '#34343F'); // асфальт
+  for (let x = 40; x < W_FORE; x += 300) s += R(x, 1030, 150, 14, '#F2C230', 2, NOSTROKE); // разметка: плоские плашки
+  return wrap(W_FORE, H, s);
 }
 
 // ================= сборка =================
@@ -400,6 +438,7 @@ const ALL = {
   bg_sky: sky, bg_far: far, bg_mid: mid, bg_fore: fore,
   ...GREG_PARTS,
   prop_supercar: supercar, prop_alien_driver: alienDriver, prop_oppressor: oppressor, prop_rocket: rocket, prop_billboard: billboard, prop_dust: dust,
+  fx_boom: fxBoom, fx_flash: fxFlash, fx_smoke: fxSmoke, fx_trashfire: fxTrashFire, fx_debris: fxDebris, fx_trail: fxTrail, fx_tooth: fxTooth,
 };
 
 const only = process.argv.slice(2);
@@ -409,7 +448,6 @@ async function render(name) {
   const svg = ALL[name]();
   const file = path.join(IMG, name + '.png');
   await sharp(Buffer.from(svg), { density: 72 }).png().toFile(file);
-  await paperTexture(file, name.startsWith('bg_') ? 0.09 : 0.03);
   const m = await sharp(file).metadata();
   const meta = META[name];
   const entry = { file: name + '.png', width: m.width, height: m.height, pivot: meta.pivot, group: meta.group, note: meta.note, source: 'svg-fallback' };
