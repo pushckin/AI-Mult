@@ -350,10 +350,12 @@ export interface StubBgDef {
 
 const neon = ["#ff2e93", "#27e5ff", "#ffe134", "#8cff3d", "#ff7a1a"];
 
+// Соглашения как у настоящих слоёв: высота 1080, центр слоя = центр кадра, база зданий y=770,
+// тротуар y 770-930, асфальт 965-1080 (канва -> авторские y = 540 - y_канвы).
 export const buildStubBgs = (): Record<string, StubBgDef> => ({
   bg_sky: {
-    w: 3200,
-    h: 1700,
+    w: 2000,
+    h: 1080,
     draw: (c, w, h) => {
       const bands = ["#0b0b26", "#12123a", "#1b1850", "#2a1d5e", "#3b2470"];
       const bh = h / bands.length;
@@ -363,104 +365,72 @@ export const buildStubBgs = (): Record<string, StubBgDef> => ({
       });
       const r = rng(7);
       c.fillStyle = "#e8e6ff";
-      for (let i = 0; i < 120; i++) {
+      for (let i = 0; i < 90; i++) {
         const s = 2 + r() * 4;
-        c.fillRect(r() * w, r() * h * 0.55, s, s);
+        c.fillRect(r() * w, r() * h * 0.6, s, s);
       }
-      ell(c, w * 0.7, h * 0.18, 70, 70, "#f4efc8"); // луна-вырезка
+      ell(c, w * 0.7, h * 0.2, 70, 70, "#f4efc8");
     },
   },
   bg_far: {
-    w: 3600,
-    h: 700,
-    draw: (c, w, h) => {
+    w: 2100,
+    h: 1080,
+    draw: (c, w) => {
       const r = rng(21);
       let x = 0;
       while (x < w) {
         const bw = 120 + r() * 160;
-        const bhh = 220 + r() * 400;
-        box(c, x, h - bhh, bw, bhh + 10, r() > 0.5 ? "#241c4a" : "#2c2058", 0);
+        const bhh = 260 + r() * 360;
+        box(c, x, 770 - bhh, bw, bhh + 10, r() > 0.5 ? "#241c4a" : "#2c2058", 0);
         c.fillStyle = "#ffe9a0";
-        for (let wy = h - bhh + 20; wy < h - 20; wy += 34) {
-          for (let wx = x + 14; wx < x + bw - 20; wx += 30) if (r() > 0.62) c.fillRect(wx, wy, 14, 18);
-        }
+        for (let wy = 770 - bhh + 20; wy < 750; wy += 34) for (let wx = x + 14; wx < x + bw - 20; wx += 30) if (r() > 0.62) c.fillRect(wx, wy, 14, 18);
         x += bw + 6;
       }
     },
   },
   bg_mid: {
-    w: 3600,
-    h: 1000,
-    // здание под билборд стоит в авторских x 100..900 (центр холста = x 0)
-    draw: (c, w, h) => {
+    w: 2300,
+    h: 1080,
+    draw: (c, w) => {
       const r = rng(5);
-      const defs: Array<[number, number, number, string]> = [
-        [-1800, 420, 560, "#33285f"],
-        [-1380, 340, 480, "#3d2d6b"],
-        [-1040, 260, 620, "#2c2456"],
-        [-780, 300, 420, "#40306e"],
-        [-480, 330, 540, "#352a62"],
-        [-150, 240, 400, "#443374"],
-        [100, 800, 900, "#2a2050"],
-        [940, 300, 520, "#3d2d6b"],
-        [1260, 360, 640, "#33285f"],
-        [1640, 280, 480, "#40306e"],
-      ];
-      for (const [bx, bw, bhh, col] of defs) {
-        const x = w / 2 + bx;
-        box(c, x, h - bhh, bw, bhh + 10, col, 0);
+      let x = 0;
+      while (x < w) {
+        const bw = 240 + r() * 200;
+        const bhh = 380 + r() * 220;
+        box(c, x, 770 - bhh, bw, bhh + 10, ["#33285f", "#3d2d6b", "#2c2456", "#40306e"][Math.floor(r() * 4)], 0);
         c.fillStyle = "#ffd978";
-        for (let wy = h - bhh + 30; wy < h - 30; wy += 54) {
-          for (let wx = x + 20; wx < x + bw - 30; wx += 48) if (r() > 0.55) c.fillRect(wx, wy, 22, 28);
-        }
-        // неоновая вывеска
-        const nc = neon[Math.floor(r() * neon.length)];
-        box(c, x + 20, h - bhh * 0.35, Math.min(bw - 40, 150), 36, nc, 6);
+        for (let wy = 770 - bhh + 30; wy < 720; wy += 54) for (let wx = x + 20; wx < x + bw - 30; wx += 48) if (r() > 0.55) c.fillRect(wx, wy, 22, 28);
+        box(c, x + 20, 640, Math.min(bw - 40, 150), 36, neon[Math.floor(r() * neon.length)], 6);
+        x += bw + 6;
       }
-      label(c, "WINEWOOD BLVD", w / 2 - 300, h - 20, 40, "rgba(255,255,255,0.3)");
-    },
-  },
-  bg_street: {
-    w: 3600,
-    h: 400,
-    draw: (c, w, h) => {
-      const side = h * 0.46;
-      c.fillStyle = "#6a6878";
-      c.fillRect(0, 0, w, side);
-      c.fillStyle = "#58566a";
-      for (let x = 0; x < w; x += 120) c.fillRect(x, 0, 4, side);
-      c.fillStyle = "#8a889a";
-      c.fillRect(0, side - 14, w, 14); // бордюр
-      c.fillStyle = INK;
-      c.fillRect(0, side, w, 4);
-      c.fillStyle = "#2a2a36";
-      c.fillRect(0, side + 4, w, h - side);
-      c.fillStyle = "#e8c93a";
-      for (let x = 0; x < w; x += 260) c.fillRect(x, h * 0.78, 150, 10);
     },
   },
   bg_fore: {
-    w: 3600,
-    h: 1400,
-    draw: (c, w, h) => {
-      // тёмные фонари на переднем плане; низ - решётка/силуэт
-      for (const px of [-1200, -300, 620, 1400]) {
-        const x = w / 2 + px;
-        c.fillStyle = "#0e0c1c";
-        c.fillRect(x, 0, 26, h);
-        c.fillRect(x - 60, 0, 146, 22);
-        ell(c, x - 50, 38, 26, 14, "#ffd978", false);
-      }
-      c.fillStyle = "#0e0c1c";
-      c.fillRect(0, h - 60, w, 60);
+    w: 2500,
+    h: 1080,
+    draw: (c, w) => {
+      c.fillStyle = "#6a6878";
+      c.fillRect(0, 770, w, 160);
+      c.fillStyle = "#58566a";
+      for (let x = 0; x < w; x += 120) c.fillRect(x, 770, 4, 160);
+      c.fillStyle = "#8a889a";
+      c.fillRect(0, 930, w, 35);
+      c.fillStyle = INK;
+      c.fillRect(0, 770, w, 4);
+      c.fillStyle = "#2a2a36";
+      c.fillRect(0, 965, w, 115);
+      c.fillStyle = "#e8c93a";
+      for (let x = 0; x < w; x += 260) c.fillRect(x, 1030, 150, 10);
     },
   },
   billboard: {
-    w: 640,
-    h: 360,
+    w: 1000,
+    h: 640,
     draw: (c, w, h) => {
-      box(c, 4, 4, w - 8, h - 8, "#15151c", 14);
-      box(c, 30, 30, w - 60, h - 60, "#050507", 8);
+      box(c, 4, 4, w - 8, h - 8, "#15151c", 24);
+      box(c, 52, 52, 896, 386, "#050507", 8);
+      c.fillStyle = "#15151c";
+      c.fillRect(w / 2 - 30, 450, 60, h - 450);
     },
   },
 });

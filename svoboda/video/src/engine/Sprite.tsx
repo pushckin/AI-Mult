@@ -51,6 +51,8 @@ export interface SpriteProps {
   seed?: number;
   flipX?: boolean;
   scale?: number;
+  /** Игнорировать pivot ассета: ставить центр картинки в (x,y) */
+  center?: boolean;
 }
 
 export const useSpriteSize = (assetKey: string, w?: number, h?: number) => {
@@ -67,7 +69,7 @@ export const useSpriteSize = (assetKey: string, w?: number, h?: number) => {
   return { a, w: sw!, h: sh!, kx: sw! / a.texW, ky: sh! / a.texH };
 };
 
-export const Sprite: React.FC<SpriteProps> = ({ assetKey, w, h, x = 0, y = 0, rotation = 0, order = 0, opacity = 1, dissolve = 0, tint, seed = 1, flipX = false, scale = 1 }) => {
+export const Sprite: React.FC<SpriteProps> = ({ assetKey, w, h, x = 0, y = 0, rotation = 0, order = 0, opacity = 1, dissolve = 0, tint, seed = 1, flipX = false, scale = 1, center = false }) => {
   const sz = useSpriteSize(assetKey, w, h);
   const material = useMemo(() => {
     if (!sz) return null;
@@ -97,7 +99,7 @@ export const Sprite: React.FC<SpriteProps> = ({ assetKey, w, h, x = 0, y = 0, ro
   u.grid.value.set(Math.max(2, Math.round(sz.w / 18)), Math.max(2, Math.round(sz.h / 18)));
   u.seed.value = seed;
   (u.tint.value as THREE.Vector4).set(...(tint ?? [0, 0, 0, 0]));
-  const [px, py] = sz.a.pivot;
+  const [px, py] = center ? [sz.a.texW / 2, sz.a.texH / 2] : sz.a.pivot;
   // центр плоскости относительно pivot (в мировых px, y вверх)
   const cx = sz.w / 2 - px * sz.kx;
   const cy = -(sz.h / 2 - py * sz.ky);

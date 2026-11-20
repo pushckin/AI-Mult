@@ -13,12 +13,13 @@ const D2R = Math.PI / 180;
  */
 export const PaperPuppet: React.FC<{ char: string; pose: Pose; order?: number }> = ({ char, pose, order = 0 }) => {
   const assets = useAssets();
-  const rig: Rig = RIGS[char];
-  if (!rig) return null;
+  const def = RIGS[char];
+  if (!def) return null;
+  const rig: Rig = def.real && def.real.probe && assets.isReal(def.real.probe) ? def.real : def.stub;
 
   const byId = new Map(rig.parts.map((p) => [p.id, p]));
-  const keyOf = (p: RigPart) => (p.kind === "mouth" ? `${char}_mouth_${pose.mouth}` : `${char}_${p.id}`);
-  const attachOf = (p: RigPart): [number, number] => assets.get(`${char}_${p.id}`)?.attach ?? p.attach;
+  const keyOf = (p: RigPart) => (p.key ? p.key(pose) : `${char}_${p.id}`);
+  const attachOf = (p: RigPart): [number, number] => assets.get(keyOf(p))?.attach ?? p.attach;
   const jointAngle = (p: RigPart) => (p.joint === "none" ? 0 : pose[p.joint]);
 
   const render = (parent: string | undefined): React.ReactNode =>
@@ -37,9 +38,9 @@ export const PaperPuppet: React.FC<{ char: string; pose: Pose; order?: number }>
           dx = pose.headDx;
           dy = pose.headDy;
         }
-        if (p.id === "cup" && pose.cupUpright) {
-          // компенсируем вращение родительской цепочки: тело + торс + рука
-          ang = -(pose.rot + pose.torso + pose.armR);
+        if (p.joint === "armR" && pose.cupUpright) {
+          // armR - МИРОВОЙ угол: компенсируем вращение тела и торса, чтобы стаканчик не наклонялся
+          ang = pose.armR - (pose.rot + pose.torso);
         }
         // сумма «вперёд = +» для конечностей: в локальном (не отражённом) пространстве CCW+ у висящей вниз конечности уводит в +x
         return (

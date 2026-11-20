@@ -87,7 +87,7 @@ export const SceneCamera: React.FC<{ state: CamState; flash?: { color: string; o
   camera.position.set(state.x, state.y, z);
   camera.rotation.set(0, 0, (state.roll * Math.PI) / 180);
   camera.near = 10;
-  camera.far = 12000;
+  camera.far = 400000;
   camera.updateProjectionMatrix();
 
   const grainTex = useMemo(() => makeGrain(), []);

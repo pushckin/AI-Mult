@@ -22,6 +22,25 @@ const toPair = (v: unknown): [number, number] | undefined => {
   return undefined;
 };
 
+const toRect = (v: unknown): [number, number, number, number] | undefined => {
+  if (Array.isArray(v) && v.length >= 4) return [Number(v[0]), Number(v[1]), Number(v[2]), Number(v[3])];
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    if (o.x !== undefined && o.w !== undefined) return [Number(o.x), Number(o.y), Number(o.w), Number(o.h)];
+  }
+  return undefined;
+};
+
+/** Логические ключи сцены -> реальные ключи манифеста (если такой PNG есть, он подменяет заглушку). */
+export const ALIASES: Record<string, string> = {
+  car: "prop_supercar",
+  bike: "prop_oppressor",
+  rocket: "prop_rocket",
+  billboard: "prop_billboard",
+  fx_dust: "prop_dust",
+  alien_driver: "prop_alien_driver",
+};
+
 export const normalizeManifest = (raw: unknown): AssetMap => {
   const out: AssetMap = {};
   const walk = (node: unknown, path: string[]) => {
@@ -37,7 +56,7 @@ export const normalizeManifest = (raw: unknown): AssetMap => {
         h: Number(o.h ?? o.height) || undefined,
         pivot: toPair(o.pivot ?? o.joint ?? o.origin),
         attach: toPair(o.attach),
-        screen: Array.isArray(o.screen) ? (o.screen.map(Number) as [number, number, number, number]) : undefined,
+        screen: toRect(o.screen),
       };
       out[key] = entry;
       const base = entry.file.replace(/\.[a-z0-9]+$/i, "").split("/").pop()!;
@@ -50,11 +69,12 @@ export const normalizeManifest = (raw: unknown): AssetMap => {
   return out;
 };
 
-export const fetchManifest = async (): Promise<AssetMap> => {
+/** Сырой JSON манифеста (или {} если файла нет). */
+export const fetchManifest = async (): Promise<unknown> => {
   try {
     const res = await fetch(staticFile("img/manifest.json"));
     if (!res.ok || (res.headers.get("content-type") || "").includes("text/html")) return {};
-    return normalizeManifest(await res.json());
+    return await res.json();
   } catch {
     return {};
   }
@@ -106,7 +126,7 @@ export const AssetsProvider: React.FC<{ manifest: AssetMap; children: React.Reac
         map.set(key, { key, texture: drawStubTexture(s.w, s.h, s.draw), texW: s.w, texH: s.h, pivot: s.pivot, isStub: true });
       }
       for (const [key, s] of Object.entries(bgs)) {
-        map.set(key, { key, texture: drawStubTexture(s.w, s.h, s.draw), texW: s.w, texH: s.h, pivot: [s.w / 2, s.h / 2], isStub: true });
+        map.set(key, { key, texture: drawStubTexture(s.w, s.h, s.draw), texW: s.w, texH: s.h, pivot: [s.w / 2, s.h / 2], screen: key === "billboard" ? [52, 52, 896, 386] : undefined, isStub: true });
       }
       // 2) настоящие PNG поверх (если файл есть и загрузился)
       await Promise.all(
@@ -123,6 +143,13 @@ export const AssetsProvider: React.FC<{ manifest: AssetMap; children: React.Reac
           real.add(e.key);
         }),
       );
+      for (const [logical, realKey] of Object.entries(ALIASES)) {
+        const a = map.get(realKey);
+        if (a && real.has(realKey)) {
+          map.set(logical, a);
+          real.add(logical);
+        }
+      }
       if (dead) return;
       setApi({ get: (k) => map.get(k), has: (k) => map.has(k), isReal: (k) => real.has(k) });
       continueRender(handle);
