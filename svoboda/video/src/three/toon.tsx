@@ -8,38 +8,29 @@ export const INK = "#0c0a10";
 export const FOV = 40;
 export const VIEW_H = 1080;
 const FOCAL_PX = VIEW_H / 2 / Math.tan((FOV * Math.PI) / 360);
-export const LIGHT_DIR = new THREE.Vector3(-0.42, 0.78, 0.5).normalize();
+export const LIGHT_DIR = new THREE.Vector3(0.66, 0.6, 0.5).normalize();
 
 // ---------- материалы ----------
-const toonCache = new Map<string, THREE.ShaderMaterial>();
-const shadeOf = (hex: string) => {
-  const c = new THREE.Color(hex);
-  const hsl = { h: 0, s: 0, l: 0 };
-  c.getHSL(hsl);
-  // тень: темнее, чуть холоднее и насыщеннее (как у вырезанной бумаги)
-  const s = new THREE.Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.05), hsl.l * 0.7);
-  return s.lerp(new THREE.Color("#2a2a66"), 0.12);
-};
-export const toonMat = (hex: string): THREE.ShaderMaterial => {
+// MeshToonMaterial с жёсткой 2-ступенчатой градиент-картой: светлая сторона / тёмная сторона + настоящие тени от направленного света.
+// lit = цвет модели; тень = цвет * AMB (холодная, насыщенная). AMB + SUN = 1 по каналам (линейное пространство).
+export const AMB = new THREE.Color().setRGB(0.33, 0.33, 0.58);
+export const SUN = new THREE.Color().setRGB(0.67, 0.67, 0.42);
+const gradTex = (() => {
+  const N = 20;
+  const d = new Uint8Array(N);
+  for (let i = 0; i < N; i++) d[i] = i >= 11 ? 255 : 0; // порог dot(N,L) ~ 0.1
+  const t = new THREE.DataTexture(d, N, 1, THREE.RedFormat);
+  t.minFilter = THREE.NearestFilter;
+  t.magFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.needsUpdate = true;
+  return t;
+})();
+const toonCache = new Map<string, THREE.MeshToonMaterial>();
+export const toonMat = (hex: string): THREE.MeshToonMaterial => {
   let m = toonCache.get(hex);
   if (m) return m;
-  m = new THREE.ShaderMaterial({
-    uniforms: { uColor: { value: new THREE.Color(hex) }, uShade: { value: shadeOf(hex) }, uLight: { value: LIGHT_DIR } },
-    vertexShader: /* glsl */ `
-      varying vec3 vN;
-      void main() {
-        vN = normalize(transpose(inverse(mat3(modelMatrix))) * normal);
-        gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
-      }`,
-    fragmentShader: /* glsl */ `
-      uniform vec3 uColor; uniform vec3 uShade; uniform vec3 uLight; varying vec3 vN;
-      void main() {
-        float d = dot(normalize(vN), uLight);
-        vec3 c = d > 0.02 ? uColor : uShade;
-        gl_FragColor = vec4(c, 1.0);
-        #include <colorspace_fragment>
-      }`,
-  });
+  m = new THREE.MeshToonMaterial({ color: hex, gradientMap: gradTex });
   toonCache.set(hex, m);
   return m;
 };
@@ -126,7 +117,7 @@ export interface PartProps {
   children?: React.ReactNode;
 }
 export const Part: React.FC<PartProps> = ({ geo, hull, color, px = 3.6, position, rotation, scale, visible, children }) => (
-  <mesh geometry={geo} material={toonMat(color)} position={position} rotation={rotation} scale={scale as any} visible={visible}>
+  <mesh geometry={geo} material={toonMat(color)} position={position} rotation={rotation} scale={scale as any} visible={visible} castShadow receiveShadow>
     {px > 0 && <mesh geometry={hull ?? geo} material={outlineMat(px)} />}
     {children}
   </mesh>
@@ -164,4 +155,31 @@ export const extrude = (key: string, pts: Array<[number, number]>, depth: number
   e = { geo, hull };
   exCache.set(key, e);
   return e;
+};
+
+/** Общий свет: ambient (цвет тени) + направленный сбоку-сверху (светлая сторона) с тенями */
+export const Lights: React.FC<{ target?: [number, number, number]; shadowSize?: number }> = ({ target = [0, 0, 0], shadowSize = 4096 }) => {
+  const L = LIGHT_DIR;
+  const ref = React.useRef<THREE.DirectionalLight>(null);
+  return (
+    <>
+      <ambientLight color={AMB} intensity={Math.PI} />
+      <directionalLight
+        ref={ref}
+        color={SUN}
+        intensity={Math.PI}
+        position={[target[0] + L.x * 40, target[1] + L.y * 40, target[2] + L.z * 40]}
+        castShadow
+        shadow-mapSize={[shadowSize, shadowSize]}
+        shadow-camera-left={-13}
+        shadow-camera-right={13}
+        shadow-camera-top={11}
+        shadow-camera-bottom={-9}
+        shadow-camera-near={1}
+        shadow-camera-far={100}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.03}
+      />
+    </>
+  );
 };

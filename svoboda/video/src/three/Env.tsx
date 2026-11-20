@@ -45,7 +45,7 @@ const TexPlane: React.FC<{ tex: THREE.Texture; w: number; h: number; position: [
 // ---------- палитра ----------
 export interface EnvPal { sky: string; win: string; winOff: string; neon: boolean; }
 export const PAL_NIGHT: EnvPal = { sky: "#14143e", win: "#ffd36a", winOff: "#3b3f78", neon: true };
-export const PAL_COLD: EnvPal = { sky: "#0e2a66", win: "#ffe9a0", winOff: "#6f80c0", neon: true };
+export const PAL_COLD: EnvPal = PAL_NIGHT; // тот же тон до и после исчезновения
 
 // ---------- здания ----------
 interface BDef { x: number; w: number; h: number; wall: string; trim: string; sign: string; fg: string; bg: string; aw: [string, string]; extra?: string }
@@ -60,13 +60,23 @@ export const BUILDINGS: BDef[] = [
 ];
 const FACE_Z = -2.2;
 
+const DZ = [0.0, 0.45, -0.15, 0.3, 0.0, 0.5, -0.1];
 const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number }> = ({ b, pal, idx }) => {
   const depth = 6;
   const zc = FACE_Z - depth / 2;
   const fz = FACE_Z + 0.012;
   const lit = (i: number) => (hash(idx * 13 + i, 5) > 0.35 ? pal.win : pal.winOff);
   return (
-    <group position={[b.x, 0, 0]}>
+    <group position={[b.x, 0, DZ[idx]]}>
+      {/* рамы витрины и двери: толстые объёмные коробки */}
+      <Part geo={rbox(2.7, 0.14, 0.3, 0.03)} color={b.trim} px={2.6} position={[-b.w * 0.2, 1.98, FACE_Z + 0.15]} />
+      {[-1.3, 1.3].map((dx) => (
+        <Part key={dx} geo={rbox(0.14, 1.6, 0.3, 0.03)} color={b.trim} px={2.6} position={[-b.w * 0.2 + dx, 1.2, FACE_Z + 0.15]} />
+      ))}
+      <Part geo={rbox(1.15, 0.12, 0.34, 0.03)} color={b.trim} px={2.6} position={[b.w * 0.27, 2.17, FACE_Z + 0.17]} />
+      {[-0.55, 0.55].map((dx) => (
+        <Part key={dx} geo={rbox(0.12, 2.2, 0.34, 0.03)} color={b.trim} px={2.6} position={[b.w * 0.27 + dx, 1.1, FACE_Z + 0.17]} />
+      ))}
       <Part geo={rbox(b.w, b.h, depth, 0.05)} color={b.wall} px={3} position={[0, b.h / 2, zc]} />
       {/* карниз */}
       <Part geo={rbox(b.w + 0.2, 0.28, depth + 0.2, 0.04)} color={b.trim} px={3} position={[0, b.h + 0.1, zc]} />
@@ -83,9 +93,9 @@ const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number }> = ({ b, pal, idx
       ))}
       
       {/* вывеска (светится, не освещается) */}
-      <Part geo={rbox(3.0, 0.78, 0.14, 0.05)} color="#15141c" px={3.4} position={[0, 3.2, FACE_Z + 0.16]} />
-      <TexPlane tex={signTex(b.sign, pal.neon ? b.fg : "#3a4068", pal.neon ? b.bg : "#101428")} w={2.88} h={0.69} position={[0, 3.2, FACE_Z + 0.235]} />
-      {b.extra && <TexPlane tex={signTex(b.extra, pal.neon ? "#ff3b5c" : "#3a4068", "#1a1020")} w={1.3} h={0.32} position={[0, 3.85, FACE_Z + 0.09]} />}
+      <Part geo={rbox(3.0, 0.78, 0.34, 0.05)} color="#15141c" px={3.4} position={[0, 3.2, FACE_Z + 0.27]} />
+      <TexPlane tex={signTex(b.sign, pal.neon ? b.fg : "#3a4068", pal.neon ? b.bg : "#101428")} w={2.88} h={0.69} position={[0, 3.2, FACE_Z + 0.445]} />
+      {b.extra && <TexPlane tex={signTex(b.extra, pal.neon ? "#ff5b7c" : "#3a4068", "#1a1020")} w={2.2} h={0.69} position={[0, 4.02, FACE_Z + 0.3]} />}
       {/* верхние окна */}
       {[-1.9, 1.9].map((x, i) => (
         <Flat key={x} geo={planeGeo} color={lit(i)} position={[x, 3.4, fz]} scale={[0.5, 0.7, 1]} />
@@ -239,23 +249,23 @@ export const Hydrant: React.FC<{ x: number; z: number }> = ({ x, z }) => (
 );
 
 // ---------- билборд ----------
-export const BB = { x: 5.2, y: 6.35, z: -4.0, w: 5.0, h: 2.4 };
+export const BB = { x: 5.2, y: 5.95, z: -4.0, w: 5.0, h: 2.4 };
 const bbCanvas = (kind: "a" | "g1" | "g2" | "b") =>
-  canvasTex(`bb_${kind}`, 1280, 640, (g) => {
-    const W = 1280;
+  canvasTex(`bb_${kind}`, 1472, 640, (g) => {
+    const W = 1472;
     const H = 640;
     g.fillStyle = "#07070b";
     g.fillRect(0, 0, W, H);
     const draw = (time: string, col: string, showDate: boolean) => {
       g.textAlign = "center";
       g.textBaseline = "alphabetic";
-      g.font = `900 ${showDate ? 300 : 400}px 'Courier New','DejaVu Sans Mono',monospace`;
+      g.font = `900 ${showDate ? 280 : 420}px 'Courier New','DejaVu Sans Mono',monospace`;
       g.fillStyle = col;
-      g.fillText(time, W / 2, showDate ? 330 : 430);
+      g.fillText(time, W / 2, showDate ? 290 : 460);
       if (showDate) {
-        g.font = `900 100px ${FONT}`;
+        g.font = `900 158px ${FONT}`;
         g.fillStyle = "#ffe9b0";
-        g.fillText("19 НОЯБРЯ 2026", W / 2, 510);
+        g.fillText("19 НОЯБРЯ 2026", W / 2, 520);
       }
     };
     if (kind === "b") {
@@ -322,17 +332,17 @@ export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number }> = 
       {BUILDINGS.map((b, i) => (
         <Building key={i} b={b} pal={pal} idx={i} />
       ))}
-      <Palm x={-7.2} z={-1.3} h={4.4} seed={1} />
-      <Palm x={-4.8} z={-1.6} h={3.9} seed={2} />
+      <Palm x={-9.8} z={-1.3} h={4.4} seed={1} />
+      <Palm x={-8.3} z={-1.6} h={3.9} seed={2} />
       <Palm x={9.6} z={-1.3} h={4.2} seed={4} />
       <Palm x={14.0} z={-1.5} h={4.5} seed={5} />
-      <Lamp x={-3.6} z={1.45} on={lampOn} />
-      <Lamp x={7.6} z={1.45} on={lampOn} />
+      <Lamp x={-3.6} z={1.62} on={lampOn} />
+      <Lamp x={7.6} z={1.62} on={lampOn} />
       <Bin x={-4.4} z={-1.0} />
       <Bin x={0.9} z={-1.45} color="#5a5f78" />
       <Bin x={6.9} z={-1.2} />
-      <Hydrant x={-4.5} z={1.2} />
-      <Hydrant x={6.6} z={1.2} />
+      <Hydrant x={-4.7} z={1.6} />
+      <Hydrant x={6.6} z={1.6} />
     </group>
   );
 };

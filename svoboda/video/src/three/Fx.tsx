@@ -80,20 +80,20 @@ export const Chunk: React.FC<{ position: [number, number, number]; rot: [number,
 
 /** Взрыв ракеты: звезда + облака + обломки. k - кадров с момента взрыва */
 export const Explosion: React.FC<{ at: [number, number, number]; k: number; seed: number }> = ({ at, k, seed }) => {
-  if (k < 0 || k > 44) return null;
+  if (k < 0 || k > 30) return null;
   const kh = Math.floor(k / 2) * 2;
   const [x, y, z] = at;
   const out: React.ReactNode[] = [];
   if (kh < 8) out.push(<Star key="s" position={[x, y, z + 0.5]} size={0.45 + Math.min(kh, 6) * 0.1} rot={seed * 0.7 + kh * 0.16} seed={seed} />);
   if (kh >= 2) {
-    [-1, 0, 1].forEach((j) => {
+    [-1, 1].forEach((j) => {
       const a = kh - 2;
-      const rr = a < 24 ? 0.26 + Math.min(a, 14) * 0.03 : Math.max(0.05, 0.68 - (a - 24) * 0.035);
+      const rr = a < 14 ? 0.2 + a * 0.022 : Math.max(0.05, 0.5 - (a - 14) * 0.04);
       out.push(<Puff key={`p${j}`} position={[x + j * 0.3 + a * 0.012 * j, y + 0.15 + a * 0.06 + Math.abs(j) * 0.05, z + 0.3]} r={rr} color={a < 6 ? "#d0cfdc" : a < 14 ? "#aeadc2" : "#8f8ea8"} />);
     });
   }
   if (kh < 14) {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 4; i++) {
       const a = hash(i, seed) * Math.PI * 2;
       const sp = 0.25 + hash(i + 9, seed) * 0.3;
       out.push(<Chunk key={`c${i}`} position={[x + Math.cos(a) * sp * kh * 1.5, y + Math.sin(a) * sp * kh * 1.5 - kh * kh * 0.012, z + 0.4]} rot={[kh * 0.4 + i, kh * 0.3, i]} s={0.1 + hash(i, seed + 4) * 0.08} color={i % 2 ? "#6c5a52" : "#d9c9a8"} />);
@@ -134,9 +134,9 @@ export const DustRing: React.FC<{ at: [number, number, number]; k: number; r?: n
 /** Зуб */
 export const Tooth: React.FC<{ position: [number, number, number]; rot: number; s: number }> = ({ position, rot, s }) => (
   <group position={position} rotation={[0, 0, rot]} scale={s}>
-    <Part geo={rbox(0.3, 0.26, 0.2, 0.09)} color="#fbfaf2" px={3} position={[0, 0.07, 0]} />
-    <Part geo={rcyl(0.07, 0.04, 0.2, 0.03, 10)} color="#fbfaf2" px={3} position={[-0.07, -0.12, 0]} />
-    <Part geo={rcyl(0.07, 0.04, 0.2, 0.03, 10)} color="#fbfaf2" px={3} position={[0.07, -0.12, 0]} />
+    <Part geo={rbox(0.3, 0.26, 0.22, 0.09)} color="#ffe27a" px={5} position={[0, 0.07, 0]} />
+    <Part geo={rcyl(0.07, 0.04, 0.2, 0.03, 10)} color="#ffe27a" px={5} position={[-0.07, -0.12, 0]} />
+    <Part geo={rcyl(0.07, 0.04, 0.2, 0.03, 10)} color="#ffe27a" px={5} position={[0.07, -0.12, 0]} />
   </group>
 );
 
