@@ -19,8 +19,8 @@ await sharp(full).resize(960, 540).toFile(path.join(RAW, 'sheet_bg.png'));
 // лист 2: Грег + реквизит на сером
 const items = [
   ['greg_ref', 0.5], ['greg_head_closed', 0.6], ['greg_head_open', 0.6], ['greg_torso', 0.7], ['greg_arm_left', 0.7], ['greg_arm_right_coffee', 0.7], ['greg_leg_left', 0.7], ['greg_leg_right', 0.7],
-  ['prop_supercar', 0.6], ['prop_alien_driver', 0.8], ['prop_oppressor', 0.6], ['prop_rocket', 0.8], ['prop_billboard', 0.45], ['prop_dust', 0.7],
-  ['fx_boom', 0.6], ['fx_flash', 0.4], ['fx_smoke', 0.6], ['fx_trashfire', 0.7], ['fx_debris', 0.6], ['fx_trail', 0.7], ['fx_tooth', 1.5],
+  ['prop_supercar', 0.6], ['prop_alien_driver', 0.8], ['prop_oppressor', 0.6], ['prop_rocket', 0.8], ['prop_billboard', 0.45], ['prop_billboard_0000', 0.45], ['prop_dust', 0.7],
+  ['fx_boom', 0.6], ['fx_flash', 0.4], ['fx_smoke', 0.6], ['fx_trashfire', 0.7], ['fx_debris', 0.6], ['fx_trail', 0.7], ['fx_tooth', 1.0],
 ];
 const W = 1400, Hh = 1250;
 const cs = []; let x = 10, y = 10, rowH = 0;

@@ -335,8 +335,8 @@
     },
     "fx_tooth": {
       "file": "fx_tooth.png",
-      "width": 48,
-      "height": 64,
+      "width": 120,
+      "height": 150,
       "pivot": [
         0.5,
         0.5
@@ -344,6 +344,28 @@
       "group": "fx",
       "note": "Летящий зуб.",
       "source": "svg-fallback"
+    },
+    "prop_billboard_0000": {
+      "file": "prop_billboard_0000.png",
+      "width": 1000,
+      "height": 640,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "group": "prop",
+      "note": "Билборд после 00:00: чёрный экран с красным контуром, красные прожекторы; цифры рисует код. screen как у prop_billboard.",
+      "source": "svg-fallback",
+      "screen": {
+        "x": 52,
+        "y": 52,
+        "w": 896,
+        "h": 386,
+        "fx": 0.052,
+        "fy": 0.081,
+        "fw": 0.896,
+        "fh": 0.603
+      }
     }
   },
   "frame": {

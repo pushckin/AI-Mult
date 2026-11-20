@@ -21,6 +21,7 @@ export const META = {
   prop_oppressor:  { group: 'prop', pivot: [0.5, 0.5], facing: 'right', note: 'Oppressor Mk II сбоку, летит вправо.' },
   prop_rocket:     { group: 'prop', pivot: [0.75, 0.5], facing: 'right', note: 'Ракета, летит вправо; pivot около центра массы.' },
   prop_billboard:  { group: 'prop', pivot: [0.5, 1], note: 'Билборд-табло, пустой экран. screen = область экрана для цифр (px и доли).' },
+  prop_billboard_0000: { group: 'prop', pivot: [0.5, 1], note: 'Билборд после 00:00: чёрный экран с красным контуром, красные прожекторы; цифры рисует код. screen как у prop_billboard.' },
   fx_boom:   { group: 'fx', pivot: [0.5, 0.5], note: 'Взрыв-вспышка, плоская звезда, оранж/жёлтый.' },
   fx_flash:  { group: 'fx', pivot: [0.5, 0.5], note: 'Белая вспышка-звезда (12 лучей), без контура; для исчезновения.' },
   fx_smoke:  { group: 'fx', pivot: [0.5, 0.8], note: 'Клуб тёмного дыма, плоский.' },
