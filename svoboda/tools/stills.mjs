@@ -14,7 +14,7 @@ fs.mkdirSync(outDir, { recursive: true });
 const serveUrl = await bundle({ entryPoint: path.join(video, 'src/index.ts'), publicDir: path.join(video, 'public') });
 const browserExecutable = process.env.BROWSER || '/usr/bin/google-chrome';
 const opts = { chromiumOptions: { gl: 'angle' }, browserExecutable: fs.existsSync(browserExecutable) ? browserExecutable : undefined };
-const comp = await selectComposition({ serveUrl, id: 'Scene1', ...opts });
+const comp = await selectComposition({ serveUrl, id: process.env.COMP || 'Scene1', ...opts });
 for (const f of frames) {
   await renderStill({ composition: comp, serveUrl, frame: f, output: path.join(outDir, `f${String(f).padStart(3, '0')}.png`), ...opts });
 }

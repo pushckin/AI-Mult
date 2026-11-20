@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "remotion studio",
     "build": "remotion bundle",
-    "render": "remotion render Scene1 ../out/scene1.mp4 --gl=angle",
+    "render": "remotion render Scene1 ../out/scene1_v5.mp4 --gl=angle",
     "typecheck": "tsc --noEmit",
     "versions": "remotion versions"
   },
