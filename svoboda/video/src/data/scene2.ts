@@ -60,13 +60,35 @@ export const shotAt = (tl: Timeline, frame: number): ShotT => {
   return tl.shots[tl.shots.length - 1];
 };
 
-/** Огибающая реплики -> рот: 0 закрыт, 1 «о», 2 «а» */
+/** Паузы реплики: серии >= 5 кадров с огибающей < 0.14 (рот в паузах закрыт, внутри слов - открыт всегда) */
+const pauseCache = new WeakMap<number[], boolean[]>();
+const pausesOf = (env: number[]): boolean[] => {
+  let m = pauseCache.get(env);
+  if (m) return m;
+  m = env.map(() => false);
+  let run = 0;
+  for (let i = 0; i <= env.length; i++) {
+    if (i < env.length && env[i] < 0.14) run++;
+    else {
+      if (run >= 5) for (let j = i - run; j < i; j++) m[j] = true;
+      run = 0;
+    }
+  }
+  pauseCache.set(env, m);
+  return m;
+};
+/** 0 закрыт (пауза/вне реплики), 1 «о» (тихий слог), 2 «а» (громкий); меняется на двойках */
 export const mouthFromEnv = (env: number[] | undefined, k: number, vLen: number): number => {
   if (k < 0 || k >= vLen) return 0;
   const f = Math.floor(k / 2) * 2;
-  const e = env ? Math.max(env[f] ?? 0, (env[f + 1] ?? 0) * 0.9) : ((f >> 2) % 3 === 0 ? 0.2 : 0.7);
-  return e > 0.5 ? 2 : e > 0.2 ? 1 : 0;
+  if (!env) return (f >> 2) % 3 === 0 ? 1 : 2;
+  const pm = pausesOf(env);
+  if (pm[f] && pm[Math.min(env.length - 1, f + 1)]) return 0;
+  const e = Math.max(env[f] ?? 0, env[f + 1] ?? 0);
+  return e > 0.4 ? 2 : 1;
 };
+/** Идёт ли звук (не пауза) в кадре k реплики */
+export const voicedAt = (env: number[] | undefined, k: number, vLen: number): boolean => mouthFromEnv(env, k, vLen) > 0;
 export const envAt = (env: number[] | undefined, k: number): number => (env ? env[Math.floor(k / 2) * 2] ?? 0 : 0.4);
 
 // ---------- ключевые моменты внутри планов (кадры от начала плана) ----------
@@ -102,5 +124,5 @@ export const buildCues = (tl: Timeline): AudioCue[] => {
   cues.push({ base: VOICE_FILES[5], from: f.from + f.vFrom, volume: 0.95 });
   return cues;
 };
-/** Шаги Тони в плане 12 (кадры от начала плана) */
-export const STEP_AT = [12, 150];
+/** Шаги Тони в плане 12 (кадры от начала плана): 3 шага в общем плане, один в финале */
+export const STEP_AT = [14, 40, 66, 300];

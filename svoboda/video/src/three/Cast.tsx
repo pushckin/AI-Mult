@@ -107,44 +107,64 @@ interface ArmSpec {
   bicepCol?: string;
   delt?: string; // цвет дельты (шар на плече)
   skin: string;
+  len?: number; // множитель длины конечности
+  shoulderCol?: string;
 }
-/** Кисть-варежка: коробка со скруглением + большой палец; 1 - с указательным, 2 - кулак */
+/** Кисть: коробка со скруглением + большой палец; 1 - с указательным, 2 - кулак (костяшки) */
 const Hand: React.FC<{ s: ArmSpec; kind: number; side: 1 | -1 }> = ({ s, kind, side }) => {
-  const k = s.hand * (kind === 2 ? 1.1 : 1);
+  const k = s.hand * (kind === 2 ? 1.12 : 1);
   return (
-    <group position={[0, -0.27, 0]}>
+    <group position={[0, -0.27 * (s.len ?? 1), 0]}>
       <Part geo={rbox(0.19 * k, 0.2 * k, 0.15 * k, 0.07 * k)} color={s.skin} px={3} position={[0, -0.03, 0]} />
       <Part geo={sphereGeo(12)} color={s.skin} px={2.6} position={[-side * 0.095 * k, -0.01, 0.045 * k]} scale={[0.05 * k, 0.07 * k, 0.05 * k]} />
+      {kind === 2 && <Part geo={rbox(0.15 * k, 0.05 * k, 0.04, 0.02)} color={s.skin} px={2.4} position={[0, -0.07 * k, 0.085 * k]} />}
       {kind === 1 && <Part geo={rcyl(0.045 * k, 0.042 * k, 0.2, 0.018, 12)} color={s.skin} px={2.8} position={[0, -0.2 * 1, 0.01]} />}
     </group>
   );
 };
-const Arm2: React.FC<{ side: 1 | -1; swing: number; abd: number; elbow: number; spec: ArmSpec; hand: number; held?: React.ReactNode; heldRot?: number; heldY?: number; shrug?: number }> = ({ side, swing, abd, elbow, spec: s, hand, held, heldRot = 0, heldY = 0, shrug = 0 }) => (
-  <group position={[side * s.sx, (s.y ?? 0.5) + shrug, 0]} rotation={[-swing * D2R, 0, side * abd * D2R]}>
-    <Part geo={rcyl((s.upSleeve ? 0.112 : 0.088) * s.up, (s.upSleeve ? 0.105 : 0.082) * s.up, 0.2, 0.035)} color={s.upCol} position={[0, -0.09, 0]} />
-    {s.bicep && <Part geo={sphereGeo(16)} color={s.bicepCol ?? s.skin} px={2.4} position={[0, -0.1, 0.075 * s.bicep]} scale={[0.1 * s.bicep, 0.12 * s.bicep, 0.085 * s.bicep]} />}
-    <group position={[0, -0.2, 0]} rotation={[-elbow * D2R, 0, 0]}>
-      <Part geo={sphereGeo(14)} color={s.upCol === s.foCol ? s.foCol : s.upCol} px={2.6} position={[0, 0, 0]} scale={0.082 * s.fo} />
-      <Part geo={rcyl((s.foSleeve ? 0.086 : 0.078) * s.fo, (s.foSleeve ? 0.092 : 0.086) * s.fo, 0.24, 0.035)} color={s.foCol} position={[0, -0.1, 0]} />
-      {s.foSleeve && <Part geo={rcyl(0.1 * s.fo, 0.1 * s.fo, 0.05, 0.015)} color={s.foCol} px={2.6} position={[0, -0.215, 0]} />}
-      <Hand s={s} kind={hand} side={side} />
-      {held && (
-        <group position={[0, -0.27 + heldY, 0]} rotation={[heldRot * D2R, 0, 0]}>
-          {held}
-        </group>
-      )}
+const D = Math.PI / 180;
+/** Рука: плечо-шар -> плечо -> локоть-шар -> предплечье -> запястье -> кисть. heldOri = [тангаж, рыскание, крен] предмета относительно торса (град) */
+const Arm2: React.FC<{ side: 1 | -1; swing: number; abd: number; elbow: number; spec: ArmSpec; hand: number; held?: React.ReactNode; heldRot?: number; heldOri?: [number, number, number]; heldY?: number; shrug?: number }> = ({ side, swing, abd, elbow, spec: s, hand, held, heldRot = 0, heldOri, heldY = 0, shrug = 0 }) => {
+  const len = s.len ?? 1;
+  const flex = hand === 2 && elbow > 50 && s.bicep ? 1 : 0;
+  const bk = (s.bicep ?? 0) * (flex ? 1.75 : 1);
+  let heldQ: THREE.Quaternion | undefined;
+  if (held && heldOri) {
+    const rArm = new THREE.Quaternion().setFromEuler(new THREE.Euler(-swing * D, 0, side * abd * D, "XYZ")).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-elbow * D, 0, 0)));
+    const want = new THREE.Quaternion().setFromEuler(new THREE.Euler(heldOri[0] * D, heldOri[1] * D, heldOri[2] * D, "YXZ"));
+    heldQ = rArm.invert().multiply(want);
+  }
+  return (
+    <group position={[side * s.sx, (s.y ?? 0.5) + shrug, 0]} rotation={[-swing * D2R, 0, side * abd * D2R]}>
+      {/* плечевой сустав: шар кожи/рукава, чтобы рука срасталась с торсом */}
+      <Part geo={sphereGeo(16)} color={s.shoulderCol ?? s.upCol} px={2.6} position={[0, -0.02, 0]} scale={(s.upSleeve ? 0.115 : 0.095) * s.up} />
+      <Part geo={rcyl((s.upSleeve ? 0.112 : 0.088) * s.up, (s.upSleeve ? 0.105 : 0.082) * s.up, 0.2 * len, 0.035)} color={s.upCol} position={[0, -0.09 * len, 0]} />
+      {bk > 0 && <Part geo={sphereGeo(16)} color={s.bicepCol ?? s.skin} px={2.4} position={[0, -0.1 * len, (0.07 + (flex ? 0.035 : 0)) * s.up]} scale={[0.1 * bk, 0.12 * bk, 0.085 * bk]} />}
+      <group position={[0, -0.2 * len, 0]} rotation={[-elbow * D2R, 0, 0]}>
+        <Part geo={sphereGeo(14)} color={s.upCol === s.foCol ? s.foCol : s.upCol} px={2.6} position={[0, 0, 0]} scale={0.085 * s.fo} />
+        <Part geo={rcyl((s.foSleeve ? 0.086 : 0.078) * s.fo, (s.foSleeve ? 0.092 : 0.086) * s.fo, 0.26 * len, 0.035)} color={s.foCol} position={[0, -0.11 * len, 0]} />
+        {s.foSleeve && <Part geo={rcyl(0.1 * s.fo, 0.1 * s.fo, 0.05, 0.015)} color={s.foCol} px={2.6} position={[0, -0.23 * len, 0]} />}
+        <Hand s={s} kind={hand} side={side} />
+        {held && (
+          <group position={[0, -0.27 * len + heldY, 0]} rotation={heldQ ? undefined : [heldRot * D2R, 0, 0]} quaternion={heldQ}>
+            {held}
+          </group>
+        )}
+      </group>
     </group>
-  </group>
-);
+  );
+};
 
 interface LegSpec { hipX: number; th: number; ca: number; thCol: string; caCol: string; shoe: React.ReactNode; sock?: string }
-const Leg2: React.FC<{ side: 1 | -1; swing: number; spread: number; knee: number; spec: LegSpec }> = ({ side, swing, spread, knee, spec: s }) => (
+const Leg2: React.FC<{ side: 1 | -1; swing: number; spread: number; knee: number; spec: LegSpec; toe?: number }> = ({ side, swing, spread, knee, spec: s, toe = 0 }) => (
   <group position={[side * s.hipX, -0.04, 0]} rotation={[-swing * D2R, 0, side * spread * D2R]}>
     <Part geo={rcyl(0.125 * s.th, 0.12 * s.th, 0.2, 0.04)} color={s.thCol} position={[0, -0.09, 0]} />
     <group position={[0, -0.19, 0]} rotation={[knee * D2R, 0, 0]}>
       <Part geo={rcyl(0.118 * s.ca, 0.112 * s.ca, 0.17, 0.04)} color={s.caCol} position={[0, -0.05, 0]} />
       {s.sock && <Part geo={rcyl(0.122 * s.ca, 0.122 * s.ca, 0.07, 0.02)} color={s.sock} px={2.6} position={[0, -0.095, 0]} />}
-      {s.shoe}
+      <group position={[0, -0.14, 0.03]} rotation={[toe * D2R, 0, 0]}>
+        <group position={[0, 0.14, -0.03]}>{s.shoe}</group>
+      </group>
     </group>
   </group>
 );
@@ -164,35 +184,37 @@ const SOUND_PTS = (r: number, a0: number): Array<[number, number]> => {
   }
   return out;
 };
+/** Мегафон: начало координат - центр ладони на ручке; раструб вперёд (+z), ось конуса над ручкой (y=+0.2) */
 export const Megaphone: React.FC<{ sir?: number }> = ({ sir = 0 }) => (
-  <group scale={1.2}>
-    {/* конус: узкий конец (к губам) в z=0, раструб вперёд (+z) */}
-    <group rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.31]}>
+  <group scale={1.1}>
+    <group rotation={[Math.PI / 2, 0, 0]} position={[0, 0.2, 0.1]}>
       <Part geo={rcyl(0.06, 0.2, 0.5, 0.012, 24)} color="#e8263a" px={3.2} />
       <Part geo={rcyl(0.145, 0.18, 0.12, 0.008, 24)} color="#fbfbf6" px={0} position={[0, 0.03, 0]} />
       <Part geo={rcyl(0.206, 0.206, 0.045, 0.012, 24)} color="#2a2a38" px={3} position={[0, 0.268, 0]} />
       <Part geo={rcyl(0.075, 0.075, 0.07, 0.015, 16)} color="#2a2a38" px={3} position={[0, -0.27, 0]} />
     </group>
     {/* ручка с курком */}
-    <Part geo={rbox(0.09, 0.26, 0.11, 0.03)} color="#2a2a38" px={3} position={[0, -0.2, 0.2]} rotation={[0.25, 0, 0]} />
-    <Part geo={rbox(0.05, 0.05, 0.06, 0.015)} color="#fbfbf6" px={2.4} position={[0, -0.08, 0.3]} />
+    <Part geo={rbox(0.1, 0.26, 0.12, 0.035)} color="#2a2a38" px={3} position={[0, 0.03, 0.03]} />
+    <Part geo={rbox(0.05, 0.05, 0.06, 0.015)} color="#fbfbf6" px={2.4} position={[0, 0.13, 0.12]} />
     {sir > 0 &&
       [0, 1, 2].map((i) => {
         const r = 0.34 + ((sir + i) % 3) * 0.26;
         const e = extrude(`snd_${i}_${r.toFixed(2)}`, SOUND_PTS(r, 0.55), 0.04, 0);
         return (
-          <group key={i} position={[0, 0, 0.7 + ((sir + i) % 3) * 0.22]} rotation={[0, Math.PI / 2, 0]}>
+          <group key={i} position={[0, 0.2, 0.55 + ((sir + i) % 3) * 0.22]} rotation={[0, Math.PI / 2, 0]}>
             <Part geo={e.geo} hull={e.hull} color={i === 1 ? "#ff8a1c" : "#ffd23a"} px={3} />
           </group>
         );
       })}
   </group>
 );
-const Placard: React.FC<{ low?: boolean }> = ({ low }) => (
-  <group position={[0, low ? -0.3 : 0.0, 0]}>
-    <Part geo={rcyl(0.028, 0.028, low ? 0.62 : 1.35, 0.01, 10)} color="#9a6a3a" px={2.8} position={[0, low ? 0.27 : 0.38, 0]} />
-    <Part geo={rbox(0.9, 0.68, 0.05, 0.015)} color="#d1a468" px={3.2} position={[0.05, 0.92, 0.03]} />
-    <TexPlane tex={placardTex()} w={0.84} h={0.63} position={[0.05, 0.92, 0.06]} />
+/** Плакат: начало - ладонь на шесте */
+const Placard: React.FC = () => (
+  <group>
+    <Part geo={rcyl(0.03, 0.03, 1.0, 0.01, 10)} color="#9a6a3a" px={2.8} position={[0, 0.2, 0]} />
+    <Part geo={rbox(0.92, 0.68, 0.06, 0.02)} color="#d1a468" px={3.2} position={[0, 0.58, 0.05]} />
+    <TexPlane tex={placardTex()} w={0.86} h={0.63} position={[0, 0.58, 0.085]} />
+    <Part geo={rbox(0.9, 0.66, 0.02, 0.01)} color="#a9793c" px={0} position={[0, 0.58, 0.015]} />
   </group>
 );
 const Shades: React.FC = () => (
@@ -257,12 +279,32 @@ const Tears: React.FC<{ p: PP; lon: number; lat: number }> = ({ p, lon, lat }) =
   <>
     {p.tear > 0 &&
       ([1, -1] as const).map((s) => (
-        <Decal key={s} lon={s * (lon + 3)} lat={lat - 6 - p.tear * 7} rx={0.055} ry={0.1} color="#5ec8ff" ring={0.014} lift={1.016} />
+        <React.Fragment key={s}>
+          {/* дорожка слезы по щеке + падающая капля */}
+          <Line lon={s * (lon + 2)} lat={lat - 11} pts={[[0, 0.16], [0.0, -0.16]]} w={0.02} color="#5ec8ff" lift={1.012} />
+          <Decal lon={s * (lon + 3)} lat={lat - 6 - p.tear * 7} rx={0.065} ry={0.115} color="#5ec8ff" ring={0.016} lift={1.016} />
+        </React.Fragment>
       ))}
   </>
 );
+/** Капли пота: плоские светлые «капли» на лбу и висках (фаза 1..3 - падают) */
+const Sweat: React.FC<{ p: PP }> = ({ p }) =>
+  p.sw > 0 ? (
+    <>
+      {([1, -1] as const).map((s) => (
+        <React.Fragment key={s}>
+          <Decal lon={s * 26} lat={36 - ((p.sw + 1) % 3) * 6} rx={0.07} ry={0.12} color="#bfeaff" ring={0.016} lift={1.03} />
+          {/* брызги пота вокруг головы (плоские капли) */}
+          <Decal lon={s * 68} lat={24 + ((p.sw + s) % 3) * 9} rx={0.1} ry={0.17} color="#bfeaff" ring={0.02} lift={1.34} rot={s * 25} />
+          <Decal lon={s * 80} lat={4 - p.sw * 7} rx={0.08} ry={0.14} color="#bfeaff" ring={0.018} lift={1.3} rot={s * 15} />
+        </React.Fragment>
+      ))}
+      <Decal lon={4} lat={50 - ((p.sw + 2) % 3) * 5} rx={0.05} ry={0.09} color="#bfeaff" ring={0.014} lift={1.03} />
+    </>
+  ) : null;
 
 // ---------- Тони ----------
+const GLASS_RING: Array<[number, number]> = Array.from({ length: 11 }).map((_, i) => [Math.cos((i / 10) * Math.PI * 2) * 0.34, Math.sin((i / 10) * Math.PI * 2) * 0.3] as [number, number]);
 const TonyFace: React.FC<{ p: PP }> = ({ p }) => {
   const c = COL.tony;
   const eye: EyeCfg = { lon: 21, lat: 8, rad: 0.27, pupil: 0.085, skin: c.skin, lid: c.skin };
@@ -272,21 +314,24 @@ const TonyFace: React.FC<{ p: PP }> = ({ p }) => {
       {/* выбритая борода: чёткий контур по челюсти */}
       <Decal lon={0} lat={-46} rx={1.12} ry={0.52} color={c.beard} lift={1.006} />
       <Decal lon={0} lat={-27} rx={0.34} ry={0.09} color={c.beard} lift={1.007} />
-      {p.acc === 0 ? (
+      {/* глаза всегда видны; очки (acc=0) - только оправа и блик, глаза за линзами */}
+      <Eye side={1} st={p.eyeL} p={p} c={eye} />
+      <Eye side={-1} st={p.eyeR} p={p} c={eye} />
+      {p.acc === 0 && (
         <>
-          <Decal lon={0} lat={7} rx={0.78} ry={0.19} color="#0c0a10" ring={0.03} ringColor="#0c0a10" lift={1.012} />
-          <Line lon={-24} lat={11} pts={[[-0.3, 0], [0.1, 0.02]]} w={0.016} color="#9aa2d8" lift={1.02} />
-          <Line lon={24} lat={11} pts={[[-0.3, 0], [0.1, 0.02]]} w={0.016} color="#9aa2d8" lift={1.02} />
-        </>
-      ) : (
-        <>
-          <Eye side={1} st={p.eyeL} p={p} c={eye} />
-          <Eye side={-1} st={p.eyeR} p={p} c={eye} />
-          <Brows p={p} lat={eye.lat + 20} lon={22} w={0.07} color={c.hair} />
+          {([1, -1] as const).map((s) => (
+            <React.Fragment key={s}>
+              <Line lon={s * 21} lat={8} pts={GLASS_RING} w={0.034} color="#0c0a10" lift={1.024} />
+              <Line lon={s * 24} lat={13} pts={[[-0.12, 0.05], [0.12, 0.05]]} w={0.016} color="#cfd6ff" lift={1.03} />
+              <Line lon={s * 55} lat={9} pts={[[-0.2, 0], [0.2, 0]]} w={0.026} color="#0c0a10" lift={1.02} />
+            </React.Fragment>
+          ))}
+          <Line lon={0} lat={10} pts={[[-0.1, 0], [0.1, 0]]} w={0.03} color="#0c0a10" lift={1.024} />
         </>
       )}
-      {p.acc === 0 && <Brows p={p} lat={26} lon={22} w={0.07} color={c.hair} />}
+      <Brows p={p} lat={eye.lat + 20} lon={22} w={0.07} color={c.hair} />
       <Tears p={p} lon={21} lat={8} />
+      <Sweat p={p} />
       <Mouth p={p} lat={-37} line="#f0b8a0" inner="#6a1020" />
     </>
   );
@@ -308,12 +353,16 @@ const MarcusFace: React.FC<{ p: PP }> = ({ p }) => {
         </React.Fragment>
       ))}
       <Line lon={0} lat={7} pts={[[-0.14, 0], [0.14, 0]]} w={0.02} color={c.gold} lift={1.02} />
-      <Line lon={-21} lat={4} pts={[[-0.34, 0.2], [-0.12, 0.02], [-0.2, -0.12], [0.04, -0.22], [0.0, -0.3]]} w={0.014} color="#f4f4ff" lift={1.03} />
-      <Line lon={-21} lat={4} pts={[[-0.12, 0.02], [0.14, 0.1], [0.3, 0.28]]} w={0.012} color="#f4f4ff" lift={1.03} />
+      <Line lon={-21} lat={4} pts={[[-0.34, 0.26], [-0.12, 0.02], [-0.22, -0.14], [0.04, -0.26], [0.0, -0.34]]} w={0.026} color="#ffffff" lift={1.035} />
+      <Line lon={-21} lat={4} pts={[[-0.12, 0.02], [0.14, 0.1], [0.32, 0.3]]} w={0.022} color="#ffffff" lift={1.035} />
+      <Line lon={-21} lat={4} pts={[[-0.12, 0.02], [0.2, -0.04], [0.34, -0.2]]} w={0.02} color="#ffffff" lift={1.035} />
       {/* в сценах без очков глаза не нужны: зрачки видны сквозь линзы не показываем */}
+      <Line lon={21} lat={5} pts={[[0.3, 0.24], [0.06, 0.02], [0.14, -0.2]]} w={0.018} color="#ffffff" lift={1.035} />
+      <Line lon={21} lat={5} pts={[[0.06, 0.02], [-0.2, 0.1], [-0.3, 0.26]]} w={0.016} color="#ffffff" lift={1.035} />
       <Brows p={p} lat={26} lon={22} w={0.03} color={c.hair} />
       <Line lon={0} lat={-27} pts={[[-0.24, -0.02], [0, 0.03], [0.24, -0.02]]} w={0.02} color={c.hair} lift={1.008} />
       <Tears p={p} lon={21} lat={-4} />
+      <Sweat p={p} />
       <Mouth p={p} lat={-38} line="#0c0a10" inner="#2a0a12" />
       <group visible={false}>
         <Eye side={1} st={0} p={p} c={eye} />
@@ -340,6 +389,7 @@ const ChloeFace: React.FC<{ p: PP }> = ({ p }) => {
       <Decal lon={5} lat={-14} rx={0.075} ry={0.075} color={c.skin} ring={0.022} ringColor="#ffd23a" lift={1.012} />
       <Decal lon={0} lat={-12} rx={0.03} ry={0.03} color="#c88a78" lift={1.01} />
       <Tears p={p} lon={20} lat={8} />
+      <Sweat p={p} />
       <Mouth p={p} lat={-35} line="#0c0a10" inner="#4a0a1a" />
     </>
   );
@@ -378,7 +428,7 @@ const TonyBuild: Build = (() => {
     pelvisCol: c.shorts,
     torso: [0.96, 0.58, 0.54],
     torsoCol: c.tank,
-    arm: { sx: 0.62, up: 1.5, fo: 1.4, hand: 1.25, upCol: c.skin, foCol: c.skin, bicep: 1.2, delt: c.skin, skin: c.skin },
+    arm: { sx: 0.5, up: 1.5, fo: 1.4, hand: 1.25, upCol: c.skin, foCol: c.skin, bicep: 1.2, delt: c.skin, skin: c.skin, len: 1.4 },
     leg: {
       hipX: 0.21, th: 1.55, ca: 1.35, thCol: c.shorts, caCol: c.skin, sock: c.sock,
       shoe: (
@@ -400,7 +450,7 @@ const MarcusBuild: Build = (() => {
     pelvisCol: c.pants,
     torso: [0.5, 0.6, 0.32],
     torsoCol: c.leo,
-    arm: { sx: 0.3, up: 0.72, fo: 0.68, hand: 0.82, upCol: c.leo, foCol: c.skin, upSleeve: true, skin: c.skin },
+    arm: { sx: 0.3, up: 0.72, fo: 0.68, hand: 0.82, upCol: c.leo, foCol: c.skin, upSleeve: true, skin: c.skin, len: 1.3 },
     leg: {
       hipX: 0.11, th: 0.72, ca: 0.68, thCol: c.pants, caCol: c.pants,
       shoe: <Part geo={rbox(0.17, 0.1, 0.34, 0.045)} color={c.shoe} position={[0, -0.14, 0.08]} />,
@@ -417,7 +467,7 @@ const ChloeBuild: Build = (() => {
     pelvisCol: c.pants,
     torso: [0.86, 0.6, 0.5],
     torsoCol: c.hood,
-    arm: { sx: 0.5, up: 1.3, fo: 1.28, hand: 0.95, upCol: c.hood, foCol: c.hood, upSleeve: true, foSleeve: true, skin: c.skin },
+    arm: { sx: 0.5, up: 1.3, fo: 1.28, hand: 0.95, upCol: c.hood, foCol: c.hood, upSleeve: true, foSleeve: true, skin: c.skin, len: 1.3 },
     leg: {
       hipX: 0.13, th: 0.82, ca: 0.8, thCol: c.pants, caCol: c.pants,
       shoe: (
@@ -498,15 +548,11 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
   const [pw, ph, pd] = b.pelvis;
   const [tw, th, td] = b.torso;
   const sir = p.sir;
-  // предметы в руках: правая рука (side -1) / левая (+1)
-  const compR = p.arx + p.are - p.tl;
-  const compL = p.alx + p.ale - p.tl;
-  const heldR =
-    kind === "tony" ? (p.hp === 1 ? <Shades /> : null) : kind === "chloe" ? (p.acc === 1 ? <group position={[0, 0.2, -0.24]}><Megaphone sir={sir} /></group> : null) : null;
-  const heldRotR = kind === "chloe" ? compR + p.hp : kind === "tony" ? compR * 0.5 : 0;
-  // cup: у Хлои наклон плаката назад (град), hp - наклон мегафона в руке (вниз +)
-  const heldL = kind === "chloe" ? <Placard low={p.cup < -40} /> : null;
-  const heldRotL = kind === "chloe" ? compL + p.cup : 0;
+  // предметы в руках: Хлоя всегда держит мегафон правой (ручка в кулаке) и плакат левой; ориентацию задают hp (тангаж, вниз +), my (рыскание), cup (крен плаката)
+  const heldR = kind === "tony" ? (p.hp === 1 ? <Shades /> : null) : kind === "chloe" ? <Megaphone sir={sir} /> : null;
+  const heldOriR: [number, number, number] | undefined = kind === "chloe" ? [p.hp, p.my, 0] : undefined;
+  const heldL = kind === "chloe" ? <Placard /> : null;
+  const heldOriL: [number, number, number] | undefined = kind === "chloe" ? [0, p.py, p.cup] : undefined;
   const shrug = kind === "chloe" && p.hdy < -0.1 ? -p.hdy * 0.5 : 0;
   return (
     <>
@@ -518,8 +564,8 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
               {/* таз + ноги */}
               <Part geo={rbox(pw, ph, pd, 0.07)} color={b.pelvisCol} position={[0, -0.02, 0]} />
               {kind === "marcus" && <Part geo={rbox(pw + 0.02, 0.06, pd + 0.02, 0.02)} color={COL.marcus.belt} px={2.4} position={[0, 0.07, 0]} />}
-              <Leg2 side={1} swing={p.llx} spread={p.llz} knee={p.llk} spec={b.leg} />
-              <Leg2 side={-1} swing={p.lrx} spread={p.lrz} knee={p.lrk} spec={b.leg} />
+              <Leg2 side={1} swing={p.llx} spread={p.llz} knee={p.llk} spec={b.leg} toe={p.toe} />
+              <Leg2 side={-1} swing={p.lrx} spread={p.lrz} knee={p.lrk} spec={b.leg} toe={p.toe} />
               {/* торс */}
               <group rotation={[p.tl * D2R, p.ty * D2R, p.tz * D2R]}>
                 <Part geo={rbox(tw, th, td, 0.13)} color={b.torsoCol} position={[0, 0.3, 0]} />
@@ -533,8 +579,8 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
                     <Bag />
                   </group>
                 )}
-                <Arm2 side={1} swing={p.alx} abd={p.alz} elbow={p.ale} spec={b.arm} hand={p.hl} held={heldL} heldRot={heldRotL} shrug={shrug} />
-                <Arm2 side={-1} swing={p.arx} abd={p.arz} elbow={p.are} spec={b.arm} hand={p.hr} held={heldR} heldRot={heldRotR} shrug={shrug} />
+                <Arm2 side={1} swing={p.alx} abd={p.alz} elbow={p.ale} spec={b.arm} hand={p.hl} held={heldL} heldOri={heldOriL} heldY={-0.03} shrug={shrug} />
+                <Arm2 side={-1} swing={p.arx} abd={p.arz} elbow={p.are} spec={b.arm} hand={p.hr} held={heldR} heldOri={heldOriR} heldY={-0.03} shrug={shrug} />
                 {/* голова */}
                 <group position={[p.hdx, 0.93 + p.hdy, 0]} rotation={[p.hx * D2R, p.hy * D2R, p.hz * D2R]}>
                   <Part geo={sphereGeo(32)} color={b.headCol} px={3.6} scale={[b.head.rx, b.head.ry, b.head.rz]} />
@@ -548,11 +594,6 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
                     </>
                   )}
                   {kind === "chloe" && HAIR_SKIRT(COL.chloe.hair, COL.chloe.hairDark)}
-                  {kind === "chloe" && p.acc === 0 && (
-                    <group position={[0, -0.27, 0.74]} rotation={[-0.05, 0, 0]}>
-                      <Megaphone sir={sir} />
-                    </group>
-                  )}
                   <group scale={[b.head.rx, b.head.ry, b.head.rz]}>
                     {kind === "tony" ? <TonyFace p={p} /> : kind === "marcus" ? <MarcusFace p={p} /> : <ChloeFace p={p} />}
                   </group>

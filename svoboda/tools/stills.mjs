@@ -16,6 +16,6 @@ const browserExecutable = process.env.BROWSER || '/usr/bin/google-chrome';
 const opts = { chromiumOptions: { gl: 'angle' }, browserExecutable: fs.existsSync(browserExecutable) ? browserExecutable : undefined };
 const comp = await selectComposition({ serveUrl, id: process.env.COMP || 'Scene1', ...opts });
 for (const f of frames) {
-  await renderStill({ composition: comp, serveUrl, frame: f, output: path.join(outDir, `f${String(f).padStart(3, '0')}.png`), ...opts });
+  await renderStill({ composition: comp, serveUrl, frame: f, output: path.join(outDir, `f${String(f).padStart(4, '0')}.png`), ...opts });
 }
 console.log('done', frames.length);

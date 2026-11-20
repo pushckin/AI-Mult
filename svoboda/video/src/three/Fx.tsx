@@ -143,3 +143,28 @@ export const Tooth: React.FC<{ position: [number, number, number]; rot: number; 
 void clamp;
 void planeGeo;
 void Flat;
+
+/** Пыль от приземления: плоские кольца на земле (светлее плиты) + плоские кружки, разлетающиеся в стороны. Рывками на двойках. */
+export const GroundDust: React.FC<{ at: [number, number, number]; k: number; r?: number }> = ({ at, k, r = 1 }) => {
+  if (k < 0 || k > 14) return null;
+  const kh = Math.floor(k / 2) * 2;
+  const u = kh / 14;
+  const rad = (0.35 + u * 1.15) * r;
+  return (
+    <>
+      <group position={[at[0], 0.012, at[2]]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh geometry={circleGeo} material={flatMat(INK)} scale={[rad * 1.06, rad * 0.62, 1]} renderOrder={2} />
+        <mesh geometry={circleGeo} material={flatMat("#c3c1d8")} position={[0, 0, 0.002]} scale={[rad, rad * 0.58, 1]} renderOrder={3} />
+        <mesh geometry={circleGeo} material={flatMat("#8d8ba6")} position={[0, 0, 0.004]} scale={[rad * 0.66, rad * 0.37, 1]} renderOrder={4} />
+      </group>
+      {[-1, 1].map((s) =>
+        [0, 1].map((j) => (
+          <group key={`${s}_${j}`} position={[at[0] + s * (0.35 + u * (0.9 + j * 0.45)) * r, 0.14 + j * 0.12 + u * 0.12 * (1 - j), at[2] + 0.35]}>
+            <mesh geometry={circleGeo} material={flatMat(INK)} scale={(0.17 + (1 - u) * 0.06 - j * 0.04) * r + 0.02} />
+            <mesh geometry={circleGeo} material={flatMat(j ? "#dedcea" : "#c3c1d8")} position={[0, 0, 0.01]} scale={(0.17 + (1 - u) * 0.06 - j * 0.04) * r} />
+          </group>
+        )),
+      )}
+    </>
+  );
+};

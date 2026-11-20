@@ -60,7 +60,7 @@ export const BUILDINGS: BDef[] = [
 ];
 const FACE_Z = -2.2;
 
-const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; showSign?: boolean }> = ({ b, pal, idx, simple = false, showSign = true }) => {
+const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; showSign?: boolean; signLift?: number }> = ({ b, pal, idx, simple = false, showSign = true, signLift = 0 }) => {
   const depth = 6;
   const zc = FACE_Z - depth / 2;
   const fz = FACE_Z + 0.012;
@@ -83,8 +83,8 @@ const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; 
       ))}
 
       {/* вывеска (светится, не освещается) */}
-      {showSign && <Part geo={rbox(3.0, 0.78, 0.14, 0.05)} color="#15141c" px={3.4} position={[0, 3.2, FACE_Z + 0.16]} />}
-      {showSign && <TexPlane tex={signTex(b.sign, pal.neon ? b.fg : "#3a4068", pal.neon ? b.bg : "#101428")} w={2.88} h={0.69} position={[0, 3.2, FACE_Z + 0.235]} />}
+      {showSign && <Part geo={rbox(3.0, 0.78, 0.14, 0.05)} color="#15141c" px={3.4} position={[0, 3.2 + signLift, FACE_Z + 0.16]} />}
+      {showSign && <TexPlane tex={signTex(b.sign, pal.neon ? b.fg : "#3a4068", pal.neon ? b.bg : "#101428")} w={2.88} h={0.69} position={[0, 3.2 + signLift, FACE_Z + 0.235]} />}
       {!simple && b.extra && <TexPlane tex={signTex(b.extra, pal.neon ? "#ff3b5c" : "#3a4068", "#1a1020")} w={1.3} h={0.32} position={[0, 3.85, FACE_Z + 0.09]} />}
       {/* верхние окна */}
       {!simple && [-1.9, 1.9].map((x, i) => (
@@ -232,8 +232,19 @@ export const Lamp: React.FC<{ x: number; z: number; on: boolean }> = ({ x, z, on
 );
 
 // ---------- урны, гидрант ----------
-export const Bin: React.FC<{ x: number; z: number; color?: string }> = ({ x, z, color = "#4d6a52" }) => (
+export const Bin: React.FC<{ x: number; z: number; color?: string; detail?: boolean }> = ({ x, z, color = "#4d6a52", detail = false }) => (
   <group position={[x, 0, z]}>
+    {detail && (
+      <>
+        {/* объём: утолщённый обод-«бублик», рёбра-пояса, боковые ручки, ножки */}
+        <Part geo={rcyl(0.47, 0.47, 0.1, 0.045, 22)} color="#243327" px={3} position={[0, 0.99, 0]} />
+        <Part geo={rcyl(0.4, 0.4, 0.06, 0.02, 22)} color="#2f3f33" px={2.6} position={[0, 0.7, 0]} scale={[1.05, 1, 1.05]} />
+        <Part geo={rcyl(0.375, 0.375, 0.06, 0.02, 22)} color="#2f3f33" px={2.6} position={[0, 0.42, 0]} scale={[1.05, 1, 1.05]} />
+        {[1, -1].map((s) => (
+          <Part key={s} geo={rbox(0.12, 0.08, 0.2, 0.03)} color="#243327" px={2.6} position={[s * 0.5, 0.82, 0]} />
+        ))}
+      </>
+    )}
     <Part geo={rcyl(0.36, 0.42, 0.95, 0.05, 20)} color={color} px={3.4} position={[0, 0.475, 0]} />
     <Part geo={rcyl(0.45, 0.45, 0.07, 0.025, 20)} color="#2f3f33" px={3} position={[0, 0.97, 0]} />
     <Part geo={rcyl(0.38, 0.4, 0.05, 0.015, 20)} color="#2f3f33" px={0} position={[0, 0.3, 0]} scale={[1.03, 1, 1.03]} />
@@ -313,7 +324,7 @@ export const Billboard: React.FC<{ state: "a" | "g1" | "g2" | "b" }> = ({ state 
 );
 
 // ---------- улица целиком ----------
-export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm?: boolean; simple?: boolean; signs?: number[] }> = ({ pal, lampOn, calm = false, simple = false, signs }) => {
+export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm?: boolean; simple?: boolean; signs?: number[]; signLift?: number }> = ({ pal, lampOn, calm = false, simple = false, signs, signLift = 0 }) => {
   const seams = useMemo(() => Array.from({ length: 41 }).map((_, i) => -24 + i * 1.2), []);
   return (
     <group>
@@ -321,7 +332,11 @@ export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm
       <Skyline pal={pal} simple={simple} />
       {/* тротуар (плита) и бордюр */}
       <Part geo={rbox(80, 0.3, 3.9, 0.03)} color="#8d8ba6" px={0} position={[0, -0.15, -0.25]} />
-      <Part geo={rbox(80, 0.36, 0.3, 0.04)} color="#c2bfd6" px={2.4} position={[0, -0.14, 1.78]} />
+      {/* бордюр блоками (видны боковые грани и торцы) + нижняя ступень */}
+      <Part geo={rbox(80, 0.12, 0.6, 0.03)} color="#7d7a98" px={0} position={[0, -0.28, 1.95]} />
+      {Array.from({ length: 36 }).map((_, i) => (
+        <Part key={`cb${i}`} geo={rbox(2.1, 0.36, 0.34, 0.05)} color={i % 2 ? "#c2bfd6" : "#b4b1cb"} px={2.4} position={[-26 + i * 2.2, -0.14, 1.78]} />
+      ))}
       {seams.map((x) => (
         <Flat key={x} geo={planeGeo} color="#6c6a88" position={[x, 0.004, -0.25]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.04, 3.7, 1]} />
       ))}
@@ -331,7 +346,7 @@ export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm
         <Flat key={i} geo={planeGeo} color="#f0d24a" position={[-26 + i * 4, -0.295, 7.2]} rotation={[-Math.PI / 2, 0, 0]} scale={[2, 0.14, 1]} />
       ))}
       {BUILDINGS.map((b, i) => (
-        <Building key={i} b={b} pal={pal} idx={i} simple={simple} showSign={!signs || signs.includes(i)} />
+        <Building key={i} b={b} pal={pal} idx={i} simple={simple} showSign={!signs || signs.includes(i)} signLift={i === 3 ? signLift : 0} />
       ))}
       {!simple && (
         <>
