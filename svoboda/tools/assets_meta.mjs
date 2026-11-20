@@ -1,0 +1,25 @@
+// Метаданные ассетов сцены 1: pivot (доли 0..1 от размера PNG), описание. Общие для SVG-fallback и Gemini-пайплайна.
+// Стороны left/right у частей Грега — как на экране (при взгляде на куклу спереди).
+export const META = {
+  // --- фон (слои на 1080 по высоте, шире кадра для параллакса; выравнивание по левому краю = центрирование) ---
+  bg_sky:   { group: 'bg', pivot: [0.5, 0.5], z: 0, parallax: 0.05, note: 'Небо: звёзды, луна, неоновые лучи. Непрозрачный.' },
+  bg_far:   { group: 'bg', pivot: [0.5, 0.5], z: 1, parallax: 0.15, note: 'Дальние здания, силуэт города; прозрачно выше линии крыш.' },
+  bg_mid:   { group: 'bg', pivot: [0.5, 0.5], z: 2, parallax: 0.4, note: 'Средний план: витрины, пальмы, неон, кофейня (центр ~x=1250), фонари. База зданий y=770.' },
+  bg_fore:  { group: 'bg', pivot: [0.5, 0.5], z: 3, parallax: 1.0, note: 'Земля: тротуар y 770-930, бордюр, асфальт 965-1080. Прозрачно выше y=770.' },
+  // --- Грег ---
+  greg_ref:        { group: 'ref', pivot: [0.5, 1], note: 'Цельный образ-референс Грега.' },
+  greg_head_closed:{ group: 'greg', pivot: [0.5, 0.97], note: 'Голова, рот закрыт. Pivot = шея.' },
+  greg_head_open:  { group: 'greg', pivot: [0.5, 0.97], note: 'Голова, рот открыт. Pivot = шея.' },
+  greg_torso:      { group: 'greg', pivot: [0.5, 0.94], note: 'Торс. Pivot = таз. joints: см. поле joints (px).' },
+  greg_arm_left:   { group: 'greg', pivot: [0.5, 0.11], note: 'Левая рука (слева на экране). Pivot = плечо.' },
+  greg_arm_right_coffee: { group: 'greg', pivot: [0.5, 0.1], note: 'Правая рука (справа на экране) со стаканчиком. Pivot = плечо.' },
+  greg_leg_left:   { group: 'greg', pivot: [0.5, 0.04], note: 'Левая нога. Pivot = бедро.' },
+  greg_leg_right:  { group: 'greg', pivot: [0.5, 0.04], note: 'Правая нога. Pivot = бедро.' },
+  // --- реквизит ---
+  prop_supercar:   { group: 'prop', pivot: [0.5, 0.86], facing: 'right', note: 'Хромированный суперкар сбоку, едет вправо. Pivot = точка контакта с землёй (центр).' },
+  prop_alien_driver:{ group: 'prop', pivot: [0.5, 0.95], note: 'Водитель в маске пришельца, цельный спрайт (сидит, руки вперёд-вправо).' },
+  prop_oppressor:  { group: 'prop', pivot: [0.5, 0.5], facing: 'right', note: 'Oppressor Mk II сбоку, летит вправо.' },
+  prop_rocket:     { group: 'prop', pivot: [0.75, 0.5], facing: 'right', note: 'Ракета, летит вправо; pivot около центра массы.' },
+  prop_billboard:  { group: 'prop', pivot: [0.5, 1], note: 'Билборд-табло, пустой экран. screen = область экрана для цифр (px и доли).' },
+  prop_dust:       { group: 'prop', pivot: [0.5, 0.5], note: 'Облачко пыли (для исчезновения типа в маске).' },
+};

@@ -87,3 +87,38 @@ export const GREEN =
 
 export const STYLE =
   'STYLE (strict, match the reference image): South Park cutout-paper animation look. Flat shapes cut from colored construction paper, bold flat solid colors, thin dark outline (about 2px, near-black), NO gradients, NO soft shading, NO 3D volume, NO glow, slightly rough paper-cutout edges. Simple geometric shapes, minimal detail.';
+
+// ---- manifest ----
+export const MANIFEST = path.join(IMG, 'manifest.json');
+export function readManifest() {
+  try { return JSON.parse(fs.readFileSync(MANIFEST, 'utf8')); } catch { return { note: '', assets: {} }; }
+}
+export function upsertManifest(name, entry) {
+  const m = readManifest();
+  m.assets ||= {};
+  m.assets[name] = { ...(m.assets[name] || {}), ...entry };
+  fs.writeFileSync(MANIFEST, JSON.stringify(m, null, 2));
+}
+
+// Бумажная фактура: мелкий + низкочастотный шум поверх RGB, альфа сохраняется.
+export async function paperTexture(file, strength = 0.07) {
+  const meta = await sharp(file).metadata();
+  const { width: w, height: h } = meta;
+  const alpha = await sharp(file).ensureAlpha().extractChannel(3).raw().toBuffer();
+  const rgb = await sharp(file).removeAlpha().raw().toBuffer();
+  const lw = Math.ceil(w / 6), lh = Math.ceil(h / 6);
+  const low = Buffer.alloc(lw * lh); for (let i = 0; i < low.length; i++) low[i] = Math.random() * 255;
+  const lowUp = await sharp(low, { raw: { width: lw, height: lh, channels: 1 } }).resize(w, h, { kernel: 'cubic' }).raw().toBuffer();
+  const fine = Buffer.alloc(w * h); for (let i = 0; i < fine.length; i++) fine[i] = Math.random() * 255;
+  const out = Buffer.alloc(w * h * 3);
+  for (let i = 0; i < w * h; i++) {
+    const n = ((fine[i] - 128) * 0.5 + (lowUp[i] - 128) * 0.9) / 128; // ~ -1..1
+    const f = 1 + n * strength;
+    out[i * 3] = Math.max(0, Math.min(255, rgb[i * 3] * f));
+    out[i * 3 + 1] = Math.max(0, Math.min(255, rgb[i * 3 + 1] * f));
+    out[i * 3 + 2] = Math.max(0, Math.min(255, rgb[i * 3 + 2] * f));
+  }
+  const tmp = file + '.tmp.png';
+  await sharp(out, { raw: { width: w, height: h, channels: 3 } }).joinChannel(alpha, { raw: { width: w, height: h, channels: 1 } }).png().toFile(tmp);
+  fs.renameSync(tmp, file);
+}

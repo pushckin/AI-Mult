@@ -1,0 +1,269 @@
+{
+  "note": "Сцена 1 «Свобода». pivot = доли 0..1 от width/height PNG. left/right у Грега - как на экране. bg-слои: 1080 высотой, шире кадра 1920 (параллакс), центр слоя = центр кадра; parallax = коэфф. сдвига камеры. source=svg-fallback: сгенерировано программно (make_svg_assets.mjs), т.к. у GEMINI_API_KEY нет квоты на image-модели (429, free tier limit 0); gen_assets.mjs заменит на gemini-версии.",
+  "assets": {
+    "bg_sky": {
+      "file": "bg_sky.png",
+      "width": 2000,
+      "height": 1080,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "bg",
+      "note": "Небо: звёзды, луна, неоновые лучи. Непрозрачный.",
+      "source": "svg-fallback",
+      "z": 0,
+      "parallax": 0.05
+    },
+    "bg_far": {
+      "file": "bg_far.png",
+      "width": 2100,
+      "height": 1080,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "bg",
+      "note": "Дальние здания, силуэт города; прозрачно выше линии крыш.",
+      "source": "svg-fallback",
+      "z": 1,
+      "parallax": 0.15
+    },
+    "bg_mid": {
+      "file": "bg_mid.png",
+      "width": 2300,
+      "height": 1080,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "bg",
+      "note": "Средний план: витрины, пальмы, неон, кофейня (центр ~x=1250), фонари. База зданий y=770.",
+      "source": "svg-fallback",
+      "z": 2,
+      "parallax": 0.4
+    },
+    "bg_fore": {
+      "file": "bg_fore.png",
+      "width": 2500,
+      "height": 1080,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "bg",
+      "note": "Земля: тротуар y 770-930, бордюр, асфальт 965-1080. Прозрачно выше y=770.",
+      "source": "svg-fallback",
+      "z": 3,
+      "parallax": 1
+    },
+    "greg_head_closed": {
+      "file": "greg_head_closed.png",
+      "width": 360,
+      "height": 340,
+      "pivot": [
+        0.5,
+        0.97
+      ],
+      "group": "greg",
+      "note": "Голова, рот закрыт. Pivot = шея.",
+      "source": "svg-fallback"
+    },
+    "greg_head_open": {
+      "file": "greg_head_open.png",
+      "width": 360,
+      "height": 340,
+      "pivot": [
+        0.5,
+        0.97
+      ],
+      "group": "greg",
+      "note": "Голова, рот открыт. Pivot = шея.",
+      "source": "svg-fallback"
+    },
+    "greg_torso": {
+      "file": "greg_torso.png",
+      "width": 240,
+      "height": 320,
+      "pivot": [
+        0.5,
+        0.94
+      ],
+      "group": "greg",
+      "note": "Торс. Pivot = таз. joints: см. поле joints (px).",
+      "source": "svg-fallback",
+      "joints": {
+        "neck": [
+          120,
+          28
+        ],
+        "shoulder_left": [
+          30,
+          62
+        ],
+        "shoulder_right": [
+          210,
+          62
+        ],
+        "hip_left": [
+          80,
+          296
+        ],
+        "hip_right": [
+          160,
+          296
+        ]
+      }
+    },
+    "greg_arm_left": {
+      "file": "greg_arm_left.png",
+      "width": 100,
+      "height": 260,
+      "pivot": [
+        0.5,
+        0.11
+      ],
+      "group": "greg",
+      "note": "Левая рука (слева на экране). Pivot = плечо.",
+      "source": "svg-fallback"
+    },
+    "greg_arm_right_coffee": {
+      "file": "greg_arm_right_coffee.png",
+      "width": 140,
+      "height": 290,
+      "pivot": [
+        0.5,
+        0.1
+      ],
+      "group": "greg",
+      "note": "Правая рука (справа на экране) со стаканчиком. Pivot = плечо.",
+      "source": "svg-fallback"
+    },
+    "greg_leg_left": {
+      "file": "greg_leg_left.png",
+      "width": 110,
+      "height": 252,
+      "pivot": [
+        0.5,
+        0.04
+      ],
+      "group": "greg",
+      "note": "Левая нога. Pivot = бедро.",
+      "source": "svg-fallback"
+    },
+    "greg_leg_right": {
+      "file": "greg_leg_right.png",
+      "width": 110,
+      "height": 252,
+      "pivot": [
+        0.5,
+        0.04
+      ],
+      "group": "greg",
+      "note": "Правая нога. Pivot = бедро.",
+      "source": "svg-fallback"
+    },
+    "prop_supercar": {
+      "file": "prop_supercar.png",
+      "width": 810,
+      "height": 240,
+      "pivot": [
+        0.5,
+        0.86
+      ],
+      "group": "prop",
+      "note": "Хромированный суперкар сбоку, едет вправо. Pivot = точка контакта с землёй (центр).",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "prop_alien_driver": {
+      "file": "prop_alien_driver.png",
+      "width": 240,
+      "height": 262,
+      "pivot": [
+        0.5,
+        0.95
+      ],
+      "group": "prop",
+      "note": "Водитель в маске пришельца, цельный спрайт (сидит, руки вперёд-вправо).",
+      "source": "svg-fallback"
+    },
+    "prop_oppressor": {
+      "file": "prop_oppressor.png",
+      "width": 570,
+      "height": 230,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "prop",
+      "note": "Oppressor Mk II сбоку, летит вправо.",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "prop_rocket": {
+      "file": "prop_rocket.png",
+      "width": 240,
+      "height": 72,
+      "pivot": [
+        0.75,
+        0.5
+      ],
+      "group": "prop",
+      "note": "Ракета, летит вправо; pivot около центра массы.",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "prop_billboard": {
+      "file": "prop_billboard.png",
+      "width": 1000,
+      "height": 640,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "group": "prop",
+      "note": "Билборд-табло, пустой экран. screen = область экрана для цифр (px и доли).",
+      "source": "svg-fallback",
+      "screen": {
+        "x": 52,
+        "y": 52,
+        "w": 896,
+        "h": 386,
+        "fx": 0.052,
+        "fy": 0.081,
+        "fw": 0.896,
+        "fh": 0.603
+      }
+    },
+    "prop_dust": {
+      "file": "prop_dust.png",
+      "width": 320,
+      "height": 260,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "prop",
+      "note": "Облачко пыли (для исчезновения типа в маске).",
+      "source": "svg-fallback"
+    },
+    "greg_ref": {
+      "file": "greg_ref.png",
+      "width": 400,
+      "height": 920,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "group": "ref",
+      "note": "Цельный образ-референс Грега.",
+      "source": "svg-fallback"
+    }
+  },
+  "frame": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 24
+  }
+}
