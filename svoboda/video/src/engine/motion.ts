@@ -96,6 +96,34 @@ export const walk = (frame: number, o: WalkOpts = {}): Partial<Pose> => {
   };
 };
 
+// ---------- Рваная ходьба в стиле South Park ----------
+/** 4 жёсткие позы цикла, смена каждые 2 кадра: ноги шарнирами целиком, корпус «прыгает» боком, голова-блин запаздывает. */
+const JW = [
+  { legL: 34, legR: -34, armL: -30, torso: -5, head: 8, headDx: 5, y: 0, dx: 4 },
+  { legL: 6, legR: -6, armL: -8, torso: 0, head: -2, headDx: 0, y: 10, dx: 0 },
+  { legL: -34, legR: 34, armL: 30, torso: 5, head: -8, headDx: -5, y: 0, dx: -4 },
+  { legL: -6, legR: 6, armL: 8, torso: 0, head: 3, headDx: 0, y: 10, dx: 0 },
+];
+export const jerkWalk = (frame: number, o: { speed?: number } = {}): Partial<Pose> => {
+  const step = Math.floor(hold(frame) / 2);
+  const p = JW[((step % 4) + 4) % 4];
+  const cyc = o.speed ?? 1;
+  void cyc;
+  return {
+    legL: p.legL,
+    legR: p.legR,
+    armL: p.armL,
+    armR: 10 + (p.y ? 6 : 0),
+    torso: p.torso,
+    head: p.head,
+    headDx: p.headDx,
+    headDy: p.y ? -3 : 2,
+    x: p.dx,
+    y: p.y,
+    cupUpright: true,
+  };
+};
+
 // ---------- Говорение ----------
 const VISEMES = ["a", "o", "wide", "a", "o"];
 export interface TalkOpts {

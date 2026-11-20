@@ -4,56 +4,95 @@ import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { AssetsProvider, useAssets, normalizeManifest } from "./engine/assets";
 import { AudioLayers, AudioAvail } from "./engine/audio";
-import { CAM_Z, DepthGroup, FOV, SceneCamera, addShake, depthScale, impactShake, sampleCamera, shake } from "./engine/camera";
+import { CAM_Z, DepthGroup, FOV, SceneCamera, addShake, impactShake, sampleCamera, shake } from "./engine/camera";
 import { PaperPuppet } from "./engine/PaperPuppet";
 import { Sprite } from "./engine/Sprite";
-import { bounce, clamp, easeIn, eyeTick, hold, holdKeys, mix, range, ragdoll, remap, talk, track, track2, walk } from "./engine/motion";
+import { clamp, easeOut, eyeTick, hash, hold, holdKeys, jerkWalk, mix, remap, track2 } from "./engine/motion";
 import { Pose, pose } from "./engine/types";
 import * as S from "./data/scene1";
 
 export type Scene1Props = {
-  /** сырой манифест из public/img/manifest.json (кладёт calculateMetadata) */
   manifest: unknown;
-  /** найденные аудиофайлы */
   audio: AudioAvail;
 };
 
-// ---------- Позы актёров из данных ----------
+// ---------- Позы Грега ----------
 const BASE = (extra: Partial<Pose> = {}) => pose({ x: 0, y: 0, ...extra });
 
 export const gregPose = (frame: number): Pose => {
   const f = hold(frame);
-  const segs = S.GREG;
-  const seg = segs.find((s) => frame >= s.from && frame < s.to) ?? segs[segs.length - 1];
   const base = BASE({ scale: S.GREG_SCALE, seed: 3 });
-  let p: Pose;
-  if (seg.mode === "walk") {
-    const x = remap(f, [[seg.from, seg.x0], [seg.to, seg.x1]]);
-    p = mix(base, { x, y: S.GROUND }, walk(frame, { holdRightArm: true, period: 18 }), eyeTick(frame, 5, 34));
-  } else if (seg.mode === "flight") {
-    const g = remap(f, S.SLOWMO);
-    const u = g / S.FLIGHT_GAME_FRAMES;
-    const r = ragdoll(u, { from: seg.fromXY, to: seg.toXY, apex: seg.apex, spin: seg.spin }, frame);
-    // мёртвое скучающее лицо: рот закрыт, тика нет
-    p = mix(base, r, { mouth: "closed" });
-  } else {
-    const k = holdKeys(frame, seg.keys) ?? seg.keys[0];
+  if (frame < S.HIT_FRAME) {
+    // рваная ходьба: корпус смещается на двойках, ноги - жёсткие шарниры
+    const x = S.gregWalkX(f);
+    return mix(base, { x, y: S.GROUND }, jerkWalk(frame), eyeTick(frame, 5, 34));
+  }
+  if (frame < S.LAND_FRAME) {
+    const k = holdKeys(frame, S.FLIGHT_KEYS) ?? S.FLIGHT_KEYS[0];
     const { f: _f, ...patch } = k;
     void _f;
-    p = mix(base, { x: seg.x }, patch);
-    if (frame >= 560) p = mix(p, eyeTick(frame, 7, 30));
-    if (frame >= S.GREG_LINE.from) p = mix(p, talk(frame, S.GREG_LINE.from, S.GREG_LINE.to, { syllable: 4, seed: 11, nod: 2 }));
-    const b = bounce(frame, S.LAND_FRAME);
-    if (frame >= S.LAND_FRAME && frame < S.LAND_FRAME + 12) p = mix(p, { y: b.dy });
+    const Fl = S.FLIGHT;
+    const u = clamp((f - S.FLIGHT_FROM) / (S.LAND_FRAME - S.FLIGHT_FROM));
+    const w = Math.pow(u, 0.75);
+    const x = Fl.x0 + (Fl.xL - Fl.x0) * (1 - Math.pow(1 - u, 1.5));
+    const cy = Fl.cy0 + (Fl.cyL - Fl.cy0) * u + Fl.apex * 4 * w * (1 - w);
+    let p = mix(base, { x, y: cy - 160 }, patch);
+    if (frame === S.HIT_FRAME + 1) p = { ...p, tint: [1, 1, 1, 0.85] };
+    return p;
+  }
+  const k = holdKeys(frame, S.GREG_GROUND_KEYS) ?? S.GREG_GROUND_KEYS[0];
+  const { f: _f, ...patch } = k;
+  void _f;
+  let p = mix(base, { x: S.LAND_X }, patch);
+  if (frame >= S.GREG_TICK.from) p = mix(p, eyeTick(frame, S.GREG_TICK.seed, S.GREG_TICK.every));
+  if (frame >= S.GREG_LINE.from && frame < S.GREG_LINE.to) {
+    const k0 = frame - S.GREG_LINE.from;
+    const e = Math.max(S.VOICE_ENV[hold(k0)] ?? 0, S.VOICE_ENV[hold(k0) + 1] ?? 0);
+    const open = e > 0.1;
+    p = mix(p, { mouth: open ? "a" : "closed", head: e > 0.5 ? 3 : e > 0.25 ? -1.5 : 0, headDy: e > 0.5 ? -3 : 0 });
   }
   return p;
 };
 
-const carX = (f: number) => remap(hold(f), S.TRACKS.car);
-const bikeXY = (f: number): [number, number] => {
-  const [x, y] = track2(f, S.TRACKS.bike);
-  return [x, y + (hold(f) % 8 < 4 ? 5 : -5)]; // зависание рывками
+// ---------- Суперкар ----------
+interface CarSt {
+  on: boolean;
+  x: number;
+  y: number;
+  flip: boolean;
+  fast: boolean;
+  front: boolean;
+  smoke: boolean;
+}
+const carState = (frame: number): CarSt => {
+  const f = hold(frame);
+  const seg = S.CAR_SEGS.find((s) => f >= s.from && f <= s.to);
+  if (!seg) return { on: false, x: 0, y: 0, flip: false, fast: false, front: false, smoke: false };
+  const x = remap(f, seg.keys);
+  const dx = Math.abs(remap(f + 2, seg.keys) - x);
+  const fast = dx > 60;
+  return { on: true, x, y: seg.y, flip: seg.flip, fast, front: seg.y < S.GROUND - 60, smoke: dx > 36 || (f > 200 && f < 292 && dx > 3) };
 };
+
+const bikeXY = (f: number): [number, number] => {
+  const [x, y] = track2(f, S.BIKE_KEYS);
+  const hf = hold(f);
+  return [x + (Math.floor(hf / 6) % 2 ? 4 : -4), y + (hf % 8 < 4 ? 6 : -6)];
+};
+
+// ---------- Простые плоские примитивы ----------
+const Disc: React.FC<{ x: number; y: number; r: number; color: string; opacity?: number; order?: number }> = ({ x, y, r, color, opacity = 1, order = 480 }) => (
+  <mesh position={[x, y, 0]} scale={[r * 2, r * 2, 1]} renderOrder={order}>
+    <circleGeometry args={[0.5, 28]} />
+    <meshBasicMaterial color={color} transparent opacity={opacity} depthTest={false} depthWrite={false} toneMapped={false} />
+  </mesh>
+);
+const Bar: React.FC<{ x: number; y: number; w: number; h: number; color: string; opacity?: number; order?: number }> = ({ x, y, w, h, color, opacity = 1, order = 480 }) => (
+  <mesh position={[x, y, 0]} scale={[w, h, 1]} renderOrder={order}>
+    <planeGeometry args={[1, 1]} />
+    <meshBasicMaterial color={color} transparent opacity={opacity} depthTest={false} depthWrite={false} toneMapped={false} />
+  </mesh>
+);
 
 // ---------- Билборд ----------
 const billboardH = (a?: { texW: number; texH: number }) => (a ? (S.BILLBOARD.w * a.texH) / a.texW : (S.BILLBOARD.w * 640) / 1000);
@@ -85,7 +124,6 @@ const useBillboardTex = (screen: [number, number, number, number]) => {
       g.fillStyle = "#ff3b30";
       g.fillRect(70, 70, 16, 16);
       if (kind === "g1" || kind === "g2") {
-        // сдвиг горизонтальных полос + цветовой разъезд
         const src = g.getImageData(0, 0, W, H);
         g.fillStyle = "#07070b";
         g.fillRect(0, 0, W, H);
@@ -121,7 +159,6 @@ const BillboardScreen: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame >= B.flipAt + 2) which = "b";
   else if (frame >= B.flipAt) which = "flash";
   else if (frame >= B.glitchFrom) which = Math.floor(hold(frame) / 2) % 2 ? "g1" : "g2";
-  // центр экрана в авторских px
   const cx = B.x - B.w / 2 + (sc[0] + sc[2] / 2) * B.w;
   const cy = B.y + bh / 2 - (sc[1] + sc[3] / 2) * bh;
   return (
@@ -133,66 +170,118 @@ const BillboardScreen: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ---------- Актёры ----------
-/** Пришелец за рулём: настоящий спрайт (prop_alien_driver) или заглушка-кукла. Координаты - в системе машины. */
-const AlienDriver: React.FC<{ dissolve: number; shk: number; front: boolean }> = ({ dissolve, shk, front }) => {
+const AlienDriver: React.FC<{ shk: number; front: boolean }> = ({ shk, front }) => {
   const assets = useAssets();
   if (assets.isReal("alien_driver")) {
-    return <Sprite assetKey="alien_driver" h={S.ALIEN_H} x={S.ALIEN_AT[0]} y={S.ALIEN_AT[1] + shk} order={front ? 460 : 230} dissolve={dissolve} seed={9} />;
+    return <Sprite assetKey="alien_driver" h={S.ALIEN_H} x={S.ALIEN_AT[0]} y={S.ALIEN_AT[1] + shk} order={front ? 460 : 230} seed={9} />;
   }
-  const ap = pose({ x: S.ALIEN_AT[0], y: S.ALIEN_AT[1] - 90 + shk, scale: 1, armL: 75, armR: 70, dissolve, seed: 9 });
+  const ap = pose({ x: S.ALIEN_AT[0], y: S.ALIEN_AT[1] - 90 + shk, scale: 1, armL: 75, armR: 70, seed: 9 });
   return <PaperPuppet char="alien" pose={ap} order={200} />;
 };
 
 const Car: React.FC<{ frame: number }> = ({ frame }) => {
   const f = hold(frame);
-  if (f >= S.VANISH.car.to) return null;
-  const x = carX(f);
-  const cy = remap(f, S.CAR_Y_TRACK);
-  const front = cy < S.GROUND - 60; // едет по проезжей части: впереди Грега
-  const fast = Math.abs(carX(f + 2) - x) > 30;
-  const wob = fast ? (Math.floor(f / 2) % 2 ? 4 : 0) : 0;
-  const rot = fast ? (Math.floor(f / 2) % 2 ? -1.2 : 0.8) : 0;
-  const dis = easeIn(range(f, S.VANISH.car.from, S.VANISH.car.to));
-  // кабина: пришелец сидит чуть позади центра
-  const alienDis = easeIn(range(f, S.VANISH.alien.from, S.VANISH.alien.to));
-  const alienGone = f >= S.VANISH.alien.to;
-  const shk = fast ? (Math.floor(f / 2) % 2 ? 3 : -2) : 0;
+  if (f >= S.VANISH_FRAME) return null;
+  const st = carState(frame);
+  if (!st.on) return null;
+  const dir = st.flip ? -1 : 1;
+  const odd = Math.floor(f / 2) % 2;
+  const braking = f > 236 && f < 296 && f < 290;
+  const wob = st.fast ? (odd ? 4 : 0) : 0;
+  const rot = st.fast ? (odd ? -1.2 : 0.8) : braking ? (odd ? -2.4 : -1) : 0;
+  const shk = st.fast ? (odd ? 3 : -2) : 0;
   return (
-    <>
-      <group position={[x, cy + wob, 0]} rotation={[0, 0, (rot * Math.PI) / 180]}>
-        <Sprite assetKey="car" w={S.CAR_W} order={front ? 450 : 220} dissolve={dis} seed={4} />
-        {!alienGone && <AlienDriver dissolve={alienDis} shk={shk} front={front} />}
-      </group>
-    </>
+    <group position={[st.x, st.y + wob, 0]} rotation={[0, 0, (rot * Math.PI) / 180]} scale={[dir, 1, 1]}>
+      <Sprite assetKey="car" w={S.CAR_W} order={st.front ? 450 : 220} seed={4} />
+      <AlienDriver shk={shk} front={st.front} />
+    </group>
   );
+};
+
+/** Дымок из-под колёс и линии скорости */
+const CarFx: React.FC<{ frame: number }> = ({ frame }) => {
+  const f = hold(frame);
+  if (f >= S.VANISH_FRAME) return null;
+  const out: React.ReactNode[] = [];
+  for (let i = 0; i < 9; i++) {
+    const k = f - 2 * i;
+    const st = carState(k);
+    if (!st.on || !st.smoke) continue;
+    const age = 2 * i;
+    const dir = st.flip ? -1 : 1;
+    out.push(
+      <Sprite key={`p${i}`} assetKey="fx_dust" w={260} x={st.x - dir * 380} y={st.y + 40 + age * 4} scale={0.35 + 0.05 * age} opacity={0.8 * (1 - age / 19)} order={st.front ? 445 : 215} />,
+    );
+  }
+  const now = carState(f);
+  if (now.on && now.fast) {
+    const dir = now.flip ? -1 : 1;
+    for (let i = 0; i < 4; i++) {
+      out.push(<Bar key={`s${i}`} x={now.x - dir * (520 + i * 70)} y={now.y + 50 + i * 40} w={420 - i * 40} h={6} color="#f4f0ff" opacity={0.5} order={now.front ? 449 : 219} />);
+    }
+  }
+  return <>{out}</>;
 };
 
 const Bike: React.FC<{ frame: number }> = ({ frame }) => {
   const f = hold(frame);
-  if (f >= S.VANISH.bike.to) return null;
+  if (f >= S.VANISH_FRAME) return null;
   const [x, y] = bikeXY(f);
   const [x2] = bikeXY(f + 2);
   const tilt = clamp((x2 - x) / 40, -1, 1) * -6;
-  return <Sprite assetKey="bike" w={S.BIKE_W} x={x} y={y} rotation={tilt} order={250} dissolve={easeIn(range(f, S.VANISH.bike.from, S.VANISH.bike.to))} seed={6} />;
+  return <Sprite assetKey="bike" w={S.BIKE_W} x={x} y={y} rotation={tilt} order={250} seed={6} />;
 };
 
+/** Ракеты с дымовым хвостом, взрывы со вспышкой, обломки и дым */
 const Rockets: React.FC<{ frame: number }> = ({ frame }) => {
   const f = hold(frame);
-  const R = S.ROCKET;
-  const ang = (Math.atan2(R.vy, R.vx) * 180) / Math.PI;
+  const out: React.ReactNode[] = [];
+  S.ROCKETS.forEach((R, i) => {
+    const d = f - R.f;
+    if (d < 0 || d > S.ROCKET_DUR + 36) return;
+    const [bx, by] = bikeXY(R.f);
+    const sx = bx + 200;
+    const sy = by - 30;
+    const ang = (Math.atan2(R.ty - sy, R.tx - sx) * 180) / Math.PI;
+    if (d <= S.ROCKET_DUR) {
+      const t = d / S.ROCKET_DUR;
+      const x = sx + (R.tx - sx) * t;
+      const y = sy + (R.ty - sy) * t;
+      out.push(
+        <group key={`r${i}`} position={[x, y, 0]} rotation={[0, 0, (ang * Math.PI) / 180]}>
+          <Sprite assetKey="fx_trail" w={Math.min(420, 120 + d * 60)} x={-100} order={299} />
+          <Sprite assetKey="rocket" w={S.ROCKET_W} order={300} />
+        </group>,
+      );
+      return;
+    }
+    const k = d - S.ROCKET_DUR; // кадров после взрыва
+    const key = (n: string) => `${n}${i}`;
+    if (k <= 8) {
+      const g = k / 8;
+      out.push(<Sprite key={key("b")} assetKey="fx_boom" w={300} x={R.tx} y={R.ty} scale={0.6 + g * 0.9} rotation={i * 40} opacity={1 - g * 0.5} order={305} />);
+      if (k <= 2) out.push(<Disc key={key("d")} x={R.tx} y={R.ty} r={170 - k * 20} color="#fff3c4" opacity={0.9 - k * 0.25} order={306} />);
+      out.push(<Sprite key={key("x")} assetKey="fx_debris" w={380} x={R.tx} y={R.ty + k * 8} scale={0.5 + g * 0.8} opacity={1 - g} order={304} />);
+    }
+    if (k > 2) {
+      const a = k - 2;
+      out.push(<Sprite key={key("s")} assetKey="fx_smoke" w={300} x={R.tx + 12} y={R.ty + 40 + a * 5} scale={0.5 + a * 0.035} opacity={0.9 * (1 - a / 34)} order={303} />);
+      if (a > 6) out.push(<Sprite key={key("s2")} assetKey="fx_smoke" w={220} x={R.tx - 30} y={R.ty + 60 + a * 4} scale={0.4 + a * 0.03} opacity={0.7 * (1 - a / 34)} order={302} />);
+    }
+  });
+  return <>{out}</>;
+};
+
+/** Горящие урны на тротуаре; пламя - лёгкое дрожание масштаба, цвет стабилен */
+const Trashfires: React.FC<{ frame: number }> = ({ frame }) => {
+  if (frame >= S.VANISH_FRAME) return null;
+  const f = hold(frame);
   return (
     <>
-      {S.ROCKET_LAUNCHES.map((L) => {
-        const d = f - L;
-        if (d < 0 || d > R.life + 6) return null;
-        const [bx, by] = bikeXY(L);
-        const sx = bx + 140;
-        const sy = by - 20;
-        if (d <= R.life) return <Sprite key={L} assetKey="rocket" w={S.ROCKET_W} x={sx + R.vx * d} y={sy + R.vy * d} rotation={ang} order={300} />;
-        const k = (d - R.life) / 6;
-        const ex = sx + R.vx * R.life;
-        const ey = sy + R.vy * R.life;
-        return <Sprite key={L} assetKey="fx_boom" w={260} x={ex} y={ey} scale={0.5 + k} opacity={1 - k * 0.4} order={300} />;
+      {S.TRASHFIRES.map(([from, x], i) => {
+        if (f < from) return null;
+        const j = Math.floor(f / 2) % 2 ? 1.04 : 0.97;
+        return <Sprite key={i} assetKey="fx_trashfire" h={230} x={x} y={S.GROUND - 28} scale={j} order={210} />;
       })}
     </>
   );
@@ -204,17 +293,36 @@ const Tooth: React.FC<{ frame: number }> = ({ frame }) => {
   const f = hold(frame);
   const t = clamp((f - T.f) / T.life);
   const x = T.from[0] + (T.to[0] - T.from[0]) * t;
-  const y = T.from[1] + (T.to[1] - T.from[1]) * t + 70 * 4 * t * (1 - t);
-  return <Sprite assetKey="fx_tooth" w={18} x={x} y={y} rotation={t * 540} order={450} />;
+  let y = T.from[1] + (T.to[1] - T.from[1]) * t + T.arc * 4 * t * (1 - t);
+  // подпрыгивает на асфальте
+  const after = f - (T.f + T.life);
+  if (after >= 0 && after < 6) y += [0, 18, 0, 8, 0, 0][Math.floor(after / 1)] ?? 0;
+  return <Sprite assetKey="fx_tooth" w={34} x={x} y={y} rotation={t < 1 ? t * 600 : 25} order={460} />;
 };
 
-const Dust: React.FC<{ frame: number }> = ({ frame }) => {
-  const D = S.VANISH.dust;
-  const f = hold(frame);
-  if (f < D.from || f > D.to) return null;
-  const k = (f - D.from) / (D.to - D.from);
-  const x = carX(S.VANISH.alien.from) - 40;
-  return <Sprite assetKey="fx_dust" w={300} x={x} y={S.CAR_Y + 250 + k * 30} scale={0.5 + k * 1.1} opacity={1 - k} order={500} />;
+/** Эффекты удара: белая звезда-вспышка, взрывная звезда, обломки; пыль шлёпа; хруст плеча */
+const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
+  const out: React.ReactNode[] = [];
+  const H = S.HIT_FRAME;
+  const hx = S.HIT_X - 25;
+  const hy = S.GROUND + 60;
+  if (frame >= H && frame < H + 5) {
+    const k = frame - H;
+    out.push(<Sprite key="fl" assetKey="fx_flash" w={900} x={hx} y={hy} scale={1 + k * 0.1} opacity={Math.max(0, 1 - k * 0.25)} order={600} />);
+    out.push(<Sprite key="bm" assetKey="fx_boom" w={340} x={hx} y={hy} scale={0.9 + k * 0.1} rotation={k * 7} order={601} />);
+    out.push(<Sprite key="db" assetKey="fx_debris" w={520} x={hx + k * 14} y={hy + 30 + k * 6} scale={0.8 + k * 0.15} opacity={Math.max(0, 1 - k * 0.16)} order={602} />);
+  }
+  const L = S.LAND_FRAME;
+  if (frame >= L && frame < L + 18) {
+    const k = frame - L;
+    [-1, 1].forEach((s) => out.push(<Sprite key={`ld${s}`} assetKey="fx_dust" w={300} x={S.LAND_X + 20 + s * (90 + k * 9)} y={S.GROUND + 10 + k * 3} scale={0.5 + k * 0.05} opacity={Math.max(0, 1 - k / 18)} order={470} />));
+    if (k < 3) out.push(<Sprite key="lb" assetKey="fx_boom" w={260} x={S.LAND_X + 10} y={S.GROUND + 40} scale={0.8 + k * 0.2} order={471} />);
+  }
+  const P = S.SHOULDER_FRAME;
+  if (frame >= P && frame < P + 4) {
+    out.push(<Sprite key="pop" assetKey="fx_boom" w={150} x={S.LAND_X - 36} y={S.GROUND + 190} scale={0.8 + (frame - P) * 0.25} rotation={(frame - P) * 20} order={470} />);
+  }
+  return <>{out}</>;
 };
 
 // ---------- Слои фона ----------
@@ -237,7 +345,6 @@ const Layer: React.FC<{ def: S.LayerDef }> = ({ def }) => {
   );
 };
 
-/** Асфальт под слоем ground: при отъезде камеры ниже края картинки (y<-540) */
 const GroundFill: React.FC = () => (
   <mesh position={[0, -540 - 700, 0]} scale={[12000, 1400, 1]} renderOrder={-701}>
     <planeGeometry args={[1, 1]} />
@@ -251,10 +358,12 @@ const World: React.FC = () => {
   const camBase = sampleCamera(frame, S.CAMERA);
   const sh = S.HANDHELD.filter((h) => frame >= h.from && frame < h.to).map((h) => shake(frame, h.amp, h.seed, h.roll));
   const im = S.IMPACTS.map((i) => impactShake(frame, i.f, i.amp, i.dur, i.f));
-  const cam = addShake(camBase, ...sh, ...im);
+  const hd = frame - S.HIT_FRAME;
+  const punch = hd >= 0 && hd < S.HIT_PUNCH.dur ? { zoom: S.HIT_PUNCH.zoom * (1 - hd / S.HIT_PUNCH.dur) } : undefined;
+  const cam = addShake(camBase, ...sh, ...im, punch);
 
-  const sirens = frame < S.SIREN.until;
-  const flash = sirens ? { color: Math.floor(frame / S.SIREN.every) % 2 ? S.SIREN.a : S.SIREN.b, opacity: S.SIREN.opacity } : undefined;
+  const fo = S.FLASH[frame];
+  const flash = fo ? { color: "#ffffff", opacity: fo } : undefined;
 
   const B = S.BILLBOARD;
   return (
@@ -268,12 +377,14 @@ const World: React.FC = () => {
         <Sprite assetKey={B.asset} w={B.w} x={B.x} y={B.y} center order={-795} />
         <BillboardScreen frame={frame} />
       </DepthGroup>
+      <Trashfires frame={frame} />
       <Bike frame={frame} />
       <Rockets frame={frame} />
+      <CarFx frame={frame} />
       <Car frame={frame} />
       <PaperPuppet char="greg" pose={gregPose(frame)} order={400} />
       <Tooth frame={frame} />
-      <Dust frame={frame} />
+      <ImpactFx frame={frame} />
     </>
   );
 };
@@ -292,5 +403,5 @@ export const Scene1: React.FC<Scene1Props> = ({ manifest, audio }) => {
   );
 };
 
-void track;
-void depthScale;
+void easeOut;
+void hash;
