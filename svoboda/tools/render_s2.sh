@@ -15,5 +15,5 @@ FLAGS=(--gl=angle --overwrite)
 [ -d node_modules ] || npm install --no-audit --no-fund
 case "${1:-render}" in
   range) A="${2:?от}"; B="${3:?до}"; npx remotion render src/index.ts Scene2 "$ROOT/out/scene2_${A}-${B}.mp4" --frames="$A-$B" "${FLAGS[@]}" ;;
-  *) npx remotion render src/index.ts Scene2 "$ROOT/out/scene2.mp4" "${FLAGS[@]}"; echo "готово: $ROOT/out/scene2.mp4" ;;
+  *) OUT="${OUT:-scene2_v2}"; npx remotion render src/index.ts Scene2 "$ROOT/out/$OUT.mp4" "${FLAGS[@]}"; echo "готово: $ROOT/out/$OUT.mp4" ;;
 esac

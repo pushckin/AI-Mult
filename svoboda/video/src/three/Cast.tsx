@@ -43,14 +43,13 @@ const fitText = (g: CanvasRenderingContext2D, text: string, cx: number, cy: numb
   g.fillText(text, cx, cy);
 };
 const hoodTex = () =>
-  textTex("hood_npc", 512, 420, (g) => {
-    g.clearRect(0, 0, 512, 420);
+  textTex("hood_npc3", 512, 250, (g) => {
+    g.clearRect(0, 0, 512, 250);
     g.fillStyle = COL.chloe.text;
     g.textAlign = "center";
     g.textBaseline = "middle";
-    fitText(g, "NPC", 256, 80, 440, 190);
-    fitText(g, "LIVES", 256, 215, 480, 150);
-    fitText(g, "MATTER", 256, 340, 500, 130);
+    fitText(g, "NPC LIVES", 256, 66, 500, 130);
+    fitText(g, "MATTER", 256, 184, 500, 150);
   });
 const placardTex = () =>
   textTex("placard_npc", 512, 384, (g) => {
@@ -109,16 +108,26 @@ interface ArmSpec {
   delt?: string; // цвет дельты (шар на плече)
   skin: string;
 }
-const Arm2: React.FC<{ side: 1 | -1; swing: number; abd: number; elbow: number; spec: ArmSpec; hand: number; held?: React.ReactNode; heldRot?: number; heldY?: number }> = ({ side, swing, abd, elbow, spec: s, hand, held, heldRot = 0, heldY = 0 }) => (
-  <group position={[side * s.sx, s.y ?? 0.5, 0]} rotation={[-swing * D2R, 0, side * abd * D2R]}>
-    {s.delt && <Part geo={sphereGeo(16)} color={s.delt} position={[0, 0, 0]} scale={[0.17 * s.up, 0.15 * s.up, 0.16 * s.up]} />}
+/** Кисть-варежка: коробка со скруглением + большой палец; 1 - с указательным, 2 - кулак */
+const Hand: React.FC<{ s: ArmSpec; kind: number; side: 1 | -1 }> = ({ s, kind, side }) => {
+  const k = s.hand * (kind === 2 ? 1.1 : 1);
+  return (
+    <group position={[0, -0.27, 0]}>
+      <Part geo={rbox(0.19 * k, 0.2 * k, 0.15 * k, 0.07 * k)} color={s.skin} px={3} position={[0, -0.03, 0]} />
+      <Part geo={sphereGeo(12)} color={s.skin} px={2.6} position={[-side * 0.095 * k, -0.01, 0.045 * k]} scale={[0.05 * k, 0.07 * k, 0.05 * k]} />
+      {kind === 1 && <Part geo={rcyl(0.045 * k, 0.042 * k, 0.2, 0.018, 12)} color={s.skin} px={2.8} position={[0, -0.2 * 1, 0.01]} />}
+    </group>
+  );
+};
+const Arm2: React.FC<{ side: 1 | -1; swing: number; abd: number; elbow: number; spec: ArmSpec; hand: number; held?: React.ReactNode; heldRot?: number; heldY?: number; shrug?: number }> = ({ side, swing, abd, elbow, spec: s, hand, held, heldRot = 0, heldY = 0, shrug = 0 }) => (
+  <group position={[side * s.sx, (s.y ?? 0.5) + shrug, 0]} rotation={[-swing * D2R, 0, side * abd * D2R]}>
     <Part geo={rcyl((s.upSleeve ? 0.112 : 0.088) * s.up, (s.upSleeve ? 0.105 : 0.082) * s.up, 0.2, 0.035)} color={s.upCol} position={[0, -0.09, 0]} />
+    {s.bicep && <Part geo={sphereGeo(16)} color={s.bicepCol ?? s.skin} px={2.4} position={[0, -0.1, 0.075 * s.bicep]} scale={[0.1 * s.bicep, 0.12 * s.bicep, 0.085 * s.bicep]} />}
     <group position={[0, -0.2, 0]} rotation={[-elbow * D2R, 0, 0]}>
-      {s.bicep && <Part geo={sphereGeo(16)} color={s.bicepCol ?? s.skin} position={[0, 0.03, 0.07 * s.bicep]} scale={[0.11 * s.bicep, 0.12 * s.bicep, 0.1 * s.bicep]} />}
+      <Part geo={sphereGeo(14)} color={s.upCol === s.foCol ? s.foCol : s.upCol} px={2.6} position={[0, 0, 0]} scale={0.082 * s.fo} />
       <Part geo={rcyl((s.foSleeve ? 0.086 : 0.078) * s.fo, (s.foSleeve ? 0.092 : 0.086) * s.fo, 0.24, 0.035)} color={s.foCol} position={[0, -0.1, 0]} />
       {s.foSleeve && <Part geo={rcyl(0.1 * s.fo, 0.1 * s.fo, 0.05, 0.015)} color={s.foCol} px={2.6} position={[0, -0.215, 0]} />}
-      <Part geo={sphereGeo(20)} color={s.skin} position={[0, -0.27, 0]} scale={[0.115 * s.hand * (hand === 2 ? 1.15 : 1), 0.12 * s.hand * (hand === 2 ? 1.1 : 1), 0.1 * s.hand * (hand === 2 ? 1.15 : 1)]} />
-      {hand === 1 && <Part geo={rcyl(0.032, 0.03, 0.2, 0.012, 10)} color={s.skin} px={2.8} position={[0, -0.42, 0.01]} />}
+      <Hand s={s} kind={hand} side={side} />
       {held && (
         <group position={[0, -0.27 + heldY, 0]} rotation={[heldRot * D2R, 0, 0]}>
           {held}
@@ -156,36 +165,39 @@ const SOUND_PTS = (r: number, a0: number): Array<[number, number]> => {
   return out;
 };
 export const Megaphone: React.FC<{ sir?: number }> = ({ sir = 0 }) => (
-  <group scale={0.78}>
-    <group rotation={[Math.PI / 2, 0, 0]} position={[0, 0.03, 0.2]}>
-      <Part geo={rcyl(0.06, 0.2, 0.52, 0.02, 24)} color="#e8263a" px={3.2} />
-      <Part geo={rcyl(0.128, 0.152, 0.08, 0.01, 24)} color="#fbfbf6" px={0} position={[0, 0.02, 0]} scale={[1.03, 1, 1.03]} />
-      <Part geo={rcyl(0.21, 0.21, 0.04, 0.012, 24)} color="#2a2a38" px={3} position={[0, 0.27, 0]} />
+  <group scale={1.2}>
+    {/* конус: узкий конец (к губам) в z=0, раструб вперёд (+z) */}
+    <group rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.31]}>
+      <Part geo={rcyl(0.06, 0.2, 0.5, 0.012, 24)} color="#e8263a" px={3.2} />
+      <Part geo={rcyl(0.145, 0.18, 0.12, 0.008, 24)} color="#fbfbf6" px={0} position={[0, 0.03, 0]} />
+      <Part geo={rcyl(0.206, 0.206, 0.045, 0.012, 24)} color="#2a2a38" px={3} position={[0, 0.268, 0]} />
+      <Part geo={rcyl(0.075, 0.075, 0.07, 0.015, 16)} color="#2a2a38" px={3} position={[0, -0.27, 0]} />
     </group>
-    <Part geo={rbox(0.07, 0.15, 0.06, 0.02)} color="#2a2a38" px={3} position={[0, -0.06, 0.1]} />
+    {/* ручка с курком */}
+    <Part geo={rbox(0.09, 0.26, 0.11, 0.03)} color="#2a2a38" px={3} position={[0, -0.2, 0.2]} rotation={[0.25, 0, 0]} />
+    <Part geo={rbox(0.05, 0.05, 0.06, 0.015)} color="#fbfbf6" px={2.4} position={[0, -0.08, 0.3]} />
     {sir > 0 &&
       [0, 1, 2].map((i) => {
         const r = 0.34 + ((sir + i) % 3) * 0.26;
         const e = extrude(`snd_${i}_${r.toFixed(2)}`, SOUND_PTS(r, 0.55), 0.04, 0);
         return (
-          <group key={i} position={[0, 0.03, 0.46 + ((sir + i) % 3) * 0.2]} rotation={[0, Math.PI / 2, 0]}>
+          <group key={i} position={[0, 0, 0.7 + ((sir + i) % 3) * 0.22]} rotation={[0, Math.PI / 2, 0]}>
             <Part geo={e.geo} hull={e.hull} color={i === 1 ? "#ff8a1c" : "#ffd23a"} px={3} />
           </group>
         );
       })}
   </group>
 );
-const Placard: React.FC = () => (
-  <group position={[0, 0.0, 0]}>
-    <Part geo={rcyl(0.028, 0.028, 1.35, 0.01, 10)} color="#9a6a3a" px={2.8} position={[0, 0.38, 0]} />
+const Placard: React.FC<{ low?: boolean }> = ({ low }) => (
+  <group position={[0, low ? -0.3 : 0.0, 0]}>
+    <Part geo={rcyl(0.028, 0.028, low ? 0.62 : 1.35, 0.01, 10)} color="#9a6a3a" px={2.8} position={[0, low ? 0.27 : 0.38, 0]} />
     <Part geo={rbox(0.9, 0.68, 0.05, 0.015)} color="#d1a468" px={3.2} position={[0.05, 0.92, 0.03]} />
     <TexPlane tex={placardTex()} w={0.84} h={0.63} position={[0.05, 0.92, 0.06]} />
   </group>
 );
 const Shades: React.FC = () => (
-  <group>
-    <Part geo={rbox(0.3, 0.09, 0.05, 0.03)} color="#0c0a10" px={2.4} position={[0, -0.02, 0.04]} />
-    <Part geo={rbox(0.02, 0.02, 0.22, 0.008)} color="#0c0a10" px={2} position={[0.16, -0.02, -0.06]} />
+  <group position={[0, -0.12, 0.1]} scale={0.8}>
+    <Part geo={rbox(0.3, 0.09, 0.04, 0.03)} color="#2d2548" px={2.4} />
   </group>
 );
 const Bag: React.FC = () => (
@@ -238,6 +250,7 @@ const Mouth: React.FC<{ p: PP; lat: number; line?: string; inner?: string }> = (
     <Line lon={0} lat={lat - 3} pts={[[-0.22, -0.05], [0, 0.04], [0.22, -0.05]]} w={0.028} color={line} lift={1.008} visible={p.mouth === 4} />
     <Decal lon={0} lat={lat - 2} rx={0.3} ry={0.17} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} visible={p.mouth === 5} />
     <Decal lon={0} lat={lat + 2} rx={0.26} ry={0.05} color="#fbfbf6" lift={1.012} visible={p.mouth === 5} />
+    <Line lon={0} lat={lat - 2} pts={[[-0.26, -0.03], [-0.13, 0.05], [0, -0.03], [0.13, 0.05], [0.26, -0.03]]} w={0.026} color={line} lift={1.008} visible={p.mouth === 6} />
   </>
 );
 const Tears: React.FC<{ p: PP; lon: number; lat: number }> = ({ p, lon, lat }) => (
@@ -261,7 +274,7 @@ const TonyFace: React.FC<{ p: PP }> = ({ p }) => {
       <Decal lon={0} lat={-27} rx={0.34} ry={0.09} color={c.beard} lift={1.007} />
       {p.acc === 0 ? (
         <>
-          <Decal lon={0} lat={7} rx={0.9} ry={0.22} color="#0c0a10" ring={0.03} ringColor="#0c0a10" lift={1.012} />
+          <Decal lon={0} lat={7} rx={0.78} ry={0.19} color="#0c0a10" ring={0.03} ringColor="#0c0a10" lift={1.012} />
           <Line lon={-24} lat={11} pts={[[-0.3, 0], [0.1, 0.02]]} w={0.016} color="#9aa2d8" lift={1.02} />
           <Line lon={24} lat={11} pts={[[-0.3, 0], [0.1, 0.02]]} w={0.016} color="#9aa2d8" lift={1.02} />
         </>
@@ -460,36 +473,22 @@ const MarcusTorso: React.FC = () => {
     </>
   );
 };
-const ChloeTorso: React.FC<{ p: PP }> = ({ p }) => {
+const ChloeTorso: React.FC<{ p: PP }> = () => {
   const c = COL.chloe;
-  const [w, h, d] = ChloeBuild.torso;
+  const [w, , d] = ChloeBuild.torso;
   const front = d / 2 + 0.005;
   const badges: Array<[number, number, number, string]> = [
-    [-0.3, 0.53, 0.04, "#ff2fa8"], [-0.2, 0.56, 0.035, "#ffd23a"], [-0.1, 0.53, 0.04, "#fbfbf6"], [0.1, 0.55, 0.035, "#ff3b3b"], [0.2, 0.52, 0.04, "#7dff1a"],
-    [0.3, 0.55, 0.035, "#b06bff"], [0.36, 0.44, 0.03, "#ffd23a"], [-0.36, 0.44, 0.03, "#ff8a1c"], [0.34, 0.33, 0.028, "#ff2fa8"], [-0.34, 0.3, 0.028, "#2f6bf0"],
+    [-0.37, 0.5, 0.034, "#ff2fa8"], [-0.37, 0.4, 0.03, "#ffd23a"], [0.37, 0.5, 0.034, "#7dff1a"], [0.37, 0.4, 0.03, "#ff3b3b"], [-0.37, 0.1, 0.03, "#ff8a1c"], [0.37, 0.1, 0.03, "#b06bff"],
   ];
   return (
     <>
       <Part geo={rbox(w + 0.04, 0.1, d + 0.04, 0.04)} color={c.hoodDark} px={2.8} position={[0, 0.04, 0]} />
-      <Part geo={rbox(0.54, 0.12, 0.04, 0.02)} color={c.hoodDark} px={2.4} position={[0, 0.14, front + 0.01]} />
-      <TexPlane tex={hoodTex()} w={0.5} h={0.37} position={[0, 0.27, front + 0.012]} cutout />
+      <TexPlane tex={hoodTex()} w={0.7} h={0.342} position={[0, 0.235, front + 0.012]} cutout />
       {badges.map(([x, y, r, col], i) => (
         <Dot key={i} w={w} d={d} x={x} y={y} r={r} color={col} ink lift={0.01} />
       ))}
       {/* капюшон за шеей и шнурки */}
       <Part geo={sphereGeo(20)} color={c.hoodDark} position={[0, 0.62, -0.17]} scale={[0.4, 0.2, 0.2]} />
-      {([1, -1] as const).map((s) => (
-        <group key={s}>
-          <Part geo={rcyl(0.014, 0.014, 0.2, 0.005, 8)} color="#fbfbf6" px={2} position={[s * 0.06, 0.52, front + 0.012]} />
-          <Part geo={sphereGeo(8)} color="#fbfbf6" px={2} position={[s * 0.06, 0.42, front + 0.012]} scale={0.022} />
-        </group>
-      ))}
-      {/* мегафон на шнурке (после «опускает») */}
-      {p.acc === 1 && (
-        <group position={[0.1, 0.18, front + 0.07]} rotation={[0.5, 0.25, -0.3]} scale={0.8}>
-          <Megaphone />
-        </group>
-      )}
     </>
   );
 };
@@ -503,10 +502,12 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
   const compR = p.arx + p.are - p.tl;
   const compL = p.alx + p.ale - p.tl;
   const heldR =
-    kind === "tony" ? (p.acc === 1 ? <Shades /> : null) : kind === "chloe" ? (p.acc === 0 ? <Megaphone sir={sir} /> : null) : null;
+    kind === "tony" ? (p.hp === 1 ? <Shades /> : null) : kind === "chloe" ? (p.acc === 1 ? <group position={[0, 0.2, -0.24]}><Megaphone sir={sir} /></group> : null) : null;
   const heldRotR = kind === "chloe" ? compR + p.hp : kind === "tony" ? compR * 0.5 : 0;
-  const heldL = kind === "chloe" ? <Placard /> : null;
-  const heldRotL = kind === "chloe" ? compL : 0;
+  // cup: у Хлои наклон плаката назад (град), hp - наклон мегафона в руке (вниз +)
+  const heldL = kind === "chloe" ? <Placard low={p.cup < -40} /> : null;
+  const heldRotL = kind === "chloe" ? compL + p.cup : 0;
+  const shrug = kind === "chloe" && p.hdy < -0.1 ? -p.hdy * 0.5 : 0;
   return (
     <>
       {shadow && <Shadow position={[p.x, groundY + 0.02, p.z]} w={(kind === "tony" ? 0.8 : kind === "chloe" ? 0.6 : 0.46) * p.scale} d={0.34 * p.scale} />}
@@ -525,14 +526,15 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
                 {kind === "tony" && <TonyTorso />}
                 {kind === "marcus" && <MarcusTorso />}
                 {kind === "chloe" && <ChloeTorso p={p} />}
+
                 {/* сумочка у груди (Маркус): рук-держателей не требует, висит на ремешках */}
                 {kind === "marcus" && (
                   <group position={[0, 0.27, td / 2 + 0.09]} rotation={[0.15, 0, 0]}>
                     <Bag />
                   </group>
                 )}
-                <Arm2 side={1} swing={p.alx} abd={p.alz} elbow={p.ale} spec={b.arm} hand={p.hl} held={heldL} heldRot={heldRotL} />
-                <Arm2 side={-1} swing={p.arx} abd={p.arz} elbow={p.are} spec={b.arm} hand={p.hr} held={heldR} heldRot={heldRotR} />
+                <Arm2 side={1} swing={p.alx} abd={p.alz} elbow={p.ale} spec={b.arm} hand={p.hl} held={heldL} heldRot={heldRotL} shrug={shrug} />
+                <Arm2 side={-1} swing={p.arx} abd={p.arz} elbow={p.are} spec={b.arm} hand={p.hr} held={heldR} heldRot={heldRotR} shrug={shrug} />
                 {/* голова */}
                 <group position={[p.hdx, 0.93 + p.hdy, 0]} rotation={[p.hx * D2R, p.hy * D2R, p.hz * D2R]}>
                   <Part geo={sphereGeo(32)} color={b.headCol} px={3.6} scale={[b.head.rx, b.head.ry, b.head.rz]} />
@@ -546,6 +548,11 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
                     </>
                   )}
                   {kind === "chloe" && HAIR_SKIRT(COL.chloe.hair, COL.chloe.hairDark)}
+                  {kind === "chloe" && p.acc === 0 && (
+                    <group position={[0, -0.27, 0.74]} rotation={[-0.05, 0, 0]}>
+                      <Megaphone sir={sir} />
+                    </group>
+                  )}
                   <group scale={[b.head.rx, b.head.ry, b.head.rz]}>
                     {kind === "tony" ? <TonyFace p={p} /> : kind === "marcus" ? <MarcusFace p={p} /> : <ChloeFace p={p} />}
                   </group>

@@ -34,14 +34,14 @@ const CameraRig: React.FC<{ f: Frame }> = ({ f }) => {
 };
 
 /** Горящая урна: большая бочка, три языка плоского огня, столб дыма */
-const BurnBin: React.FC<{ frame: number }> = ({ frame }) => (
+const BurnBin: React.FC<{ frame: number; x: number }> = ({ frame, x }) => (
   <>
-    <group position={[BIN.x, 0, BIN.z]} scale={[2.3, 1.45, 1.6]}>
+    <group position={[x, 0, BIN.z]} scale={[1.9, 1.4, 1.4]}>
       <Bin x={0} z={0} color="#4d6a52" />
     </group>
-    <Flame position={[BIN.x, 1.38, BIN.z + 0.05]} scale={0.62} frame={frame} />
-    <Flame position={[BIN.x - 0.5, 1.38, BIN.z + 0.12]} scale={0.38} frame={frame + 3} />
-    <Flame position={[BIN.x + 0.5, 1.38, BIN.z + 0.12]} scale={0.34} frame={frame + 5} />
+    <Flame position={[x, 1.34, BIN.z + 0.05]} scale={0.58} frame={frame} />
+    <Flame position={[x - 0.42, 1.34, BIN.z + 0.12]} scale={0.34} frame={frame + 3} />
+    <Flame position={[x + 0.42, 1.34, BIN.z + 0.12]} scale={0.3} frame={frame + 5} />
   </>
 );
 
@@ -88,13 +88,14 @@ const World: React.FC<{ tl: S.Timeline; voices: Array<VoiceInfo | null> }> = ({ 
   const sh = S.shotAt(tl, frame);
   const env = useMemo(() => voices.map((v) => v?.env), [voices]);
   const f = frameAt(frame, sh, tl.shots.length, { env });
-  const showBin = sh.n === 7 || sh.n === 8 || sh.n === 9;
   return (
     <>
       <color attach="background" args={[PAL_COLD.sky]} />
       <CameraRig f={f} />
-      <Street pal={PAL_COLD} lampOn time={frame} calm />
-      {showBin && <BurnBin frame={frame} />}
+      <group position={[f.bgx, 0, 0]}>
+        <Street pal={PAL_COLD} lampOn time={frame} calm simple signs={[3]} />
+      </group>
+      {f.bin !== null && <BurnBin frame={frame} x={f.bin} />}
       <Bush shake={f.bushShake} frame={frame} />
       <Leaves k={f.leaves} />
       {f.dust.map((d, i) => (

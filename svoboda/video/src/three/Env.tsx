@@ -60,7 +60,7 @@ export const BUILDINGS: BDef[] = [
 ];
 const FACE_Z = -2.2;
 
-const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number }> = ({ b, pal, idx }) => {
+const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; showSign?: boolean }> = ({ b, pal, idx, simple = false, showSign = true }) => {
   const depth = 6;
   const zc = FACE_Z - depth / 2;
   const fz = FACE_Z + 0.012;
@@ -78,26 +78,26 @@ const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number }> = ({ b, pal, idx
       <Flat geo={planeGeo} color="#1a1a2e" position={[b.w * 0.27, 1.05, fz]} scale={[0.95, 2.1, 1]} />
       <Flat geo={planeGeo} color={pal.win} position={[b.w * 0.27, 1.45, fz + 0.002]} scale={[0.6, 0.7, 1]} />
       {/* козырёк в полоску */}
-      {Array.from({ length: 10 }).map((_, i) => (
-        <Part key={i} geo={rbox(b.w / 10, 0.07, 0.8, 0.02)} color={b.aw[i % 2]} px={0} position={[-b.w / 2 + (i + 0.5) * (b.w / 10), 2.4, FACE_Z + 0.4]} rotation={[0.38, 0, 0]} />
+      {Array.from({ length: simple ? 6 : 10 }).map((_, i, a) => (
+        <Part key={i} geo={rbox(b.w / a.length, 0.07, 0.8, 0.02)} color={b.aw[i % 2]} px={0} position={[-b.w / 2 + (i + 0.5) * (b.w / a.length), 2.4, FACE_Z + 0.4]} rotation={[0.38, 0, 0]} />
       ))}
-      
+
       {/* вывеска (светится, не освещается) */}
-      <Part geo={rbox(3.0, 0.78, 0.14, 0.05)} color="#15141c" px={3.4} position={[0, 3.2, FACE_Z + 0.16]} />
-      <TexPlane tex={signTex(b.sign, pal.neon ? b.fg : "#3a4068", pal.neon ? b.bg : "#101428")} w={2.88} h={0.69} position={[0, 3.2, FACE_Z + 0.235]} />
-      {b.extra && <TexPlane tex={signTex(b.extra, pal.neon ? "#ff3b5c" : "#3a4068", "#1a1020")} w={1.3} h={0.32} position={[0, 3.85, FACE_Z + 0.09]} />}
+      {showSign && <Part geo={rbox(3.0, 0.78, 0.14, 0.05)} color="#15141c" px={3.4} position={[0, 3.2, FACE_Z + 0.16]} />}
+      {showSign && <TexPlane tex={signTex(b.sign, pal.neon ? b.fg : "#3a4068", pal.neon ? b.bg : "#101428")} w={2.88} h={0.69} position={[0, 3.2, FACE_Z + 0.235]} />}
+      {!simple && b.extra && <TexPlane tex={signTex(b.extra, pal.neon ? "#ff3b5c" : "#3a4068", "#1a1020")} w={1.3} h={0.32} position={[0, 3.85, FACE_Z + 0.09]} />}
       {/* верхние окна */}
-      {[-1.9, 1.9].map((x, i) => (
+      {!simple && [-1.9, 1.9].map((x, i) => (
         <Flat key={x} geo={planeGeo} color={lit(i)} position={[x, 3.4, fz]} scale={[0.5, 0.7, 1]} />
       ))}
       <Flat geo={planeGeo} color={lit(7)} position={[-b.w * 0.5 + 0.35, 1.2, fz]} scale={[0.0, 0.0, 1]} />
       {/* объём фасада: пилястры, подоконники с ящиками, кондиционер, выносная вывеска, ступень, парапет и крышная коробка */}
-      {[-1, 1].map((s) => (
+      {!simple && [-1, 1].map((s) => (
         <Part key={`pl${s}`} geo={rbox(0.34, b.h - 0.1, 0.34, 0.05)} color={b.trim} px={2.8} position={[s * (b.w / 2 - 0.2), (b.h - 0.1) / 2, FACE_Z + 0.17]} />
       ))}
       <Part geo={rbox(2.7, 0.14, 0.4, 0.04)} color={b.trim} px={2.6} position={[-b.w * 0.2, 0.42, FACE_Z + 0.2]} />
-      <Part geo={rbox(1.2, 0.1, 0.5, 0.03)} color="#5d5a74" px={2.6} position={[b.w * 0.27, 0.06, FACE_Z + 0.3]} />
-      {[-1.9, 1.9].map((x, i) => (
+      {!simple && <Part geo={rbox(1.2, 0.1, 0.5, 0.03)} color="#5d5a74" px={2.6} position={[b.w * 0.27, 0.06, FACE_Z + 0.3]} />}
+      {!simple && [-1.9, 1.9].map((x, i) => (
         <group key={`wb${x}`}>
           <Part geo={rbox(0.78, 0.1, 0.34, 0.03)} color={b.trim} px={2.6} position={[x, 3.0, FACE_Z + 0.17]} />
           <Part geo={rbox(0.72, 0.2, 0.3, 0.04)} color={i % 2 ? "#6a4a32" : "#3b3f78"} px={2.4} position={[x, 3.15, FACE_Z + 0.2]} />
@@ -105,38 +105,49 @@ const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number }> = ({ b, pal, idx
           <Part geo={sphereGeo(10)} color="#e0394f" px={2} position={[x + 0.12, 3.34, FACE_Z + 0.22]} scale={0.11} />
         </group>
       ))}
-      <Part geo={rbox(0.62, 0.42, 0.5, 0.06)} color="#a9adc4" px={2.6} position={[b.w * 0.36, 3.55 - (idx % 2) * 0.1, FACE_Z + 0.25]} />
-      <group position={[idx % 2 ? b.w / 2 - 0.2 : -b.w / 2 + 0.2, 2.9, FACE_Z + 0.55]}>
+      {!simple && <Part geo={rbox(0.62, 0.42, 0.5, 0.06)} color="#a9adc4" px={2.6} position={[b.w * 0.36, 3.55 - (idx % 2) * 0.1, FACE_Z + 0.25]} />}
+      {!simple && <group position={[idx % 2 ? b.w / 2 - 0.2 : -b.w / 2 + 0.2, 2.9, FACE_Z + 0.55]}>
         <Part geo={rbox(0.1, 0.9, 0.7, 0.03)} color="#15141c" px={3} />
         <Flat geo={planeGeo} color={pal.neon ? b.fg : "#3a4068"} position={[0.056, 0, 0]} rotation={[0, Math.PI / 2, 0]} scale={[0.5, 0.7, 1]} />
         <Flat geo={planeGeo} color={pal.neon ? b.fg : "#3a4068"} position={[-0.056, 0, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[0.5, 0.7, 1]} />
-      </group>
+      </group>}
       <Part geo={rbox(b.w + 0.1, 0.26, 0.2, 0.04)} color={b.trim} px={3} position={[0, b.h + 0.35, FACE_Z - 0.1]} />
-      {idx !== 3 && idx !== 4 && idx % 3 === 0 && <Part geo={rcyl(0.5, 0.5, 0.9, 0.06, 18)} color="#8a6240" px={3} position={[-1.2, b.h + 0.62, FACE_Z - 1.5]} />}
-      {idx !== 3 && idx !== 4 && idx % 3 === 1 && <Part geo={rbox(1.1, 0.7, 0.9, 0.08)} color="#a9adc4" px={3} position={[1.2, b.h + 0.55, FACE_Z - 1.6]} />}
-      {idx % 3 === 2 && <Part geo={rcyl(0.04, 0.04, 1.2, 0.01, 8)} color="#6a6e88" px={2.6} position={[1.6, b.h + 0.9, FACE_Z - 1.4]} />}
+      {!simple && idx !== 3 && idx !== 4 && idx % 3 === 0 && <Part geo={rcyl(0.5, 0.5, 0.9, 0.06, 18)} color="#8a6240" px={3} position={[-1.2, b.h + 0.62, FACE_Z - 1.5]} />}
+      {!simple && idx !== 3 && idx !== 4 && idx % 3 === 1 && <Part geo={rbox(1.1, 0.7, 0.9, 0.08)} color="#a9adc4" px={3} position={[1.2, b.h + 0.55, FACE_Z - 1.6]} />}
+      {!simple && idx % 3 === 2 && <Part geo={rcyl(0.04, 0.04, 1.2, 0.01, 8)} color="#6a6e88" px={2.6} position={[1.6, b.h + 0.9, FACE_Z - 1.4]} />}
       {/* водосточная труба */}
-      <Part geo={rcyl(0.06, 0.06, b.h, 0.01, 10)} color={b.trim} px={2} position={[b.w / 2 - 0.2, b.h / 2, FACE_Z + 0.08]} />
+      {!simple && <Part geo={rcyl(0.06, 0.06, b.h, 0.01, 10)} color={b.trim} px={2} position={[b.w / 2 - 0.2, b.h / 2, FACE_Z + 0.08]} />}
     </group>
   );
 };
 
 // ---------- дальний город ----------
-const winTex = () =>
-  canvasTex("wins", 256, 512, (g) => {
-    g.fillStyle = "#00000000";
-    g.clearRect(0, 0, 256, 512);
-    for (let r = 0; r < 16; r++)
-      for (let c = 0; c < 8; c++) {
-        const h = hash(r * 8 + c, 3);
-        g.fillStyle = h > 0.55 ? "#ffd36a" : h > 0.3 ? "#3b3f78" : "#242a5c";
-        g.fillRect(c * 32 + 7, r * 32 + 7, 18, 18);
-      }
-  });
+const winTex = (simple = false) =>
+  simple
+    ? canvasTex("wins2", 256, 512, (g) => {
+        g.fillStyle = "#1a2a66";
+        g.fillRect(0, 0, 256, 512);
+        for (let r = 0; r < 8; r++)
+          for (let c = 0; c < 4; c++) {
+            const h = hash(r * 4 + c, 3);
+            g.fillStyle = h > 0.7 ? "#ffd36a" : "#243a80";
+            g.fillRect(c * 64 + 14, r * 64 + 12, 36, 40);
+          }
+      })
+    : canvasTex("wins", 256, 512, (g) => {
+        g.fillStyle = "#00000000";
+        g.clearRect(0, 0, 256, 512);
+        for (let r = 0; r < 16; r++)
+          for (let c = 0; c < 8; c++) {
+            const h = hash(r * 8 + c, 3);
+            g.fillStyle = h > 0.55 ? "#ffd36a" : h > 0.3 ? "#3b3f78" : "#242a5c";
+            g.fillRect(c * 32 + 7, r * 32 + 7, 18, 18);
+          }
+      });
 const SKY_BLDGS = [
   [-38, 9, 17], [-27, 8, 11], [-18, 7, 14], [-8, 9, 10], [4, 7, 19], [13, 8, 12], [22, 9, 16], [32, 8, 11], [42, 9, 15], [-48, 8, 10],
 ];
-const Skyline: React.FC<{ pal: EnvPal }> = ({ pal }) => {
+const Skyline: React.FC<{ pal: EnvPal; simple?: boolean }> = ({ pal, simple = false }) => {
   const cold = !pal.neon;
   return (
     <group position={[0, 0, -30]}>
@@ -144,7 +155,7 @@ const Skyline: React.FC<{ pal: EnvPal }> = ({ pal }) => {
         <group key={i} position={[x, 0, -i * 0.6]}>
           <Part geo={rbox(w, h, 6, 0.05)} color={cold ? "#1a2a66" : "#1f2760"} px={2.4} position={[0, h / 2, 0]} />
           <mesh geometry={planeGeo} position={[0, h / 2, 3.02]} scale={[w - 0.8, h - 0.6, 1]} visible={true}>
-            <meshBasicMaterial map={winTex()} transparent={false} toneMapped={false} color="#fff" />
+            <meshBasicMaterial map={winTex(simple)} transparent={false} toneMapped={false} color="#fff" />
           </mesh>
         </group>
       ))}
@@ -302,12 +313,12 @@ export const Billboard: React.FC<{ state: "a" | "g1" | "g2" | "b" }> = ({ state 
 );
 
 // ---------- улица целиком ----------
-export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm?: boolean }> = ({ pal, lampOn, calm = false }) => {
+export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm?: boolean; simple?: boolean; signs?: number[] }> = ({ pal, lampOn, calm = false, simple = false, signs }) => {
   const seams = useMemo(() => Array.from({ length: 41 }).map((_, i) => -24 + i * 1.2), []);
   return (
     <group>
       <Sky pal={pal} />
-      <Skyline pal={pal} />
+      <Skyline pal={pal} simple={simple} />
       {/* тротуар (плита) и бордюр */}
       <Part geo={rbox(80, 0.3, 3.9, 0.03)} color="#8d8ba6" px={0} position={[0, -0.15, -0.25]} />
       <Part geo={rbox(80, 0.36, 0.3, 0.04)} color="#c2bfd6" px={2.4} position={[0, -0.14, 1.78]} />
@@ -320,14 +331,18 @@ export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm
         <Flat key={i} geo={planeGeo} color="#f0d24a" position={[-26 + i * 4, -0.295, 7.2]} rotation={[-Math.PI / 2, 0, 0]} scale={[2, 0.14, 1]} />
       ))}
       {BUILDINGS.map((b, i) => (
-        <Building key={i} b={b} pal={pal} idx={i} />
+        <Building key={i} b={b} pal={pal} idx={i} simple={simple} showSign={!signs || signs.includes(i)} />
       ))}
-      <Palm x={-7.2} z={-1.3} h={4.4} seed={1} />
-      <Palm x={-4.8} z={-1.6} h={3.9} seed={2} />
-      <Palm x={9.6} z={-1.3} h={4.2} seed={4} />
-      <Palm x={14.0} z={-1.5} h={4.5} seed={5} />
-      <Lamp x={-3.6} z={1.45} on={lampOn} />
-      {!calm && <Lamp x={7.6} z={1.45} on={lampOn} />}
+      {!simple && (
+        <>
+          <Palm x={-7.2} z={-1.3} h={4.4} seed={1} />
+          <Palm x={-4.8} z={-1.6} h={3.9} seed={2} />
+          <Palm x={9.6} z={-1.3} h={4.2} seed={4} />
+          <Palm x={14.0} z={-1.5} h={4.5} seed={5} />
+          <Lamp x={-3.6} z={1.45} on={lampOn} />
+          {!calm && <Lamp x={7.6} z={1.45} on={lampOn} />}
+        </>
+      )}
       {!calm && (
         <>
           <Bin x={-4.4} z={-1.0} />
