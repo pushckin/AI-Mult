@@ -17,3 +17,6 @@ node_modules/
 __pycache__/
 .step-*/
 *.raw*.wav
+
+# svoboda renders
+svoboda/out/*.mp4
