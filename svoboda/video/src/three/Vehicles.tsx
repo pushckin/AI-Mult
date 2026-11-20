@@ -63,18 +63,11 @@ export const SuperCar: React.FC<{ spin?: number; driver?: PP | null; wobble?: nu
         <Flat geo={rbox(0.9, 0.2, 0.02, 0.01)} color="#2a2f44" position={[-0.25, 0.58, s * 0.955]} />
         <Flat geo={rbox(2.4, 0.07, 0.02, 0.01)} color="#6f8fd0" position={[0.3, 0.38, s * 0.955]} />
         <Flat geo={rbox(3.4, 0.12, 0.02, 0.01)} color="#8fb0e6" position={[0.1, 0.55, s * 0.953]} rotation={[0, 0, 0.012]} />
-        {/* светлые плоские блики */}
-        <Flat geo={rbox(1.1, 0.06, 0.02, 0.01)} color="#ffffff" position={[0.9, 0.74, s * 0.93]} rotation={[0, 0, -0.1]} />
-        <Flat geo={rbox(0.7, 0.05, 0.02, 0.01)} color="#ffffff" position={[-1.2, 0.97, s * 0.865]} />
-        <Flat geo={rbox(0.5, 0.045, 0.02, 0.01)} color="#ffffff" position={[-0.3, 0.7, s * 0.955]} rotation={[0, 0, 0.35]} />
         {/* фары и стоп-сигналы */}
         <Flat geo={circleGeo} color="#fff6b8" position={[2.0, 0.66, s * 0.62]} rotation={[0, Math.PI / 2, 0]} scale={[0.14, 0.09, 1]} double />
         <Flat geo={planeGeo} color="#e0273a" position={[-2.151, 0.62, s * 0.55]} rotation={[0, -Math.PI / 2, 0]} scale={[0.4, 0.1, 1]} double />
       </group>
     ))}
-    {/* блики на капоте и крыше (сверху) */}
-    <Flat geo={planeGeo} color="#ffffff" position={[1.35, 0.835, 0.3]} rotation={[-Math.PI / 2, 0, -0.1]} scale={[0.8, 0.09, 1]} double />
-    <Flat geo={planeGeo} color="#ffffff" position={[-1.2, 0.965, -0.4]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.6, 0.08, 1]} double />
     {/* выхлопы */}
     {[0.32, -0.32].map((z) => (
       <group key={z} position={[-2.2, 0.42, z]} rotation={[0, 0, Math.PI / 2]}>
@@ -152,8 +145,6 @@ export const Bike: React.FC<{ spin?: number; flame?: number; rockets?: boolean[]
       {/* корпус-торпеда */}
       <Part geo={sphereGeo(24)} color="#343a6e" position={[0.15, 0.82, 0]} scale={[0.95, 0.34, 0.36]} />
       <Part geo={rbox(1.0, 0.3, 0.5, 0.12)} color="#2b3060" position={[-0.65, 0.78, 0]} />
-      {/* блик на корпусе */}
-      <Flat geo={planeGeo} color="#6f7ad8" position={[0.35, 1.0, 0.0]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.9, 0.1, 1]} double />
       {/* кабина-стекло */}
       <Part geo={sphereGeo(16)} color="#7fd0f2" px={3} position={[0.55, 1.02, 0]} scale={[0.28, 0.18, 0.2]} />
       {/* сиденье, руль */}

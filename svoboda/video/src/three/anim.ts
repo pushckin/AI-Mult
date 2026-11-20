@@ -3,17 +3,17 @@ import { PP, PPatch, mixP } from "./Person";
 import * as S from "../data/scene1";
 import { clamp, hold, holdKeys, hash, jitter, lerp, remap } from "./util";
 
-export const GS = 1.4; // масштаб Грега
+export const GS = 1.5; // масштаб Грега
 export const GZ = 0.42; // глубина Грега
 const STAND_Y = 0.43 * GS;
-export const LIE_X = 0.0;
+export const LIE_X = 0.5;
 export const STAND_X = -0.45;
 export const HIT_X = -1.0;
 
 const G = (o: PPatch = {}): PP => mixP({ scale: GS, z: GZ, y: STAND_Y, x: 0, ry: 72, eyeR: 2 }, o);
 
 // ---------------- Фаза 1: бредёт по тротуару (0-167) ----------------
-const walkX = (f: number) => -2.0 + 0.04 * Math.floor(Math.min(f, 150) / 6);
+const walkX = (f: number) => -2.0 + 0.027 * Math.floor(Math.min(f, 150) / 4);
 
 /** Куда смотрит/что делает: [от, до, заплатка] */
 const WALK_LOOKS: ReadonlyArray<readonly [number, number, PPatch]> = [
@@ -55,32 +55,56 @@ const FL = (f: number, o: PPatch, alt: PPatch = {}): FK => ({ f, mouth: 1, eyeL:
 /** Полёт: жёсткие позы (кувырок против часовой, 450 градусов), дальше - плюх на спину */
 export const FLIGHT_KEYS: FK[] = [
   FL(S.HIT_FRAME, { rz: 4, ry: -58, tl: 38, alx: 70, arx: 70, ale: 60, are: 60, llx: -30, lrx: -50, llk: 40, lrk: 20, hx: 20, hy: -10, cup: 20 }, { tl: 44, hx: 26, llx: -36, alx: 82 }),
-  FL(178, { rz: 28, ry: -58, tl: 50, alx: 100, arx: 90, ale: 40, are: 50, llx: 20, lrx: 40, llk: 60, lrk: 40, hx: 28, hy: -14 }, { tl: 38, llx: 34, hx: 18, ale: 70 }),
+  FL(176, { rz: 28, ry: -58, tl: 50, alx: 100, arx: 90, ale: 40, are: 50, llx: 20, lrx: 40, llk: 60, lrk: 40, hx: 28, hy: -14 }, { tl: 38, llx: 34, hx: 18, ale: 70 }),
   FL(190, { rz: 78, ry: -46, tl: 10, alx: 160, arx: 150, ale: 10, are: 10, llx: 40, lrx: 10, llk: 10, lrk: 70, hx: -10, hy: -20, mouth: 2 }, { tl: -10, alx: 130, llx: 70, lrx: 30, hx: -24 }),
   FL(206, { rz: 150, ry: -30, tl: 0, alx: 150, arx: 160, ale: 30, are: 10, llx: -50, lrx: 50, llk: 20, lrk: 20, hx: -22, hy: 12, mouth: 2 }, { llx: -70, lrx: 20, alx: 120, arx: 175, hx: -10 }),
   FL(222, { rz: 215, ry: -12, tl: -14, alx: 110, arx: 130, ale: 50, are: 40, llx: 60, lrx: -40, llk: 10, lrk: 60, hx: 20, hy: -16 }, { llx: 40, lrx: -60, alx: 140, arx: 100 }),
   FL(246, { rz: 290, ry: 20, rx: -14, tl: 12, alx: 90, arx: 140, ale: 20, are: 20, llx: 20, lrx: 70, llk: 50, lrk: 20, hx: 10, hy: 8, mouth: 2 }, { llx: 50, lrx: 40, alx: 130, arx: 100, hy: -8 }),
-  FL(268, { rz: 372, ry: 50, rx: -40, tl: 20, alx: 130, arx: 90, ale: 30, are: 20, llx: 10, lrx: 40, llk: 30, lrk: 60, hx: -10, hy: -40 }, { alx: 100, arx: 130, llx: 30, hx: 0 }),
-  FL(282, { rz: 0, ry: 70, rx: -58, tl: 10, alx: 140, arx: 120, ale: 20, are: 40, llx: 20, lrx: 50, llk: 40, lrk: 20, hx: 0, hy: -50, mouth: 2 }, { alx: 110, arx: 150, llx: 50, hx: 10 }),
-  FL(290, { rz: 0, ry: 86, rx: -84, tl: 0, alx: 120, arx: 130, ale: 10, are: 20, llx: 10, lrx: 30, llk: 10, lrk: 10, hx: 0, hy: -70, mouth: 1 }, { alx: 90, arx: 100 }),
+  FL(268, { rz: 360, ry: 50, rx: -40, tl: 20, alx: 130, arx: 90, ale: 30, are: 20, llx: 10, lrx: 40, llk: 30, lrk: 60, hx: -10, hy: -40 }, { alx: 100, arx: 130, llx: 30, hx: 0 }),
+  FL(282, { rz: 360, ry: 70, rx: -58, tl: 10, alx: 140, arx: 120, ale: 20, are: 40, llx: 20, lrx: 50, llk: 40, lrk: 20, hx: 0, hy: -50, mouth: 2 }, { alx: 110, arx: 150, llx: 50, hx: 10 }),
+  FL(290, { rz: 360, ry: 86, rx: -84, tl: 0, alx: 120, arx: 130, ale: 10, are: 20, llx: 10, lrx: 30, llk: 10, lrk: 10, hx: 0, hy: -70, mouth: 1 }, { alx: 90, arx: 100 }),
 ];
 export const flightPos = (f: number) => {
   const F0 = S.FLIGHT_FROM;
   const t = clamp((Math.min(S.LAND_FRAME - 1, F0 + Math.floor((f - F0) / 4) * 4) - F0) / (S.LAND_FRAME - 1 - F0));
-  const x = lerp(HIT_X + 0.25, LIE_X + 0.1, t);
-  const APEX_T = 0.3;
-  const y = t < APEX_T ? lerp(0.95, 3.25, 1 - Math.pow(1 - t / APEX_T, 2)) : lerp(3.25, 0.5, Math.pow((t - APEX_T) / (1 - APEX_T), 2));
+  const x = lerp(HIT_X + 0.55, LIE_X + 0.1, 1 - Math.pow(1 - t, 2.4));
+  const APEX_T = 0.22;
+  const y = t < APEX_T ? lerp(1.5, 3.1, 1 - Math.pow(1 - t / APEX_T, 2)) : lerp(3.1, 0.5, Math.pow((t - APEX_T) / (1 - APEX_T), 2));
   return { x, y, z: GZ + 0.35 * Math.sin(t * Math.PI) };
+};
+/** Контакт с машиной: 3 жёстких кадра (168, 170, 172) */
+const CONTACT: ReadonlyArray<readonly [number, number]> = [[HIT_X, 0.82], [HIT_X + 0.2, 0.98], [HIT_X + 0.4, 1.2]];
+const flightPatch = (frame: number): PPatch => {
+  const F0 = S.FLIGHT_FROM;
+  const f4 = F0 + Math.floor((frame - F0) / 4) * 4;
+  let k0 = FLIGHT_KEYS[0];
+  let k1 = FLIGHT_KEYS[FLIGHT_KEYS.length - 1];
+  for (let i = 0; i < FLIGHT_KEYS.length - 1; i++) {
+    if (FLIGHT_KEYS[i].f <= f4 && f4 <= FLIGHT_KEYS[i + 1].f) {
+      k0 = FLIGHT_KEYS[i];
+      k1 = FLIGHT_KEYS[i + 1];
+      break;
+    }
+  }
+  const t = k1.f === k0.f ? 1 : clamp((f4 - k0.f) / (k1.f - k0.f));
+  const out: Record<string, number> = {};
+  for (const key of Object.keys(k1) as Array<keyof FK>) {
+    if (key === "f" || key === "alt" || key === "px" || key === "py") continue;
+    const a = (k0[key] as number | undefined) ?? 0;
+    const b = k1[key] as number;
+    out[key] = lerp(a, b, t);
+  }
+  return out as PPatch;
 };
 
 // Лежит на спине: rx -90, ry 90 - голова к -x
-const LIE = (o: PPatch = {}): PP => mixP({ scale: GS, z: GZ + 0.06, x: LIE_X, y: 0.33, rx: -90, ry: 90, hy: -72, tl: 0, alx: 0, arx: 6, ale: 0, are: 0, llz: 6, lrz: 6, mouth: 0, eyeL: 0, eyeR: 0, ...o });
+const LIE = (o: PPatch = {}): PP => mixP({ scale: GS, z: GZ - 0.05, x: LIE_X, y: 0.5, rx: -90, ry: 90, hy: -72, tl: 0, alx: 0, arx: 6, ale: 0, are: 0, llz: 6, lrz: 6, mouth: 0, eyeL: 0, eyeR: 0, ...o });
 type LK = { f: number } & PPatch;
 const LK_ = (f: number, o: PPatch = {}): LK => ({ f, ...o });
 export const LIE_KEYS: LK[] = [
-  LK_(S.LAND_FRAME, { y: 0.48, hy: -40, hx: 20, alx: 120, arx: 130, llx: 30, lrx: 40, mouth: 1, eyeL: 1, eyeR: 1, tl: 30 }),
-  LK_(S.LAND_FRAME + 2, { y: 0.36, hy: -62, hx: -16, alx: 100, arx: 110, llx: 10, lrx: 20, mouth: 1, eyeL: 3, eyeR: 3 }),
-  LK_(S.LAND_FRAME + 4, { y: 0.34, hy: -72, hx: 10, alx: 70, arx: 60, mouth: 1, eyeL: 3, eyeR: 3 }),
+  LK_(S.LAND_FRAME, { y: 0.64, hy: -40, hx: 20, alx: 120, arx: 130, llx: 30, lrx: 40, mouth: 1, eyeL: 1, eyeR: 1, tl: 30 }),
+  LK_(S.LAND_FRAME + 2, { y: 0.52, hy: -62, hx: -16, alx: 100, arx: 110, llx: 10, lrx: 20, mouth: 1, eyeL: 3, eyeR: 3 }),
+  LK_(S.LAND_FRAME + 4, { y: 0.50, hy: -72, hx: 10, alx: 70, arx: 60, mouth: 1, eyeL: 3, eyeR: 3 }),
   LK_(S.LAND_FRAME + 7, { hy: -72, alx: 30, arx: 30, eyeL: 3, eyeR: 3 }),
   LK_(S.LAND_FRAME + 12, { hy: -70, hx: 4, alx: 20, arx: 20, eyeL: 3, eyeR: 3 }),
   LK_(312, { hy: -68, hx: 8, alx: 16, eyeL: 0, eyeR: 2 }),
@@ -114,8 +138,8 @@ export const RISE_KEYS: LK[] = [
   RK(S.RISE_FROM, { hy: -70, hx: 0 }),
   RK(484, { hy: -60, hx: 24, alx: 40, tl: 8, eyeL: 0, eyeR: 2, mouth: 1 }), // голова приподнялась
   RK(488, { hy: -68, hx: 8, alx: -30, arx: -30, tl: 0, mouth: 0 }),
-  RK(492, { hy: -50, hx: 26, alx: -50, arx: -45, tl: 26, y: 0.34, x: LIE_X }),
-  RK(496, { hy: -40, hx: 20, alx: -62, arx: -58, tl: 52, y: 0.36 }), // садится
+  RK(492, { hy: -50, hx: 26, alx: -50, arx: -45, tl: 26, y: 0.50, x: LIE_X }),
+  RK(496, { hy: -40, hx: 20, alx: -62, arx: -58, tl: 52, y: 0.42 }), // садится
   RK(500, { hy: -36, hx: 14, alx: -70, arx: -64, tl: 74, y: 0.38 }),
   RK(504, { hy: -28, hx: 8, alx: -66, arx: -60, tl: 86, y: 0.38 }), // сидит
   RK(510, { hy: -30, hx: 10, alx: -50, arx: -55, tl: 88, y: 0.4, llx: 40, lrx: 50, llk: 40, lrk: 50 }), // колени
@@ -153,7 +177,7 @@ export const gregPose = (frame: number): PP => {
   const f = hold(frame);
   // ---- 0..167 ----
   if (frame < S.HIT_FRAME) {
-    const ph = Math.floor(f / 6) % 2;
+    const ph = Math.floor(f / 4) % 2;
     const look = WALK_LOOKS.find(([a, b]) => f >= a && f < b)?.[2] ?? {};
     const turning = f >= 140;
     const ryK: Array<[number, number]> = [[0, 72], [138, 72], [142, 48], [146, 22], [150, 0], [154, -22], [158, -40], [162, -54], [168, -58]];
@@ -168,14 +192,19 @@ export const gregPose = (frame: number): PP => {
   }
   // ---- удар и полёт ----
   if (frame < S.LAND_FRAME) {
+    if (frame < S.FLIGHT_FROM) {
+      const ci = Math.min(2, Math.floor((frame - S.HIT_FRAME) / 2));
+      const { f: _kf, alt, px, py, ...patch } = FLIGHT_KEYS[0];
+      void _kf; void px; void py;
+      const [cx, cy] = CONTACT[ci];
+      const jt = ci === 1 ? alt : {};
+      return G({ ...patch, ...jt, x: cx, y: cy, z: GZ, rx: 0, tl: patch.tl! + ci * 6 });
+    }
+    const patch = flightPatch(frame);
+    const odd = Math.floor((frame - S.FLIGHT_FROM) / 4) % 2 === 1;
     const k = holdKeys(frame, FLIGHT_KEYS) ?? FLIGHT_KEYS[0];
-    const { f: kf, alt, px, py, ...patch } = k;
-    void px; void py;
-    const odd = Math.floor((frame - kf) / 4) % 2 === 1;
-    const hitStop = frame < S.FLIGHT_FROM;
-    const odd2 = Math.floor(frame / 2) % 2 === 1;
-    const pos = hitStop ? { x: HIT_X + (odd2 ? 0.05 : 0), y: 0.82 + (odd2 ? 0.04 : 0), z: GZ } : flightPos(f);
-    return G({ ...patch, ...(odd && !hitStop ? alt : {}), ...(hitStop && odd2 ? alt : {}), x: pos.x + (odd && !hitStop ? 0.04 : 0), y: pos.y + (odd && !hitStop ? 0.06 : 0), z: pos.z, rx: patch.rx ?? 0 });
+    const pos = flightPos(f);
+    return G({ ...patch, ...(odd ? k.alt : {}), x: pos.x + (odd ? 0.04 : 0), y: pos.y + (odd ? 0.06 : 0), z: pos.z, rx: patch.rx ?? 0 });
   }
   // ---- лежит и встаёт ----
   if (frame < S.RISE_FROM) {
@@ -194,15 +223,15 @@ export const gregPose = (frame: number): PP => {
   const { f: _g, ...rpatch } = rk;
   void _g;
   // до 510 лежит/сидит (LIE-основа), после - стоячая основа
-  let p: PP = frame < 514 ? LIE(rpatch) : G({ ry: 0, x: remap(f, [[514, -0.05], [538, STAND_X]]), arx: 24, are: 80, alz: 8, ...rpatch });
+  let p: PP = frame < 514 ? LIE(rpatch) : G({ ry: 0, x: remap(f, [[514, LIE_X - 0.3], [538, STAND_X]]), arx: 24, are: 80, alz: 8, ...rpatch });
   if (frame >= 514 && frame < 538) p = { ...p, scale: GS, z: GZ + 0.04 - (frame - 514) * 0.0006 };
   if (frame >= 538) p = { ...p, z: GZ + 0.04 };
   // тик глаза
   if (frame >= 626 && Math.floor(f / 2) % 15 === 7) p = { ...p, eyeL: 2, eyeR: 3, brow: -1 };
   if (frame >= S.GREG_LINE.from && frame < S.GREG_LINE.to) {
     const k0 = f - S.GREG_LINE.from;
-    const e = Math.max(S.VOICE_ENV[k0] ?? 0, S.VOICE_ENV[k0 + 1] ?? 0);
-    p = { ...p, mouth: e > 0.5 ? 2 : e > 0.12 ? 1 : 0, hx: p.hx + (e > 0.5 ? 3 : 0) };
+    const e = S.VOICE_ENV[k0] ?? 0;
+    p = { ...p, mouth: e > 0.5 ? 2 : e > 0.24 ? 1 : 0, hx: p.hx + (e > 0.5 ? 3 : 0) };
   }
   if (frame >= 604) {
     const w = SWAY[Math.floor((f - 604) / 6) % SWAY.length];
@@ -225,17 +254,17 @@ export const carState = (frame: number): CarSt => {
   if (f >= 58 && f <= 92) { x = R([[58, -15], [92, 15]], f); fast = true; }
   else if (f >= 98 && f <= 130) { x = R([[98, 15], [130, -15]], f); z = lane - 0.9; yaw = 180; fast = true; }
   else if (f >= 134 && f < S.HIT_FRAME) {
-    x = R([[134, -15.5], [150, -9.5], [156, -7.4], [160, -6.1], [163, -5.0], [165, -4.2], [S.HIT_FRAME - 1, -3.35]], f);
+    x = R([[134, -17], [150, -11], [156, -8.6], [160, -6.9], [164, -5.2], [166, -4.3], [S.HIT_FRAME - 1, -3.6]], f);
     z = R([[134, lane], [152, lane], [156, 3.0], [160, 1.6], [163, 0.3], [165, CAR_Z], [S.HIT_FRAME - 1, CAR_Z]], f);
     yaw = R([[134, 0], [152, 0], [156, 16], [160, 24], [163, 12], [165, 3], [S.HIT_FRAME - 1, 0]], f);
     dy = f >= 158 && f < 166 ? ([0.18, 0.05, 0.12, 0][Math.floor((f - 158) / 2)] ?? 0) : 0;
     fast = true;
   } else if (f >= S.HIT_FRAME) {
     z = CAR_Z;
-    x = R([[S.HIT_FRAME, -3.35], [S.FLIGHT_FROM - 1, -3.35], [186, -2.8], [206, -1.4], [230, 1.2], [254, 2.6], [276, 3.2], [S.LAND_FRAME, 3.35], [1000, 3.35]], f);
+    x = R([[S.HIT_FRAME, -3.55], [S.FLIGHT_FROM - 1, -3.3], [186, -2.8], [206, -1.4], [230, 1.2], [254, 2.6], [276, 3.2], [S.LAND_FRAME, 3.35], [1000, 3.35]], f);
     braking = f > 228 && f < S.LAND_FRAME;
     pitch = braking ? (Math.floor(f / 2) % 2 ? -3.2 : -1.6) : f >= S.FLIGHT_FROM && f < 230 ? 1.2 : 0;
-    if (f >= S.HIT_FRAME && f < S.FLIGHT_FROM) dy = Math.floor(f / 2) % 2 ? 0.05 : 0;
+    if (f >= S.HIT_FRAME && f < S.FLIGHT_FROM) { dy = Math.floor(f / 2) % 2 ? 0.05 : 0; pitch = -3; }
     yaw = braking ? (Math.floor(f / 2) % 2 ? 3 : 1) : 0;
   } else on = false;
   if (!on) return { on, x, z, yaw, dy, pitch, spin: 0, fast, braking };
@@ -262,29 +291,38 @@ export const alienPose = (frame: number): PP => {
 };
 
 // ---------------- Байк ----------------
-const BIKE_K: ReadonlyArray<readonly [number, number, number, number, number]> = [
-  [0, -3.2, 3.5, -0.8, 0], [24, 0.6, 3.0, 0.2, 0], [40, 3.8, 3.9, -0.6, 8], [52, 5.6, 4.1, -1.2, 90], [64, 4.4, 3.8, 0.6, 180], [90, -0.6, 2.8, 0.9, 180],
-  [110, -3.6, 3.2, 0.0, 180], [118, -4.6, 3.9, -0.9, 270], [128, -3.0, 3.3, -0.4, 360], [150, 0.0, 3.1, 0.3, 360], [168, 2.0, 3.0, -0.4, 350],
-  [200, 3.8, 3.6, -1.0, 360], [300, 3.4, 3.7, -1.2, 360], [470, 3.4, 3.6, -1.2, 360],
+// Летает в верхней части неба слева направо и обратно (дугами); два пролёта «за билбордом» (z<-5, билборд его закрывает, а не наоборот).
+type BK = readonly [number, number, number, number, number];
+const LOOP: ReadonlyArray<BK> = [
+  [0, -9.8, 5.5, -2.0, 0], [14, -5.2, 6.5, -2.0, 0], [28, -1.2, 6.9, -2.2, 0], [34, 0.3, 6.9, -2.4, 0],
+  [38, 0.5, 6.9, -2.5, 180], [64, -7.6, 5.9, -2.0, 180], [76, -10.6, 5.6, -2.0, 180], [77, -10.8, 5.5, -2.0, 0],
 ];
+const buildBikeKeys = (): BK[] => {
+  const ks: BK[] = [];
+  const add = (b: number, l: ReadonlyArray<BK>) => l.forEach(([f, x, y, z, yw]) => ks.push([b + f, x, y, z, yw]));
+  add(0, LOOP.slice(0, 7)); // 0-76
+  // пролёт слева направо за билбордом, и обратно (78-170)
+  add(78, [[0, -10.8, 5.5, -2.0, 0], [10, -4.0, 6.4, -2.6, 0], [20, 0.4, 6.8, -5.4, 0], [38, 13, 6.2, -6.8, 0], [39, 13.4, 6.2, -6.8, 180],
+    [40, 13.4, 6.6, -6.8, 180], [62, 2.0, 6.9, -5.6, 180], [76, -3.0, 6.5, -2.4, 180], [88, -9.0, 5.6, -2.0, 180], [92, -11.0, 5.5, -2.0, 180], [93, -11.0, 5.5, -2.0, 0]]);
+  for (let b = 172; b < 520; b += 77) add(b, LOOP);
+  return ks.sort((a, b) => a[0] - b[0]);
+};
+const BIKE_K = buildBikeKeys();
 export interface BikeSt { x: number; y: number; z: number; yaw: number; roll: number; pitch: number; flame: number }
 export const bikeState = (frame: number): BikeSt => {
   const f = hold(frame);
-  const g = (ff: number) => {
-    const ks = BIKE_K;
-    const xs: Array<[number, number]> = ks.map((k) => [k[0], k[1]]);
-    return [remap(ff, xs), remap(ff, ks.map((k) => [k[0], k[2]] as [number, number])), remap(ff, ks.map((k) => [k[0], k[3]] as [number, number])), remap(ff, ks.map((k) => [k[0], k[4]] as [number, number]))];
-  };
-  const [x0, y, z0, yaw] = g(f);
-  const sw = f > 168 ? 1 : 0.4;
-  const x = x0 + Math.sin(f * 0.09) * 0.7 * sw;
-  const z = z0 + Math.cos(f * 0.07) * 0.3 * sw;
-  const [, , , yaw2] = g(f + 4);
-  const turning = Math.abs(yaw2 - yaw) > 6;
+  const ch = (idx: number) => remap(f, BIKE_K.map((k) => [k[0], k[idx]] as [number, number]));
+  const x = ch(1);
+  const y = ch(2);
+  const z = ch(3);
+  const yawBase = ch(4);
   const odd = Math.floor(f / 2) % 2;
-  const roll = (turning ? 24 : 0) + (odd ? 5 : -5) + Math.sin(f * 0.21) * 4;
-  const bob = Math.sin(f * 0.37) * 0.12 + (odd ? 0.04 : 0);
-  return { x, y: y + bob, z, yaw, roll, pitch: (odd ? 2.5 : -2.5) + (f > 168 ? 0 : -4), flame: 1 + (Math.floor(f / 2) % 2) };
+  const yaw = yawBase + (yawBase % 180 === 0 ? Math.sin(f * 0.11) * 16 : 0);
+  const yawN = remap(f + 4, BIKE_K.map((k) => [k[0], k[4]] as [number, number]));
+  const turning = Math.abs(yawN - yawBase) > 6;
+  const roll = (turning ? 22 : 0) + (odd ? 6 : -6) + Math.sin(f * 0.21) * 4;
+  const bob = Math.sin(f * 0.37) * 0.14 + (odd ? 0.06 : 0);
+  return { x, y: y + bob - 0.9, z, yaw, roll, pitch: (odd ? 3 : -3) + Math.sin(f * 0.13) * 4, flame: 1 + (Math.floor(f / 2) % 2) };
 };
 export const podHidden = (frame: number): boolean[] => {
   const h = [false, false, false, false, false, false];
@@ -316,13 +354,13 @@ export const extraPose = (frame: number, e: ExtraDef): PP | null => {
 };
 
 // ---------------- Камера ----------------
+// Статичная: общий план (0-479) с еле заметным боковым дрейфом без зума, затем жёсткий стык на средний план (480+).
 export const cameraAt = (frame: number) => {
-  const camX = remap(frame, [[0, 0.4], [456, 0.9], [480, 0.9], [720, -0.05]]);
-  const camZ = remap(frame, [[0, 8.5], [456, 7.6], [480, 7.6], [720, 6.7]]);
-  const camY = remap(frame, [[0, 1.45], [456, 1.5], [480, 1.5], [720, 1.55]]);
-  const tgtY = remap(frame, [[0, 2.45], [456, 2.5], [480, 2.4], [720, 1.85]]);
-  const tgtX = camX + remap(frame, [[0, 0], [720, -0.1]]);
-  return { camX, camZ, camY, tgtX, tgtY };
+  if (frame < S.RISE_FROM) {
+    const camX = remap(frame, [[0, -1.05], [S.VANISH_FRAME, -0.4]]);
+    return { camX, camY: 2.0, camZ: 9.9, tgtX: -0.65, tgtY: 3.0 };
+  }
+  return { camX: -0.5, camY: 1.55, camZ: 7.4, tgtX: -0.5, tgtY: 1.85 };
 };
 export const shakeAt = (frame: number): { x: number; y: number } => {
   const kick = (f0: number, amp: number, dur: number) => {

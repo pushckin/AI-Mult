@@ -37,16 +37,16 @@ export const ALIEN_COL: Palette = { skin: "#f2c49b", shirt: "#f2c49b", collar: "
 const GregFace: React.FC<{ p: PP; c: Palette }> = ({ p, c }) => {
   const eyeY = 8;
   const eye = (side: 1 | -1, st: number) => {
-    const lon = side * 17;
+    const lon = side * 20;
     const big = st === 1;
-    const rad = big ? 0.3 : 0.27;
+    const rad = big ? 0.36 : 0.33;
     const lx = p.lx * 0.1;
     const ly = p.ly * 0.1;
     return (
       <group key={side}>
         <Decal lon={lon} lat={eyeY} rx={rad} color="#fbfbf6" ring={0.04} lift={1.004} />
         {/* зрачок на сфере головы, со смещением взгляда */}
-        <Decal lon={lon + (lx * 180) / Math.PI} lat={eyeY + (ly * 180) / Math.PI} rx={big ? 0.06 : 0.075} color="#0c0a10" lift={1.011} visible={st !== 3} />
+        <Decal lon={lon + (lx * 180) / Math.PI} lat={eyeY + (ly * 180) / Math.PI} rx={big ? 0.075 : 0.1} color="#0c0a10" lift={1.011} visible={st !== 3} />
         {/* веко: кожа закрывает верх (прищур) или весь глаз (закрыт) */}
         <Decal lon={lon} lat={eyeY + 9} rx={rad + 0.01} ry={rad * 0.62} color={c.skin} lift={1.014} ring={0.0} visible={st === 2 || st === 3} />
         <Line lon={lon} lat={eyeY + (st === 3 ? 0 : 2)} pts={[[-0.3, 0], [0.3, 0]]} w={0.02} color="#0c0a10" lift={1.019} visible={st === 2 || st === 3} />
@@ -54,7 +54,7 @@ const GregFace: React.FC<{ p: PP; c: Palette }> = ({ p, c }) => {
     );
   };
   const brow = (side: 1 | -1) => (
-    <Line key={`b${side}`} lon={side * 17} lat={eyeY + 20} pts={[[-0.26, side * 0.0 - 0.02 * p.brow * side], [0.0, 0.03 + 0.03 * p.brow], [0.26, 0.0 + 0.06 * p.brow * -side * 0]]}
+    <Line key={`b${side}`} lon={side * 20} lat={eyeY + 20} pts={[[-0.26, side * 0.0 - 0.02 * p.brow * side], [0.0, 0.03 + 0.03 * p.brow], [0.26, 0.0 + 0.06 * p.brow * -side * 0]]}
       w={0.038} color={c.hair} rot={side * (-12 + p.brow * -14)} lift={1.01} />
   );
   return (
@@ -136,7 +136,7 @@ const Leg: React.FC<{ side: 1 | -1; swing: number; spread: number; knee: number;
   </group>
 );
 
-const HEAD_G = { rx: 0.45, ry: 0.4, rz: 0.37 };
+const HEAD_G = { rx: 0.56, ry: 0.45, rz: 0.37 };
 const HEAD_A = { rx: 0.4, ry: 0.52, rz: 0.36 };
 
 // ---- лицо статиста ----

@@ -141,7 +141,7 @@ export const Flat: React.FC<Omit<PartProps, "px"> & { double?: boolean; order?: 
 
 /** Круглая плоская тень на земле (непрозрачная тёмная лепёшка, без размытия) */
 const shadowGeo = new THREE.CircleGeometry(1, 28);
-export const Shadow: React.FC<{ position: [number, number, number]; w: number; d: number; color?: string }> = ({ position, w, d, color = "#1d1c2e" }) => (
+export const Shadow: React.FC<{ position: [number, number, number]; w: number; d: number; color?: string }> = ({ position, w, d, color = "#4e4c6a" }) => (
   <mesh geometry={shadowGeo} material={flatMat(color)} position={position} rotation={[-Math.PI / 2, 0, 0]} scale={[w, d, 1]} renderOrder={1} />
 );
 

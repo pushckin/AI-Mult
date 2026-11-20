@@ -45,7 +45,7 @@ const TexPlane: React.FC<{ tex: THREE.Texture; w: number; h: number; position: [
 // ---------- палитра ----------
 export interface EnvPal { sky: string; win: string; winOff: string; neon: boolean; }
 export const PAL_NIGHT: EnvPal = { sky: "#14143e", win: "#ffd36a", winOff: "#3b3f78", neon: true };
-export const PAL_COLD: EnvPal = { sky: "#0d1a40", win: "#3c4d84", winOff: "#2a3566", neon: false };
+export const PAL_COLD: EnvPal = { sky: "#0e2a66", win: "#ffe9a0", winOff: "#6f80c0", neon: true };
 
 // ---------- здания ----------
 interface BDef { x: number; w: number; h: number; wall: string; trim: string; sign: string; fg: string; bg: string; aw: [string, string]; extra?: string }
@@ -91,6 +91,30 @@ const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number }> = ({ b, pal, idx
         <Flat key={x} geo={planeGeo} color={lit(i)} position={[x, 3.4, fz]} scale={[0.5, 0.7, 1]} />
       ))}
       <Flat geo={planeGeo} color={lit(7)} position={[-b.w * 0.5 + 0.35, 1.2, fz]} scale={[0.0, 0.0, 1]} />
+      {/* объём фасада: пилястры, подоконники с ящиками, кондиционер, выносная вывеска, ступень, парапет и крышная коробка */}
+      {[-1, 1].map((s) => (
+        <Part key={`pl${s}`} geo={rbox(0.34, b.h - 0.1, 0.34, 0.05)} color={b.trim} px={2.8} position={[s * (b.w / 2 - 0.2), (b.h - 0.1) / 2, FACE_Z + 0.17]} />
+      ))}
+      <Part geo={rbox(2.7, 0.14, 0.4, 0.04)} color={b.trim} px={2.6} position={[-b.w * 0.2, 0.42, FACE_Z + 0.2]} />
+      <Part geo={rbox(1.2, 0.1, 0.5, 0.03)} color="#5d5a74" px={2.6} position={[b.w * 0.27, 0.06, FACE_Z + 0.3]} />
+      {[-1.9, 1.9].map((x, i) => (
+        <group key={`wb${x}`}>
+          <Part geo={rbox(0.78, 0.1, 0.34, 0.03)} color={b.trim} px={2.6} position={[x, 3.0, FACE_Z + 0.17]} />
+          <Part geo={rbox(0.72, 0.2, 0.3, 0.04)} color={i % 2 ? "#6a4a32" : "#3b3f78"} px={2.4} position={[x, 3.15, FACE_Z + 0.2]} />
+          <Part geo={sphereGeo(10)} color="#2fa24e" px={2} position={[x - 0.2, 3.32, FACE_Z + 0.2]} scale={0.13} />
+          <Part geo={sphereGeo(10)} color="#e0394f" px={2} position={[x + 0.12, 3.34, FACE_Z + 0.22]} scale={0.11} />
+        </group>
+      ))}
+      <Part geo={rbox(0.62, 0.42, 0.5, 0.06)} color="#a9adc4" px={2.6} position={[b.w * 0.36, 3.55 - (idx % 2) * 0.1, FACE_Z + 0.25]} />
+      <group position={[idx % 2 ? b.w / 2 - 0.2 : -b.w / 2 + 0.2, 2.9, FACE_Z + 0.55]}>
+        <Part geo={rbox(0.1, 0.9, 0.7, 0.03)} color="#15141c" px={3} />
+        <Flat geo={planeGeo} color={pal.neon ? b.fg : "#3a4068"} position={[0.056, 0, 0]} rotation={[0, Math.PI / 2, 0]} scale={[0.5, 0.7, 1]} />
+        <Flat geo={planeGeo} color={pal.neon ? b.fg : "#3a4068"} position={[-0.056, 0, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[0.5, 0.7, 1]} />
+      </group>
+      <Part geo={rbox(b.w + 0.1, 0.26, 0.2, 0.04)} color={b.trim} px={3} position={[0, b.h + 0.35, FACE_Z - 0.1]} />
+      {idx !== 3 && idx !== 4 && idx % 3 === 0 && <Part geo={rcyl(0.5, 0.5, 0.9, 0.06, 18)} color="#8a6240" px={3} position={[-1.2, b.h + 0.62, FACE_Z - 1.5]} />}
+      {idx !== 3 && idx !== 4 && idx % 3 === 1 && <Part geo={rbox(1.1, 0.7, 0.9, 0.08)} color="#a9adc4" px={3} position={[1.2, b.h + 0.55, FACE_Z - 1.6]} />}
+      {idx % 3 === 2 && <Part geo={rcyl(0.04, 0.04, 1.2, 0.01, 8)} color="#6a6e88" px={2.6} position={[1.6, b.h + 0.9, FACE_Z - 1.4]} />}
       {/* водосточная труба */}
       <Part geo={rcyl(0.06, 0.06, b.h, 0.01, 10)} color={b.trim} px={2} position={[b.w / 2 - 0.2, b.h / 2, FACE_Z + 0.08]} />
     </group>
@@ -118,9 +142,9 @@ const Skyline: React.FC<{ pal: EnvPal }> = ({ pal }) => {
     <group position={[0, 0, -30]}>
       {SKY_BLDGS.map(([x, w, h], i) => (
         <group key={i} position={[x, 0, -i * 0.6]}>
-          <Part geo={rbox(w, h, 6, 0.05)} color={cold ? "#161f4a" : "#1f2760"} px={2.4} position={[0, h / 2, 0]} />
+          <Part geo={rbox(w, h, 6, 0.05)} color={cold ? "#1a2a66" : "#1f2760"} px={2.4} position={[0, h / 2, 0]} />
           <mesh geometry={planeGeo} position={[0, h / 2, 3.02]} scale={[w - 0.8, h - 0.6, 1]} visible={true}>
-            <meshBasicMaterial map={winTex()} transparent={false} toneMapped={false} color={cold ? "#556" : "#fff"} />
+            <meshBasicMaterial map={winTex()} transparent={false} toneMapped={false} color="#fff" />
           </mesh>
         </group>
       ))}
@@ -215,23 +239,23 @@ export const Hydrant: React.FC<{ x: number; z: number }> = ({ x, z }) => (
 );
 
 // ---------- билборд ----------
-export const BB = { x: 4.7, y: 6.1, z: -4.0, w: 5.4, h: 3.0 };
+export const BB = { x: 5.2, y: 6.35, z: -4.0, w: 5.0, h: 2.4 };
 const bbCanvas = (kind: "a" | "g1" | "g2" | "b") =>
-  canvasTex(`bb_${kind}`, 1280, 704, (g) => {
+  canvasTex(`bb_${kind}`, 1280, 640, (g) => {
     const W = 1280;
-    const H = 704;
+    const H = 640;
     g.fillStyle = "#07070b";
     g.fillRect(0, 0, W, H);
     const draw = (time: string, col: string, showDate: boolean) => {
       g.textAlign = "center";
       g.textBaseline = "alphabetic";
-      g.font = `900 ${showDate ? 330 : 360}px 'Courier New','DejaVu Sans Mono',monospace`;
+      g.font = `900 ${showDate ? 300 : 400}px 'Courier New','DejaVu Sans Mono',monospace`;
       g.fillStyle = col;
-      g.fillText(time, W / 2, showDate ? 360 : 440);
+      g.fillText(time, W / 2, showDate ? 330 : 430);
       if (showDate) {
-        g.font = `900 112px ${FONT}`;
+        g.font = `900 100px ${FONT}`;
         g.fillStyle = "#ffe9b0";
-        g.fillText("19 НОЯБРЯ 2026", W / 2, 560);
+        g.fillText("19 НОЯБРЯ 2026", W / 2, 510);
       }
     };
     if (kind === "b") {
@@ -240,36 +264,36 @@ const bbCanvas = (kind: "a" | "g1" | "g2" | "b") =>
     }
     draw("23:59", "#ff8a1c", true);
     if (kind === "g1" || kind === "g2") {
-      const src = g.getImageData(0, 0, W, H);
-      g.fillStyle = "#07070b";
-      g.fillRect(0, 0, W, H);
-      let y = 0;
-      let i = 0;
-      while (y < H) {
-        const hh = 30 + ((i * 53 + (kind === "g1" ? 7 : 31)) % 90);
-        const dx = ((i * 97 + (kind === "g1" ? 13 : 59)) % 160) - 80;
-        g.putImageData(src, dx, 0, 0, y, W, Math.min(hh, H - y));
-        y += hh;
-        i++;
-      }
-      g.fillStyle = "#27e5ff";
-      g.fillRect(0, 120 + (kind === "g1" ? 0 : 200), W, 26);
+      // глитч: яркие красные блоки поверх табло (2 кадра)
+      g.fillStyle = "#ff1a1a";
+      const blocks = kind === "g1" ? [[80, 70, 420, 130], [640, 190, 560, 110], [220, 380, 700, 90], [900, 20, 300, 80]] : [[360, 40, 520, 120], [60, 230, 380, 100], [760, 330, 440, 130], [200, 500, 600, 80]];
+      for (const [x, y, w, h] of blocks) g.fillRect(x, y, w, h);
     }
   });
 export const Billboard: React.FC<{ state: "a" | "g1" | "g2" | "b" }> = ({ state }) => (
   <group position={[BB.x, 0, BB.z]}>
-    {/* ножки */}
+    {/* ножки с раскосами */}
     {[-2.0, 2.0].map((x) => (
-      <Part key={x} geo={rcyl(0.17, 0.17, BB.y - BB.h / 2 + 0.2, 0.03, 14)} color="#4a4d62" px={3.4} position={[x, (BB.y - BB.h / 2 + 0.2) / 2, 0]} />
+      <Part key={x} geo={rcyl(0.17, 0.17, BB.y - BB.h / 2 + 0.2, 0.03, 14)} color="#4a4d62" px={3.4} position={[x, (BB.y - BB.h / 2 + 0.2) / 2, -0.1]} />
     ))}
-    
+    {[-1, 1].map((s) => (
+      <Part key={s} geo={rbox(0.1, 1.3, 0.1, 0.03)} color="#4a4d62" px={2.6} position={[s * 1.0, BB.y - BB.h / 2 - 0.55, -0.1]} rotation={[0, 0, -s * 0.5]} />
+    ))}
+    {/* мостик-помост и перила */}
+    <Part geo={rbox(BB.w + 0.2, 0.1, 1.0, 0.03)} color="#2b2d3c" px={3} position={[0, BB.y - BB.h / 2 - 0.05, 0.45]} />
+    <Part geo={rbox(BB.w + 0.2, 0.06, 0.06, 0.02)} color="#6a6e88" px={2.4} position={[0, BB.y - BB.h / 2 + 0.38, 0.92]} />
+    {[-2.4, -1.2, 0, 1.2, 2.4].map((x) => (
+      <Part key={x} geo={rbox(0.05, 0.43, 0.05, 0.015)} color="#6a6e88" px={2.2} position={[x, BB.y - BB.h / 2 + 0.17, 0.92]} />
+    ))}
     {/* рама */}
-    <Part geo={rbox(BB.w, BB.h, 0.42, 0.09)} color="#34374a" px={4} position={[0, BB.y, 0]} />
-    <Part geo={rbox(BB.w + 0.1, 0.24, 0.5, 0.06)} color="#262838" px={3} position={[0, BB.y + BB.h / 2 + 0.12, 0]} />
-    <TexPlane tex={bbCanvas(state)} w={BB.w - 0.42} h={BB.h - 0.42} position={[0, BB.y, 0.225]} />
-    {/* прожекторы */}
+    <Part geo={rbox(BB.w, BB.h, 0.55, 0.09)} color="#34374a" px={4} position={[0, BB.y, 0]} />
+    <Part geo={rbox(BB.w + 0.12, 0.26, 0.7, 0.06)} color="#262838" px={3} position={[0, BB.y + BB.h / 2 + 0.12, 0]} />
+    <Part geo={rbox(BB.w - 0.3, 0.18, 0.62, 0.05)} color="#262838" px={2.6} position={[0, BB.y - BB.h / 2 - 0.02, 0.04]} />
+    <TexPlane tex={bbCanvas(state)} w={BB.w - 0.4} h={BB.h - 0.4} position={[0, BB.y, 0.285]} />
+    {/* прожекторы на выносных штангах */}
     {[-2.0, 0, 2.0].map((x) => (
-      <group key={x} position={[x, BB.y + BB.h / 2 + 0.34, 0.25]}>
+      <group key={x} position={[x, BB.y + BB.h / 2 + 0.34, 0.45]}>
+        <Part geo={rbox(0.08, 0.08, 0.5, 0.02)} color="#1d1e2a" px={2.2} position={[0, -0.04, -0.2]} />
         <Part geo={rbox(0.34, 0.16, 0.26, 0.04)} color="#1d1e2a" px={2.6} />
         <Flat geo={planeGeo} color="#fff3b0" position={[0, -0.02, 0.135]} scale={[0.26, 0.09, 1]} />
       </group>
@@ -286,7 +310,7 @@ export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number }> = 
       <Skyline pal={pal} />
       {/* тротуар (плита) и бордюр */}
       <Part geo={rbox(80, 0.3, 3.9, 0.03)} color="#8d8ba6" px={0} position={[0, -0.15, -0.25]} />
-      <Part geo={rbox(80, 0.3, 0.22, 0.03)} color="#c2bfd6" px={2.2} position={[0, -0.15, 1.75]} />
+      <Part geo={rbox(80, 0.36, 0.3, 0.04)} color="#c2bfd6" px={2.4} position={[0, -0.14, 1.78]} />
       {seams.map((x) => (
         <Flat key={x} geo={planeGeo} color="#6c6a88" position={[x, 0.004, -0.25]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.04, 3.7, 1]} />
       ))}

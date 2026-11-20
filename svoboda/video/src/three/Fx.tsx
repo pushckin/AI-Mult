@@ -1,7 +1,7 @@
 // Плоские непрозрачные эффекты из 3D-форм: звезда-импакт, облака дыма, пламя, обломки, пыль, мусор.
 import React from "react";
 import * as THREE from "three";
-import { Part, Flat, rbox, sphereGeo, extrude, planeGeo, rcyl } from "./toon";
+import { Part, Flat, rbox, sphereGeo, extrude, planeGeo, rcyl, circleGeo, flatMat, INK } from "./toon";
 import { hash, clamp, hold } from "./util";
 
 const starPts = (n: number, ro: number, ri: number, seed: number): Array<[number, number]> => {
@@ -27,10 +27,22 @@ export const Star: React.FC<{ position: [number, number, number]; size: number; 
   );
 };
 
-/** Клубы дыма-«облака»: непрозрачные плоско-закрашенные сферы с контуром */
-export const Puff: React.FC<{ position: [number, number, number]; r: number; color?: string; px?: number }> = ({ position, r, color = "#cfd0dc", px = 3 }) => (
-  <Part geo={sphereGeo(16)} color={color} px={px} position={position} scale={r} />
-);
+/** Плоское облако из 4 кругов одного цвета: общий ровный контур, без внутренних линий (контуры всех кругов под заливками) */
+const PUFF_C: ReadonlyArray<readonly [number, number, number]> = [[-0.62, -0.08, 0.62], [0.02, 0.16, 0.82], [0.64, -0.06, 0.62], [0.02, -0.3, 0.58]];
+export const Puff: React.FC<{ position: [number, number, number]; r: number; color?: string; px?: number }> = ({ position, r, color = "#cfd0dc", px = 3 }) => {
+  const ow = 0.007 * px;
+  const zj = (hash(Math.round(position[0] * 37) + Math.round(position[1] * 53), 7) - 0.5) * 0.5;
+  return (
+    <group position={[position[0], position[1], position[2] + zj]}>
+      {PUFF_C.map(([x, y, k], i) => (
+        <mesh key={`o${i}`} geometry={circleGeo} material={flatMat(INK)} position={[x * r, y * r, 0]} scale={r * k + ow} />
+      ))}
+      {PUFF_C.map(([x, y, k], i) => (
+        <mesh key={`f${i}`} geometry={circleGeo} material={flatMat(color)} position={[x * r, y * r, 0.03]} scale={r * k} />
+      ))}
+    </group>
+  );
+};
 
 /** Дымовой столб: клубы растут и сносятся ветром, цикл на двойках */
 export const SmokeColumn: React.FC<{ x: number; y: number; z: number; frame: number; n?: number; dark?: boolean; h?: number }> = ({ x, y, z, frame, n = 6, dark = true, h = 2.3 }) => {
@@ -40,7 +52,7 @@ export const SmokeColumn: React.FC<{ x: number; y: number; z: number; frame: num
       {Array.from({ length: n }).map((_, j) => {
         const age = ((f + j * 3) % (n * 3)) / (n * 3); // 0..1
         const rr = 0.13 + age * 0.3;
-        return <Puff key={j} position={[x + age * 1.2 + (j % 2 ? 0.08 : -0.08), y + age * h, z + 0.05]} r={rr} color={dark ? (age > 0.5 ? "#5a5a76" : "#4a4a64") : "#d6d6e2"} />;
+        return <Puff key={j} position={[x + age * 1.2 + (j % 2 ? 0.08 : -0.08), y + age * h, z + 0.05]} r={rr} color={dark ? (age > 0.5 ? "#8b8aa6" : "#75748f") : "#e6e6f0"} />;
       })}
     </>
   );
@@ -77,7 +89,7 @@ export const Explosion: React.FC<{ at: [number, number, number]; k: number; seed
     [-1, 0, 1].forEach((j) => {
       const a = kh - 2;
       const rr = a < 24 ? 0.26 + Math.min(a, 14) * 0.03 : Math.max(0.05, 0.68 - (a - 24) * 0.035);
-      out.push(<Puff key={`p${j}`} position={[x + j * 0.3 + a * 0.012 * j, y + 0.15 + a * 0.06 + Math.abs(j) * 0.05, z + 0.3]} r={rr} color={a < 6 ? "#8a8aa4" : a < 14 ? "#6c6c88" : "#55556f"} />);
+      out.push(<Puff key={`p${j}`} position={[x + j * 0.3 + a * 0.012 * j, y + 0.15 + a * 0.06 + Math.abs(j) * 0.05, z + 0.3]} r={rr} color={a < 6 ? "#d0cfdc" : a < 14 ? "#aeadc2" : "#8f8ea8"} />);
     });
   }
   if (kh < 14) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Рендер сцены 1.
-#   tools/render_s1.sh                 -> out/scene1_v5.mp4 (полный рендер, 720 кадров)
+#   tools/render_s1.sh                 -> out/scene1_v6.mp4 (полный рендер, 720 кадров)
 #   tools/render_s1.sh checks [frames] -> кадры-проверки out/check/s1_<кадр>.png (по умолчанию 12 таймкодов)
 #   tools/render_s1.sh range A B       -> быстрый рендер части кадров в out/scene1_<A>-<B>.mp4
 # Переменные: BROWSER=/usr/bin/google-chrome (если headless-shell не скачивается), CONC=2
@@ -41,7 +41,7 @@ case "$MODE" in
     npx remotion render src/index.ts Scene1 "$OUT/scene1_${A}-${B}.mp4" --frames="$A-$B" "${FLAGS[@]}"
     ;;
   *)
-    npx remotion render src/index.ts Scene1 "$OUT/scene1_v5.mp4" "${FLAGS[@]}"
-    echo "готово: $OUT/scene1_v5.mp4"
+    npx remotion render src/index.ts Scene1 "$OUT/scene1_v6.mp4" "${FLAGS[@]}"
+    echo "готово: $OUT/scene1_v6.mp4"
     ;;
 esac

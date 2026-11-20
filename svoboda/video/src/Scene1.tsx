@@ -47,15 +47,15 @@ const EXTRA_COLS: Palette[] = [
 // ---------- Грег ----------
 const Greg: React.FC<{ frame: number }> = ({ frame }) => {
   const p = A.gregPose(frame);
-  // тень под телом
-  const lying = frame >= S.LAND_FRAME;
-  const h = Math.max(0, p.y - 0.4);
-  const sw = lying ? 2.3 : Math.max(0.5, 1.0 - h * 0.12);
-  const sd = lying ? 0.9 : Math.max(0.28, 0.5 - h * 0.05);
-  const sx = lying ? p.x - 0.6 : p.x;
+  const lying = frame >= S.LAND_FRAME && frame < S.RISE_FROM + 30;
+  const h = Math.max(0, p.y - 0.65);
+  const k = Math.max(0.35, 1 - h * 0.18);
+  // тень под Грегом присутствует всю сцену
+  const sw = lying ? 1.45 : 0.58 * k;
+  const sd = lying ? 0.5 : 0.32 * k;
   return (
     <>
-      <Shadow position={[sx, 0.03, p.z + (lying ? 0.0 : 0)]} w={sw * 0.5 * (lying ? 1.4 : 0.9)} d={sd * 0.5 * (lying ? 1.4 : 0.9)} />
+      <Shadow position={[lying ? p.x + 0.1 : p.x, 0.03, p.z + 0.08]} w={sw} d={sd} />
       <Person pose={p} kind="greg" shadow={false} />
     </>
   );
@@ -127,7 +127,7 @@ const Bikes: React.FC<{ frame: number }> = ({ frame }) => {
   });
   return (
     <>
-      <group position={[b.x, b.y, b.z]} rotation={[0, b.yaw * D2R, 0]} scale={1.2}>
+      <group position={[b.x, b.y, b.z]} rotation={[0, b.yaw * D2R, 0]} scale={1.1}>
         <group rotation={[0, 0, b.pitch * D2R]}>
           <group rotation={[b.roll * D2R, 0, 0]}>
             <Bike spin={hold(frame) * 25} flame={b.flame} rockets={hidden.map((h) => !h)} />
@@ -166,25 +166,31 @@ const Papers: React.FC<{ frame: number }> = ({ frame }) => (
 const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
   const out: React.ReactNode[] = [];
   const H = S.HIT_FRAME;
-  if (frame >= H && frame < H + 6) {
+  // контакт: небольшая звезда на стыке бампера и ног (2-3 кадра), не закрывает позу
+  if (frame >= H && frame < S.FLIGHT_FROM) {
     const k = Math.floor((frame - H) / 2);
-    out.push(<Star key="st" position={[A.HIT_X - 0.55, 0.55, A.GZ + 0.9]} size={[0.75, 1.0, 0.75][k]} rot={[0, 0.22, -0.18][k]} seed={20 + k} n={10} />);
+    out.push(<Star key="st" position={[A.HIT_X - 0.62 + k * 0.1, 0.48 + k * 0.1, A.GZ + 0.9]} size={[0.42, 0.52, 0.36][k]} rot={[0.1, 0.4, -0.2][k]} seed={20 + k} n={8} />);
   }
-  if (frame >= H + 2 && frame < S.FLIGHT_FROM) {
+  if (frame >= H && frame < H + 14) {
     const k = hold(frame) - H;
-    for (let i = 0; i < 5; i++) out.push(<Chunk key={`d${i}`} position={[A.HIT_X + (i - 2) * 0.3 + k * 0.05 * (i - 2), 0.4 + k * 0.06 + (i % 2) * 0.3, A.GZ + 0.6]} rot={[k * 0.2 + i, k * 0.3, i]} s={0.12 + (i % 3) * 0.04} color={i % 2 ? "#6c5a52" : "#d9c9a8"} />);
+    for (let i = 0; i < 5; i++) out.push(<Chunk key={`d${i}`} position={[A.HIT_X - 0.4 + (i - 2) * 0.22 + k * 0.07 * (i - 1), 0.3 + k * 0.08 * (1 + (i % 3)) - k * k * 0.004, A.GZ + 0.7]} rot={[k * 0.2 + i, k * 0.3, i]} s={0.1 + (i % 3) * 0.03} color={i % 2 ? "#6c5a52" : "#d9c9a8"} />);
   }
-  if (frame >= S.LAND_FRAME && frame < S.LAND_FRAME + 14) out.push(<DustRing key="ld" at={[A.LIE_X - 1.1, 0, A.GZ + 0.5]} k={frame - S.LAND_FRAME} r={1.1} />);
-  if (frame >= S.SHOULDER_FRAME && frame < S.SHOULDER_FRAME + 6) out.push(<Star key="pop" position={[A.STAND_X + 0.55, 1.75, A.GZ + 1.0]} size={0.5 + (frame - S.SHOULDER_FRAME) * 0.08} rot={(frame - S.SHOULDER_FRAME) * 0.4} seed={40} n={8} />);
-  // зуб
+  // шлёп: пыль двумя облаками в стороны + короткая звезда-удар
+  if (frame >= S.LAND_FRAME && frame < S.LAND_FRAME + 16) out.push(<DustRing key="ld" at={[A.LIE_X - 0.1, 0, A.GZ + 0.95]} k={frame - S.LAND_FRAME} r={1.3} />);
+  // плечо: маленькая вспышка у плеча (не у лица)
+  if (frame >= S.SHOULDER_FRAME && frame < S.SHOULDER_FRAME + 4) out.push(<Star key="pop" position={[A.STAND_X + 0.95, 1.35, A.GZ + 1.0]} size={0.28} rot={(frame - S.SHOULDER_FRAME) * 0.5} seed={40} n={7} />);
+  // зуб: вылетает изо рта по дуге и лежит на тротуаре в кадре
   if (frame >= S.SPIT_FRAME) {
     const f = hold(frame);
-    const t = clamp((f - S.SPIT_FRAME) / 26);
-    const x = lerp(A.STAND_X + 0.15, A.STAND_X + 1.7, t);
-    let y = lerp(1.55, 0.08, t) + 0.9 * 4 * t * (1 - t);
-    const after = f - (S.SPIT_FRAME + 26);
-    if (after >= 0 && after < 6) y += [0, 0.14, 0, 0.06, 0, 0][after] ?? 0;
-    out.push(<Tooth key="tooth" position={[x, y, A.GZ + 0.7 + t * 0.4]} rot={t < 1 ? t * 12 : 0.4} s={0.55 + 0.35 * t} />);
+    const T = 22;
+    const t = clamp((f - S.SPIT_FRAME) / T);
+    const x = lerp(A.STAND_X + 0.1, A.STAND_X + 1.9, t);
+    const y0 = 0.2;
+    let y = lerp(1.75, y0, t * t * 0.55 + t * 0.45) + 1.1 * 4 * t * (1 - t);
+    const after = f - (S.SPIT_FRAME + T);
+    if (after >= 0 && after < 6) y += [0, 0.22, 0.1, 0.0, 0.05, 0][after] ?? 0;
+    if (t >= 1) y = Math.max(y, y0);
+    out.push(<Tooth key="tooth" position={[x, y, A.GZ + 0.45 - t * 0.1]} rot={t < 1 ? -t * 14 : 0.5} s={1.0 + 0.3 * t} />);
   }
   return <>{out}</>;
 };
@@ -192,16 +198,25 @@ const ImpactFx: React.FC<{ frame: number }> = ({ frame }) => {
 // ---------- мир ----------
 const World: React.FC = () => {
   const frame = useCurrentFrame();
-  const cold = frame >= S.VANISH_FRAME;
+  const cold = frame > S.VANISH_FRAME;
   const pal = cold ? PAL_COLD : PAL_NIGHT;
   let bb: "a" | "g1" | "g2" | "b" = "a";
   if (frame >= S.BILLBOARD_FLIP) bb = "b";
   else if (frame >= S.BILLBOARD_GLITCH) bb = Math.floor(hold(frame) / 2) % 2 ? "g1" : "g2";
+  // ровно один кадр пустоты (холодный контрастный) на стыке исчезновения
+  if (frame === S.VANISH_FRAME) {
+    return (
+      <>
+        <color attach="background" args={["#d4ecff"]} />
+        <CameraRig />
+      </>
+    );
+  }
   return (
     <>
       <color attach="background" args={[pal.sky]} />
       <CameraRig />
-      <Street pal={pal} lampOn={!cold} time={frame} />
+      <Street pal={pal} lampOn time={frame} />
       <Billboard state={bb} />
       {!cold && <Fires frame={frame} />}
       {!cold && <Papers frame={frame} />}

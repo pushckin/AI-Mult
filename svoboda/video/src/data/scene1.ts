@@ -18,15 +18,15 @@ export const SHOTS = [
 
 // ---------- Ключевые кадры ----------
 export const HIT_FRAME = 168;
-export const FLIGHT_FROM = 178;
+export const FLIGHT_FROM = 174;
 export const LAND_FRAME = 296;
 export const VANISH_FRAME = 456;
 export const RISE_FROM = 480;
 export const SHOULDER_FRAME = 552;
 export const HEADJERK_FRAME = 558;
 export const SPIT_FRAME = 566;
-export const BILLBOARD_FLIP = 424;
-export const BILLBOARD_GLITCH = 416;
+export const BILLBOARD_FLIP = 418;
+export const BILLBOARD_GLITCH = 414;
 /** Реплика Грега (voice_greg_01.wav = 3.35 с = 80 кадров) */
 export const GREG_LINE = { from: 630, to: 710 };
 
