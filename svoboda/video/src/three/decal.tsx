@@ -1,7 +1,7 @@
 // Накладки, лежащие на поверхности (единичной) сферы: «глаза», рот, шрам, брови. Родитель масштабируется в эллипсоид головы.
 import React, { useMemo } from "react";
 import * as THREE from "three";
-import { flatMat } from "./toon";
+import { flatMat, STYLE } from "./toon";
 
 /** Касательная плоскость в точке (lon,lat): u - восток, v - север. Возвращает базис (x=east, y=dir, z=-north). */
 export const basisAt = (lonDeg: number, latDeg: number) => {
@@ -71,7 +71,8 @@ export interface DecalProps {
 export const Decal: React.FC<DecalProps> = ({ lon, lat, rx, ry = rx, rot = 0, color, lift = 1.004, ring = 0, ringColor = "#0c0a10", visible = true, children }) => {
   const q = useMemo(() => basisAt(lon, lat), [lon, lat]);
   const g = capGeo(rx, ry);
-  const gr = ring > 0 ? capGeo(rx + ring, ry + ring) : null;
+  const rg = STYLE.v5 ? ring * 1.6 : ring;
+  const gr = ring > 0 ? capGeo(rx + rg, ry + rg) : null;
   return (
     <group quaternion={q} visible={visible}>
       <group rotation={[0, (rot * Math.PI) / 180, 0]}>
@@ -98,7 +99,7 @@ export const Line: React.FC<LineProps> = ({ lon, lat, pts, w = 0.03, color, rot 
   const geo = useMemo(() => {
     const v = pts.map(([u, vv]) => new THREE.Vector3(...expMap(u, vv)));
     const curve = pts.length > 2 ? new THREE.CatmullRomCurve3(v, false, "catmullrom", 0.4) : new THREE.LineCurve3(v[0], v[1]);
-    return new THREE.TubeGeometry(curve, 14, w, 6, false);
+    return new THREE.TubeGeometry(curve, 14, STYLE.v5 ? w * 1.35 : w, 6, false);
   }, [pts, w]);
   return (
     <group quaternion={q} visible={visible}>

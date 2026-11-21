@@ -60,12 +60,28 @@ export const BUILDINGS: BDef[] = [
 ];
 const FACE_Z = -2.2;
 
-const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; showSign?: boolean; signLift?: number }> = ({ b, pal, idx, simple = false, showSign = true, signLift = 0 }) => {
+const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; showSign?: boolean; signLift?: number; flat?: boolean }> = ({ b, pal, idx, simple = false, showSign = true, signLift = 0, flat = false }) => {
   const depth = 6;
   const bh = signLift > 0 ? b.h + 1.5 : b.h; // кофейня выше: вывеска над головами
   const zc = FACE_Z - depth / 2;
   const fz = FACE_Z + 0.012;
   const lit = (i: number) => (hash(idx * 13 + i, 5) > 0.35 ? pal.win : pal.winOff);
+  if (flat) {
+    // крупные плоские формы: стена, карниз, одна большая витрина, дверь, широкий козырёк, вывеска
+    return (
+      <group position={[b.x, 0, 0]}>
+        <Part geo={rbox(b.w, bh, depth, 0.05)} color={b.wall} px={3} position={[0, bh / 2, zc]} />
+        <Part geo={rbox(b.w + 0.3, 0.34, depth + 0.2, 0.04)} color={b.trim} px={3} position={[0, bh + 0.12, zc]} />
+        <Flat geo={planeGeo} color={pal.win} position={[-b.w * 0.2, 1.25, fz]} scale={[2.5, 1.6, 1]} />
+        <Flat geo={planeGeo} color="#1a1a2e" position={[b.w * 0.28, 1.1, fz]} scale={[1.0, 2.2, 1]} />
+        {[0, 1, 2, 3].map((i) => (
+          <Part key={i} geo={rbox(b.w / 4, 0.1, 0.8, 0.02)} color={b.aw[i % 2]} px={0} position={[-b.w / 2 + (i + 0.5) * (b.w / 4), 2.45, FACE_Z + 0.4]} rotation={[0.38, 0, 0]} />
+        ))}
+        {showSign && <Part geo={rbox(3.0, 0.78, 0.14, 0.05)} color="#15141c" px={3.4} position={[0, 3.2 + signLift, FACE_Z + 0.16]} />}
+        {showSign && <TexPlane tex={signTex(b.sign, pal.neon ? b.fg : "#3a4068", pal.neon ? b.bg : "#101428")} w={2.88} h={0.69} position={[0, 3.2 + signLift, FACE_Z + 0.235]} />}
+      </group>
+    );
+  }
   return (
     <group position={[b.x, 0, 0]}>
       <Part geo={rbox(b.w, bh, depth, 0.05)} color={b.wall} px={3} position={[0, bh / 2, zc]} />
@@ -125,14 +141,14 @@ const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; 
 // ---------- дальний город ----------
 const winTex = (simple = false) =>
   simple
-    ? canvasTex("wins2", 256, 512, (g) => {
+    ? canvasTex("wins3", 256, 512, (g) => {
         g.fillStyle = "#1a2a66";
         g.fillRect(0, 0, 256, 512);
-        for (let r = 0; r < 8; r++)
-          for (let c = 0; c < 4; c++) {
-            const h = hash(r * 4 + c, 3);
-            g.fillStyle = h > 0.7 ? "#ffd36a" : "#243a80";
-            g.fillRect(c * 64 + 14, r * 64 + 12, 36, 40);
+        for (let r = 0; r < 4; r++)
+          for (let c = 0; c < 2; c++) {
+            const h = hash(r * 2 + c, 3);
+            g.fillStyle = h > 0.62 ? "#ffd36a" : "#2a4496";
+            g.fillRect(c * 128 + 26, r * 128 + 22, 76, 84);
           }
       })
     : canvasTex("wins", 256, 512, (g) => {
@@ -164,7 +180,7 @@ const Skyline: React.FC<{ pal: EnvPal; simple?: boolean }> = ({ pal, simple = fa
   );
 };
 
-const SKY_STARS = Array.from({ length: 46 }).map((_, i) => [(hash(i, 1) - 0.5) * 150, 11 + hash(i, 2) * 38, -80, 0.12 + hash(i, 3) * 0.16] as const);
+const SKY_STARS = Array.from({ length: 12 }).map((_, i) => [(hash(i, 1) - 0.5) * 150, 11 + hash(i, 2) * 38, -80, 0.3 + hash(i, 3) * 0.2] as const);
 const Sky: React.FC<{ pal: EnvPal }> = ({ pal }) => (
   <group>
     <mesh geometry={planeGeo} position={[0, 20, -90]} scale={[420, 170, 1]} material={flatMat(pal.sky)} />
@@ -174,8 +190,6 @@ const Sky: React.FC<{ pal: EnvPal }> = ({ pal }) => (
     {/* луна */}
     <Flat geo={circleGeo} color="#161840" position={[-22, 20.5, -84]} scale={5.3} />
     <Flat geo={circleGeo} color="#f6efb4" position={[-22, 20.5, -83.9]} scale={4.8} />
-    <Flat geo={circleGeo} color="#e5dc9c" position={[-20.6, 21.8, -83.8]} scale={0.9} />
-    <Flat geo={circleGeo} color="#e5dc9c" position={[-23.4, 19.4, -83.8]} scale={1.3} />
   </group>
 );
 
@@ -325,7 +339,7 @@ export const Billboard: React.FC<{ state: "a" | "g1" | "g2" | "b" }> = ({ state 
 );
 
 // ---------- улица целиком ----------
-export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm?: boolean; simple?: boolean; signs?: number[]; signLift?: number }> = ({ pal, lampOn, calm = false, simple = false, signs, signLift = 0 }) => {
+export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm?: boolean; simple?: boolean; signs?: number[]; signLift?: number; flat?: boolean }> = ({ pal, lampOn, calm = false, simple = false, signs, signLift = 0, flat = false }) => {
   const seams = useMemo(() => Array.from({ length: 41 }).map((_, i) => -24 + i * 1.2), []);
   return (
     <group>
@@ -335,19 +349,20 @@ export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm
       <Part geo={rbox(80, 0.3, 3.9, 0.03)} color="#8d8ba6" px={0} position={[0, -0.15, -0.25]} />
       {/* бордюр блоками (видны боковые грани и торцы) + нижняя ступень */}
       <Part geo={rbox(80, 0.12, 0.6, 0.03)} color="#7d7a98" px={0} position={[0, -0.28, 1.95]} />
-      {Array.from({ length: 36 }).map((_, i) => (
+      {flat && <Part geo={rbox(80, 0.36, 0.34, 0.05)} color="#b4b1cb" px={2.4} position={[0, -0.14, 1.78]} />}
+      {!flat && Array.from({ length: 36 }).map((_, i) => (
         <Part key={`cb${i}`} geo={rbox(2.1, 0.36, 0.34, 0.05)} color={i % 2 ? "#c2bfd6" : "#b4b1cb"} px={2.4} position={[-26 + i * 2.2, -0.14, 1.78]} />
       ))}
-      {seams.map((x) => (
+      {!flat && seams.map((x) => (
         <Flat key={x} geo={planeGeo} color="#6c6a88" position={[x, 0.004, -0.25]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.04, 3.7, 1]} />
       ))}
       {/* дорога */}
       <mesh geometry={planeGeo} material={flatMat("#2d2d44")} position={[0, -0.3, 12]} rotation={[-Math.PI / 2, 0, 0]} scale={[200, 22, 1]} />
-      {Array.from({ length: 14 }).map((_, i) => (
-        <Flat key={i} geo={planeGeo} color="#f0d24a" position={[-26 + i * 4, -0.295, 7.2]} rotation={[-Math.PI / 2, 0, 0]} scale={[2, 0.14, 1]} />
+      {Array.from({ length: flat ? 7 : 14 }).map((_, i) => (
+        <Flat key={i} geo={planeGeo} color="#f0d24a" position={[-26 + i * (flat ? 8 : 4), -0.295, 7.2]} rotation={[-Math.PI / 2, 0, 0]} scale={[flat ? 4 : 2, 0.14, 1]} />
       ))}
       {BUILDINGS.map((b, i) => (
-        <Building key={i} b={b} pal={pal} idx={i} simple={simple} showSign={!signs || signs.includes(i)} signLift={i === 3 ? signLift : 0} />
+        <Building key={i} b={b} pal={pal} idx={i} simple={simple} flat={flat} showSign={!signs || signs.includes(i)} signLift={i === 3 ? signLift : 0} />
       ))}
       {!simple && (
         <>

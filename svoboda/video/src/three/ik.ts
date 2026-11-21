@@ -12,7 +12,7 @@ export interface ArmGeom {
 /** Геометрии рук (согласованы с Arm2 в Cast.tsx: l1 = 0.2·len, l2 = 0.27·len) */
 export const ARM_GEOM = {
   tony: { sx: 0.5, sy: 0.5, l1: 0.2 * 1.4, l2: 0.3 * 1.4 },
-  marcus: { sx: 0.3, sy: 0.5, l1: 0.2 * 1.3, l2: 0.3 * 1.3 },
+  marcus: { sx: 0.37, sy: 0.5, l1: 0.2 * 1.3, l2: 0.3 * 1.3 },
   chloe: { sx: 0.5, sy: 0.5, l1: 0.2 * 1.3, l2: 0.3 * 1.3 },
 } as const;
 

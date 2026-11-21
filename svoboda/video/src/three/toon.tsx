@@ -9,22 +9,36 @@ export const FOV = 40;
 export const VIEW_H = 1080;
 const FOCAL_PX = VIEW_H / 2 / Math.tan((FOV * Math.PI) / 360);
 export const LIGHT_DIR = new THREE.Vector3(-0.42, 0.78, 0.5).normalize();
+/** Стиль v5 (сцена 2): все материалы строго 2-ступенчатые, одна толщина контура, яркие плоские цвета. Сцена 1 остаётся как была. */
+export const STYLE = { v5: false };
+export const OUTLINE_PX = 5.6;
+const INK_L = 0.14;
+/** Подкрутка цвета: насыщеннее и чуть ярче (почти чёрное и почти белое не трогаем) */
+export const pop = (hex: string): THREE.Color => {
+  const c = new THREE.Color(hex);
+  if (!STYLE.v5) return c;
+  const hsl = { h: 0, s: 0, l: 0 };
+  c.getHSL(hsl);
+  if (hsl.l < INK_L || hsl.l > 0.93) return c;
+  return c.setHSL(hsl.h, Math.min(1, hsl.s * 1.14), Math.min(0.9, hsl.l * 1.06 + 0.012));
+};
 
 // ---------- материалы ----------
 const toonCache = new Map<string, THREE.ShaderMaterial>();
 const shadeOf = (hex: string) => {
-  const c = new THREE.Color(hex);
+  const c = pop(hex);
   const hsl = { h: 0, s: 0, l: 0 };
   c.getHSL(hsl);
-  // тень: темнее, чуть холоднее и насыщеннее (как у вырезанной бумаги)
-  const s = new THREE.Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.05), hsl.l * 0.7);
+  // тень: темнее, чуть холоднее и насыщеннее (как у вырезанной бумаги); в v5 - одна заметная ступень
+  const s = new THREE.Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.05), hsl.l * (STYLE.v5 ? 0.68 : 0.7));
   return s.lerp(new THREE.Color("#2a2a66"), 0.12);
 };
 export const toonMat = (hex: string): THREE.ShaderMaterial => {
-  let m = toonCache.get(hex);
+  const key = hex + (STYLE.v5 ? "#5" : "");
+  let m = toonCache.get(key);
   if (m) return m;
   m = new THREE.ShaderMaterial({
-    uniforms: { uColor: { value: new THREE.Color(hex) }, uShade: { value: shadeOf(hex) }, uLight: { value: LIGHT_DIR } },
+    uniforms: { uColor: { value: pop(hex) }, uShade: { value: shadeOf(hex) }, uLight: { value: LIGHT_DIR } },
     vertexShader: /* glsl */ `
       varying vec3 vN;
       void main() {
@@ -40,7 +54,7 @@ export const toonMat = (hex: string): THREE.ShaderMaterial => {
         #include <colorspace_fragment>
       }`,
   });
-  toonCache.set(hex, m);
+  toonCache.set(key, m);
   return m;
 };
 const outlineCache = new Map<number, THREE.ShaderMaterial>();
@@ -70,10 +84,10 @@ export const outlineMat = (px: number): THREE.ShaderMaterial => {
 };
 const flatCache = new Map<string, THREE.MeshBasicMaterial>();
 export const flatMat = (hex: string, opts: { double?: boolean } = {}): THREE.MeshBasicMaterial => {
-  const key = hex + (opts.double ? "d" : "");
+  const key = hex + (opts.double ? "d" : "") + (STYLE.v5 ? "#5" : "");
   let m = flatCache.get(key);
   if (!m) {
-    m = new THREE.MeshBasicMaterial({ color: hex, toneMapped: false, side: opts.double ? THREE.DoubleSide : THREE.FrontSide });
+    m = new THREE.MeshBasicMaterial({ color: pop(hex), toneMapped: false, side: opts.double ? THREE.DoubleSide : THREE.FrontSide });
     flatCache.set(key, m);
   }
   return m;
@@ -125,12 +139,15 @@ export interface PartProps {
   visible?: boolean;
   children?: React.ReactNode;
 }
-export const Part: React.FC<PartProps> = ({ geo, hull, color, px = 3.6, position, rotation, scale, visible, children }) => (
-  <mesh geometry={geo} material={toonMat(color)} position={position} rotation={rotation} scale={scale as any} visible={visible}>
-    {px > 0 && <mesh geometry={hull ?? geo} material={outlineMat(px)} />}
-    {children}
-  </mesh>
-);
+export const Part: React.FC<PartProps> = ({ geo, hull, color, px = 3.6, position, rotation, scale, visible, children }) => {
+  const w = STYLE.v5 ? (px > 0 ? OUTLINE_PX : 0) : px; // v5: у всех деталей одна толщина контура
+  return (
+    <mesh geometry={geo} material={toonMat(color)} position={position} rotation={rotation} scale={scale as any} visible={visible}>
+      {w > 0 && <mesh geometry={hull ?? geo} material={outlineMat(w)} />}
+      {children}
+    </mesh>
+  );
+};
 
 /** Плоская (без освещения) фигура-накладка */
 export const Flat: React.FC<Omit<PartProps, "px"> & { double?: boolean; order?: number }> = ({ geo, color, position, rotation, scale, visible, double, order, children }) => (

@@ -10,8 +10,8 @@ export type CastKind = "tony" | "marcus" | "chloe";
 
 // ---------- палитры ----------
 export const COL = {
-  tony: { skin: "#d9a070", tank: "#ff2fa8", tankDark: "#c91a85", shorts: "#2f6bf0", sock: "#f6f6fb", shoe: "#f6f6fb", sole: "#ff2fa8", hair: "#241812", beard: "#3a2418" },
-  marcus: { skin: "#f7d6bf", leo: "#e8b83a", spot: "#4a2a12", pants: "#9a3cff", belt: "#ffd23a", shoe: "#fff2dc", hair: "#1b1424", bag: "#35d6c0", gold: "#e0b030" },
+  tony: { skin: "#b9763f", tank: "#ff2fa8", tankDark: "#c91a85", shorts: "#2f6bf0", sock: "#f6f6fb", shoe: "#f6f6fb", sole: "#ff2fa8", hair: "#241812", beard: "#3a2418" },
+  marcus: { skin: "#ffe0c8", leo: "#ffd02a", spot: "#4a2a12", pants: "#9a3cff", belt: "#ffd23a", shoe: "#fff2dc", hair: "#1b1424", bag: "#35d6c0", gold: "#e0b030" },
   chloe: { skin: "#f6d4c6", hood: "#28d8f2", hoodDark: "#12a3c0", text: "#10101a", hair: "#7dff1a", hairDark: "#4fc90a", pants: "#2a2338", boot: "#22202a", sole: "#f6f6fb" },
 };
 
@@ -186,12 +186,12 @@ const SOUND_PTS = (r: number, a0: number): Array<[number, number]> => {
 };
 /** Мегафон: начало координат - центр ладони на ручке; раструб вперёд (+z), ось конуса над ручкой (y=+0.2) */
 export const Megaphone: React.FC<{ sir?: number }> = ({ sir = 0 }) => (
-  <group scale={1.1}>
-    <group rotation={[Math.PI / 2, 0, 0]} position={[0, 0.2, 0.1]}>
-      <Part geo={rcyl(0.06, 0.2, 0.5, 0.012, 24)} color="#e8263a" px={3.2} />
-      <Part geo={rcyl(0.145, 0.18, 0.12, 0.008, 24)} color="#fbfbf6" px={0} position={[0, 0.03, 0]} />
-      <Part geo={rcyl(0.206, 0.206, 0.045, 0.012, 24)} color="#2a2a38" px={3} position={[0, 0.268, 0]} />
-      <Part geo={rcyl(0.075, 0.075, 0.07, 0.015, 16)} color="#2a2a38" px={3} position={[0, -0.27, 0]} />
+  <group scale={0.95}>
+    <group rotation={[Math.PI / 2, 0, 0]} position={[0, 0.16, 0.1]}>
+      <Part geo={rcyl(0.045, 0.145, 0.46, 0.012, 24)} color="#e8263a" px={3.2} />
+      <Part geo={rcyl(0.1, 0.13, 0.1, 0.008, 24)} color="#fbfbf6" px={0} position={[0, 0.03, 0]} />
+      <Part geo={rcyl(0.15, 0.15, 0.04, 0.012, 24)} color="#2a2a38" px={3} position={[0, 0.25, 0]} />
+      <Part geo={rcyl(0.055, 0.055, 0.06, 0.015, 16)} color="#2a2a38" px={3} position={[0, -0.25, 0]} />
     </group>
     {/* ручка с курком */}
     <Part geo={rbox(0.1, 0.26, 0.12, 0.035)} color="#2a2a38" px={3} position={[0, 0.03, 0.03]} />
@@ -211,15 +211,19 @@ export const Megaphone: React.FC<{ sir?: number }> = ({ sir = 0 }) => (
 /** Плакат: начало - ладонь на шесте */
 const Placard: React.FC = () => (
   <group>
-    <Part geo={rcyl(0.03, 0.03, 1.0, 0.01, 10)} color="#9a6a3a" px={2.8} position={[0, 0.2, 0]} />
-    <Part geo={rbox(0.92, 0.68, 0.06, 0.02)} color="#d1a468" px={3.2} position={[0, 0.58, 0.05]} />
-    <TexPlane tex={placardTex()} w={0.86} h={0.63} position={[0, 0.58, 0.085]} />
-    <Part geo={rbox(0.9, 0.66, 0.02, 0.01)} color="#a9793c" px={0} position={[0, 0.58, 0.015]} />
+    <Part geo={rcyl(0.03, 0.03, 0.9, 0.01, 10)} color="#9a6a3a" px={2.8} position={[0, 0.15, 0]} />
+    <Part geo={rbox(0.78, 0.58, 0.06, 0.02)} color="#d1a468" px={3.2} position={[0, 0.5, 0.05]} />
+    <TexPlane tex={placardTex()} w={0.73} h={0.54} position={[0, 0.5, 0.085]} />
+    <Part geo={rbox(0.76, 0.56, 0.02, 0.01)} color="#a9793c" px={0} position={[0, 0.5, 0.015]} />
   </group>
 );
+/** Очки в руке: две толстые линзы-диска и перемычка */
 const Shades: React.FC = () => (
-  <group position={[0, -0.12, 0.1]} scale={0.8}>
-    <Part geo={rbox(0.3, 0.09, 0.04, 0.03)} color="#2d2548" px={2.4} />
+  <group position={[0, -0.1, 0.1]} scale={0.9}>
+    {([1, -1] as const).map((s) => (
+      <Part key={s} geo={sphereGeo(14)} color="#3a2f6e" px={3} position={[s * 0.12, 0, 0]} scale={[0.105, 0.085, 0.04]} />
+    ))}
+    <Part geo={rbox(0.07, 0.03, 0.03, 0.01)} color="#0c0a10" px={2} position={[0, 0.01, 0]} />
   </group>
 );
 const Bag: React.FC = () => (
@@ -280,11 +284,12 @@ const Tears: React.FC<{ p: PP; lon: number; lat: number }> = ({ p, lon, lat }) =
     {p.tear > 0 &&
       ([1, -1] as const).map((s) => (
         <React.Fragment key={s}>
-          {/* дорожка слезы по щеке + падающая капля */}
-          <Line lon={s * (lon + 2)} lat={lat - 11} pts={[[0, 0.16], [0.0, -0.16]]} w={0.02} color="#5ec8ff" lift={1.012} />
-          <Decal lon={s * (lon + 3)} lat={lat - 6 - p.tear * 7} rx={0.065} ry={0.115} color="#5ec8ff" ring={0.016} lift={1.016} />
+          {/* одна плоская капля на щеке, фаза 1..3 - ползёт вниз */}
+          <Decal lon={s * (lon + 4)} lat={lat - 8 - p.tear * 6} rx={0.085} ry={0.14} color="#5ec8ff" ring={0.02} lift={1.016} />
         </React.Fragment>
       ))}
+    {/* третья капля: падает сбоку от лица (только на 3-й фазе) */}
+    {p.tear === 3 && <Decal lon={lon + 40} lat={lat - 26} rx={0.075} ry={0.12} color="#5ec8ff" ring={0.02} lift={1.3} rot={-20} />}
   </>
 );
 /** Капли пота: плоские светлые «капли» на лбу и висках (фаза 1..3 - падают) */
@@ -292,19 +297,66 @@ const Sweat: React.FC<{ p: PP }> = ({ p }) =>
   p.sw > 0 ? (
     <>
       {([1, -1] as const).map((s) => (
-        <React.Fragment key={s}>
-          <Decal lon={s * 26} lat={36 - ((p.sw + 1) % 3) * 6} rx={0.07} ry={0.12} color="#bfeaff" ring={0.016} lift={1.03} />
-          {/* брызги пота вокруг головы (плоские капли) */}
-          <Decal lon={s * 68} lat={24 + ((p.sw + s) % 3) * 9} rx={0.1} ry={0.17} color="#bfeaff" ring={0.02} lift={1.34} rot={s * 25} />
-          <Decal lon={s * 80} lat={4 - p.sw * 7} rx={0.08} ry={0.14} color="#bfeaff" ring={0.018} lift={1.3} rot={s * 15} />
-        </React.Fragment>
+        <Decal key={s} lon={s * 44} lat={30 - ((p.sw + (s > 0 ? 1 : 0)) % 3) * 8} rx={0.085} ry={0.15} color="#bfeaff" ring={0.02} lift={1.03} rot={s * 14} />
       ))}
-      <Decal lon={4} lat={50 - ((p.sw + 2) % 3) * 5} rx={0.05} ry={0.09} color="#bfeaff" ring={0.014} lift={1.03} />
     </>
   ) : null;
 
+// ---------- 3D-очки: линзы и дужки - настоящие объёмы на голове, поворачиваются вместе с ней ----------
+type HeadDim = { rx: number; ry: number; rz: number };
+const headPt = (h: HeadDim, lonD: number, latD: number, out = 0): THREE.Vector3 => {
+  const lon = lonD * D;
+  const lat = latD * D;
+  const p = new THREE.Vector3(h.rx * Math.cos(lat) * Math.sin(lon), h.ry * Math.sin(lat), h.rz * Math.cos(lat) * Math.cos(lon));
+  const n = new THREE.Vector3(p.x / (h.rx * h.rx), p.y / (h.ry * h.ry), p.z / (h.rz * h.rz)).normalize();
+  return p.addScaledVector(n, out);
+};
+const headNormalQ = (h: HeadDim, lonD: number, latD: number) => {
+  const p = headPt(h, lonD, latD);
+  const n = new THREE.Vector3(p.x / (h.rx * h.rx), p.y / (h.ry * h.ry), p.z / (h.rz * h.rz)).normalize();
+  return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
+};
+const Bar: React.FC<{ a: THREE.Vector3; b: THREE.Vector3; w: number; color: string }> = ({ a, b, w, color }) => {
+  const d = b.clone().sub(a);
+  const len = d.length();
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), d.normalize());
+  return (
+    <group position={a.clone().add(b).multiplyScalar(0.5).toArray() as [number, number, number]} quaternion={q}>
+      <Part geo={rbox(w, w, len, w * 0.4)} color={color} px={2.4} />
+    </group>
+  );
+};
+const Specs: React.FC<{ h: HeadDim; lon: number; lat: number; rw: number; rh: number; lens: string; rim: string; frame: string; cracked?: boolean }> = ({ h, lon, lat, rw, rh, lens, rim, frame, cracked }) => {
+  const outer = lon + ((rw * 1.15) / (h.rx * Math.cos(lat * D))) / D;
+  return (
+    <group>
+      {([1, -1] as const).map((s) => {
+        const pos = headPt(h, s * lon, lat, 0.012);
+        const q = headNormalQ(h, s * lon, lat);
+        return (
+          <group key={s} position={pos.toArray() as [number, number, number]} quaternion={q}>
+            <Part geo={sphereGeo(20)} color={rim} px={3} position={[0, 0, -0.004]} scale={[rw * 1.14, rh * 1.14, 0.05]} />
+            <Part geo={sphereGeo(20)} color={lens} px={0} position={[0, 0, 0.02]} scale={[rw, rh, 0.045]} />
+            {/* блик: плоский светлый штрих на линзе */}
+            <Flat geo={planeGeo} color="#dfe6ff" position={[-rw * 0.3 * s, rh * 0.38, 0.066]} rotation={[0, 0, -s * 0.5]} scale={[rw * 0.55, rh * 0.18, 1]} />
+            {cracked && s === -1 && (
+              <>
+                <Flat geo={planeGeo} color="#ffffff" position={[0, 0, 0.067]} rotation={[0, 0, 0.9]} scale={[rw * 1.3, 0.012, 1]} />
+                <Flat geo={planeGeo} color="#ffffff" position={[0.02, -0.01, 0.067]} rotation={[0, 0, -0.5]} scale={[rw * 0.9, 0.01, 1]} />
+              </>
+            )}
+          </group>
+        );
+      })}
+      <Bar a={headPt(h, lon - 18, lat + 2, 0.03)} b={headPt(h, -(lon - 18), lat + 2, 0.03)} w={0.03} color={frame} />
+      {([1, -1] as const).map((s) => (
+        <Bar key={s} a={headPt(h, s * outer, lat, 0.01)} b={new THREE.Vector3(s * (h.rx - 0.004), -0.02, 0.0)} w={0.028} color={frame} />
+      ))}
+    </group>
+  );
+};
+
 // ---------- Тони ----------
-const GLASS_RING: Array<[number, number]> = Array.from({ length: 11 }).map((_, i) => [Math.cos((i / 10) * Math.PI * 2) * 0.34, Math.sin((i / 10) * Math.PI * 2) * 0.3] as [number, number]);
 const TonyFace: React.FC<{ p: PP }> = ({ p }) => {
   const c = COL.tony;
   const eye: EyeCfg = { lon: 21, lat: 8, rad: 0.27, pupil: 0.085, skin: c.skin, lid: c.skin };
@@ -317,18 +369,6 @@ const TonyFace: React.FC<{ p: PP }> = ({ p }) => {
       {/* глаза всегда видны; очки (acc=0) - только оправа и блик, глаза за линзами */}
       <Eye side={1} st={p.eyeL} p={p} c={eye} />
       <Eye side={-1} st={p.eyeR} p={p} c={eye} />
-      {p.acc === 0 && (
-        <>
-          {([1, -1] as const).map((s) => (
-            <React.Fragment key={s}>
-              <Line lon={s * 21} lat={8} pts={GLASS_RING} w={0.034} color="#0c0a10" lift={1.024} />
-              <Line lon={s * 24} lat={13} pts={[[-0.12, 0.05], [0.12, 0.05]]} w={0.016} color="#cfd6ff" lift={1.03} />
-              <Line lon={s * 55} lat={9} pts={[[-0.2, 0], [0.2, 0]]} w={0.026} color="#0c0a10" lift={1.02} />
-            </React.Fragment>
-          ))}
-          <Line lon={0} lat={10} pts={[[-0.1, 0], [0.1, 0]]} w={0.03} color="#0c0a10" lift={1.024} />
-        </>
-      )}
       <Brows p={p} lat={eye.lat + 20} lon={22} w={0.07} color={c.hair} />
       <Tears p={p} lon={21} lat={8} />
       <Sweat p={p} />
@@ -344,21 +384,6 @@ const MarcusFace: React.FC<{ p: PP }> = ({ p }) => {
   return (
     <>
       <Decal lon={0} lat={64} rx={1.1} ry={0.6} color={c.hair} ring={0.03} lift={1.01} />
-      {/* авиаторы: золотая оправа, правая линза треснута */}
-      {([1, -1] as const).map((s) => (
-        <React.Fragment key={s}>
-          <Decal lon={s * 21} lat={4} rx={0.37} ry={0.33} color="#2d2548" ring={0.035} ringColor={c.gold} lift={1.012} />
-          <Decal lon={s * 24} lat={9} rx={0.1} ry={0.05} color="#6a62a8" rot={-s * 20} lift={1.02} />
-          <Line lon={s * 52} lat={6} pts={[[-0.25, 0], [0.25, 0]]} w={0.018} color={c.gold} lift={1.02} />
-        </React.Fragment>
-      ))}
-      <Line lon={0} lat={7} pts={[[-0.14, 0], [0.14, 0]]} w={0.02} color={c.gold} lift={1.02} />
-      <Line lon={-21} lat={4} pts={[[-0.34, 0.26], [-0.12, 0.02], [-0.22, -0.14], [0.04, -0.26], [0.0, -0.34]]} w={0.026} color="#ffffff" lift={1.035} />
-      <Line lon={-21} lat={4} pts={[[-0.12, 0.02], [0.14, 0.1], [0.32, 0.3]]} w={0.022} color="#ffffff" lift={1.035} />
-      <Line lon={-21} lat={4} pts={[[-0.12, 0.02], [0.2, -0.04], [0.34, -0.2]]} w={0.02} color="#ffffff" lift={1.035} />
-      {/* в сценах без очков глаза не нужны: зрачки видны сквозь линзы не показываем */}
-      <Line lon={21} lat={5} pts={[[0.3, 0.24], [0.06, 0.02], [0.14, -0.2]]} w={0.018} color="#ffffff" lift={1.035} />
-      <Line lon={21} lat={5} pts={[[0.06, 0.02], [-0.2, 0.1], [-0.3, 0.26]]} w={0.016} color="#ffffff" lift={1.035} />
       <Brows p={p} lat={26} lon={22} w={0.03} color={c.hair} />
       <Line lon={0} lat={-27} pts={[[-0.24, -0.02], [0, 0.03], [0.24, -0.02]]} w={0.02} color={c.hair} lift={1.008} />
       <Tears p={p} lon={21} lat={-4} />
@@ -374,21 +399,18 @@ const MarcusFace: React.FC<{ p: PP }> = ({ p }) => {
 // ---------- Хлоя ----------
 const ChloeFace: React.FC<{ p: PP }> = ({ p }) => {
   const c = COL.chloe;
-  const eye: EyeCfg = { lon: 20, lat: 8, rad: 0.34, pupil: 0.1, skin: c.skin, lid: c.skin };
+  const eye: EyeCfg = { lon: 23, lat: 6, rad: 0.26, pupil: 0.085, skin: c.skin, lid: c.skin };
   return (
     <>
-      <Eye side={1} st={p.eyeL} p={p} c={eye} lash />
-      <Eye side={-1} st={p.eyeR} p={p} c={eye} lash />
-      <Brows p={p} lat={eye.lat + 21} lon={20} w={0.034} color={c.hairDark} />
-      {/* чёлка: зелёный козырёк с зубцами */}
-      <Decal lon={0} lat={64} rx={1.45} ry={0.78} color={c.hair} ring={0.03} lift={1.012} />
-      <Decal lon={-30} lat={42} rx={0.32} ry={0.2} color={c.hair} ring={0.025} lift={1.014} rot={30} />
-      <Decal lon={0} lat={43} rx={0.3} ry={0.17} color={c.hair} ring={0.025} lift={1.014} />
-      <Decal lon={28} lat={44} rx={0.3} ry={0.18} color={c.hair} ring={0.025} lift={1.014} rot={-28} />
+      <Eye side={1} st={p.eyeL} p={p} c={eye} />
+      <Eye side={-1} st={p.eyeR} p={p} c={eye} />
+      <Brows p={p} lat={eye.lat + 20} lon={23} w={0.034} color={c.hairDark} />
+      {/* чёлка: гладкая шапка над бровями (без зубцов, чтобы не мешала глазам) */}
+      <Decal lon={0} lat={70} rx={1.3} ry={0.5} color={c.hair} ring={0.03} lift={1.012} />
       {/* кольцо в носу */}
       <Decal lon={5} lat={-14} rx={0.075} ry={0.075} color={c.skin} ring={0.022} ringColor="#ffd23a" lift={1.012} />
       <Decal lon={0} lat={-12} rx={0.03} ry={0.03} color="#c88a78" lift={1.01} />
-      <Tears p={p} lon={20} lat={8} />
+      <Tears p={p} lon={23} lat={6} />
       <Sweat p={p} />
       <Mouth p={p} lat={-35} line="#0c0a10" inner="#4a0a1a" />
     </>
@@ -409,12 +431,11 @@ interface Build {
 }
 const HAIR_SKIRT = (c: string, d: string) => (
   <>
-    {/* боб: зелёная «каска» вокруг головы + боковые пряди до подбородка */}
-    <Part geo={sphereGeo(28)} color={c} px={3.4} position={[0, 0.07, -0.07]} scale={[0.6, 0.46, 0.42]} />
+    {/* боб поменьше: шапка волос на затылке и две короткие пряди по бокам */}
+    <Part geo={sphereGeo(24)} color={c} px={3.4} position={[0, 0.1, -0.08]} scale={[0.56, 0.4, 0.4]} />
     {([1, -1] as const).map((s) => (
-      <Part key={s} geo={rbox(0.15, 0.46, 0.5, 0.06)} color={d} px={3} position={[s * 0.5, -0.16, -0.04]} rotation={[0, 0, s * 0.06]} />
+      <Part key={s} geo={rbox(0.1, 0.26, 0.34, 0.04)} color={d} px={3} position={[s * 0.5, -0.06, -0.06]} rotation={[0, 0, s * 0.05]} />
     ))}
-    <Part geo={rbox(1.0, 0.4, 0.16, 0.06)} color={d} px={3} position={[0, -0.15, -0.3]} />
   </>
 );
 
@@ -446,14 +467,14 @@ const MarcusBuild: Build = (() => {
     head: { rx: 0.5, ry: 0.47, rz: 0.34 },
     headCol: c.skin,
     skin: c.skin,
-    pelvis: [0.42, 0.2, 0.28],
+    pelvis: [0.58, 0.22, 0.34],
     pelvisCol: c.pants,
-    torso: [0.5, 0.6, 0.32],
+    torso: [0.6, 0.6, 0.38],
     torsoCol: c.leo,
-    arm: { sx: 0.3, up: 0.72, fo: 0.68, hand: 0.82, upCol: c.leo, foCol: c.skin, upSleeve: true, skin: c.skin, len: 1.3 },
+    arm: { sx: 0.37, up: 0.95, fo: 0.9, hand: 1.0, upCol: c.leo, foCol: c.skin, upSleeve: true, skin: c.skin, len: 1.3 },
     leg: {
-      hipX: 0.11, th: 0.72, ca: 0.68, thCol: c.pants, caCol: c.pants,
-      shoe: <Part geo={rbox(0.17, 0.1, 0.34, 0.045)} color={c.shoe} position={[0, -0.14, 0.08]} />,
+      hipX: 0.16, th: 1.08, ca: 1.02, thCol: c.pants, caCol: c.pants,
+      shoe: <Part geo={rbox(0.22, 0.12, 0.38, 0.05)} color={c.shoe} position={[0, -0.14, 0.09]} />,
     },
   };
 })();
@@ -594,6 +615,8 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
                     </>
                   )}
                   {kind === "chloe" && HAIR_SKIRT(COL.chloe.hair, COL.chloe.hairDark)}
+                  {kind === "tony" && p.acc === 0 && <Specs h={b.head} lon={25} lat={8} rw={0.18} rh={0.15} lens="#3a2f6e" rim="#15121f" frame="#15121f" />}
+                  {kind === "marcus" && <Specs h={b.head} lon={25} lat={6} rw={0.19} rh={0.17} lens="#2a2350" rim="#e8b820" frame="#e8b820" cracked />}
                   <group scale={[b.head.rx, b.head.ry, b.head.rz]}>
                     {kind === "tony" ? <TonyFace p={p} /> : kind === "marcus" ? <MarcusFace p={p} /> : <ChloeFace p={p} />}
                   </group>

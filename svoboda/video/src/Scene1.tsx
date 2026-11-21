@@ -6,7 +6,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { useThree } from "@react-three/fiber";
 import { AudioAvail, AudioLayers } from "./engine/audio";
 import * as S from "./data/scene1";
-import { FOV, Shadow } from "./three/toon";
+import { FOV, Shadow, STYLE } from "./three/toon";
 import { Person, Palette, GREG_COL } from "./three/Person";
 import { Street, Billboard, PAL_NIGHT, PAL_COLD } from "./three/Env";
 import { SuperCar, Rocket, Bike } from "./three/Vehicles";
@@ -233,14 +233,17 @@ const World: React.FC = () => {
   );
 };
 
-export const Scene1: React.FC<Scene1Props> = ({ audio }) => (
-  <AbsoluteFill style={{ backgroundColor: "#14143e" }}>
-    <ThreeCanvas width={S.WIDTH} height={S.HEIGHT} flat camera={{ fov: FOV, position: [0.4, 1.45, 8.5], near: 0.5, far: 400 }}>
-      <World />
-    </ThreeCanvas>
-    <AudioLayers cues={S.AUDIO_CUES} avail={audio} total={S.DURATION} />
-  </AbsoluteFill>
-);
+export const Scene1: React.FC<Scene1Props> = ({ audio }) => {
+  STYLE.v5 = false; // сцена 1 - прежний стиль (v5 включает только сцена 2)
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#14143e" }}>
+      <ThreeCanvas width={S.WIDTH} height={S.HEIGHT} flat camera={{ fov: FOV, position: [0.4, 1.45, 8.5], near: 0.5, far: 400 }}>
+        <World />
+      </ThreeCanvas>
+      <AudioLayers cues={S.AUDIO_CUES} avail={audio} total={S.DURATION} />
+    </AbsoluteFill>
+  );
+};
 
 void remap;
 void Star;

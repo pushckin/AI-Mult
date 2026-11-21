@@ -7,13 +7,13 @@ import { useThree } from "@react-three/fiber";
 import { AudioAvail, AudioLayers } from "./engine/audio";
 import type { VoiceInfo } from "./engine/wav";
 import * as S from "./data/scene2";
-import { FOV, Part, rbox, rcyl, sphereGeo, LIGHT_DIR } from "./three/toon";
+import { FOV, Part, rbox, rcyl, sphereGeo, LIGHT_DIR, STYLE } from "./three/toon";
 import { Person } from "./three/Person";
 import { Cast } from "./three/Cast";
 import { Street, PAL_COLD, Bin } from "./three/Env";
 import { Flame, SmokeColumn, GroundDust, Chunk } from "./three/Fx";
 import { frameAt, BIN, BUSH, Frame } from "./three/anim2";
-import { hash, hold } from "./three/util";
+import { hash } from "./three/util";
 
 export type Scene2Props = { audio: AudioAvail; voices: Array<VoiceInfo | null> };
 
@@ -47,8 +47,7 @@ const BurnBin: React.FC<{ frame: number; x: number }> = ({ frame, x }) => (
 
 /** Декоративные кусты в кадке */
 const BUSH_BALLS: Array<[number, number, number, number, string]> = [
-  [-0.55, 0.9, 0.4, 0.42, "#2f9e4a"], [-0.1, 1.1, 0.46, 0.2, "#3bb35a"], [0.4, 1.0, 0.42, 0.3, "#2f9e4a"], [0.7, 0.8, 0.34, 0.1, "#3bb35a"], [0.05, 0.75, 0.42, -0.25, "#34a853"], [-0.4, 0.68, 0.34, -0.2, "#3bb35a"],
-  [-0.75, 0.72, 0.3, 0.05, "#34a853"], [0.2, 0.95, 0.36, -0.3, "#2f9e4a"], [0.55, 0.62, 0.3, 0.32, "#34a853"], [-0.2, 0.6, 0.32, 0.34, "#2f9e4a"], [0.0, 1.28, 0.28, 0.0, "#3bb35a"],
+  [-0.6, 0.85, 0.46, 0.35, "#2fbf4e"], [0.0, 0.95, 0.5, 0.4, "#3fd05f"], [0.6, 0.85, 0.46, 0.3, "#2fbf4e"], [-0.25, 0.72, 0.42, 0.75, "#3fd05f"], [0.3, 0.7, 0.42, 0.7, "#2fbf4e"],
 ];
 const Bush: React.FC<{ shake: number; frame: number }> = ({ shake, frame }) => {
   const n = Math.floor(frame / 2);
@@ -69,7 +68,7 @@ const Bush: React.FC<{ shake: number; frame: number }> = ({ shake, frame }) => {
 };
 const Leaves: React.FC<{ k: number }> = ({ k }) => {
   if (k < 0 || k > 18) return null;
-  const kh = hold(k, 2);
+  const kh = Math.floor(k / 2) * 2;
   return (
     <>
       {Array.from({ length: 7 }).map((_, i) => (
@@ -90,14 +89,15 @@ const World: React.FC<{ tl: S.Timeline; voices: Array<VoiceInfo | null> }> = ({ 
   const sh = S.shotAt(tl, frame);
   const env = useMemo(() => voices.map((v) => v?.env), [voices]);
   const f = frameAt(frame, sh, tl.shots.length, { env });
+  const tick = Math.round((Math.floor(frame / S.STEP) * S.STEP * 24) / S.FPS); // эффекты рассчитаны на 24 к/с: переводим время
   return (
     <>
       <color attach="background" args={[PAL_COLD.sky]} />
       <CameraRig f={f} />
       <group position={[f.bgx, 0, 0]}>
-        <Street pal={PAL_COLD} lampOn time={frame} calm simple signs={[3]} signLift={1.35} />
+        <Street pal={PAL_COLD} lampOn time={frame} calm simple flat signs={[3]} signLift={1.35} />
       </group>
-      {f.bin !== null && <BurnBin frame={frame} x={f.bin} />}
+      {f.bin !== null && <BurnBin frame={tick} x={f.bin} />}
       <Bush shake={f.bushShake} frame={frame} />
       <Leaves k={f.leaves} />
       {f.dust.map((d, i) => (
@@ -111,6 +111,7 @@ const World: React.FC<{ tl: S.Timeline; voices: Array<VoiceInfo | null> }> = ({ 
 };
 
 export const Scene2: React.FC<Scene2Props> = ({ audio, voices }) => {
+  STYLE.v5 = true; // яркие плоские цвета, 2-ступенчатый свет, контур 5.6 px
   // направленный свет справа-сверху (двухступенчатая тень чётко меняется при развороте тел и голов)
   LIGHT_DIR.set(0.62, 0.7, 0.36).normalize();
   const tl = useMemo(() => S.buildTimeline(voices.map((v) => v?.dur ?? null)), [voices]);
