@@ -1,18 +1,8 @@
 // СЦЕНА 2 «Освобождение» (кадры раскадровки 07-12). Длины планов вычисляются из длительностей реплик (wav в public/audio).
 import type { AudioCue } from "../engine/audio";
-import type { VoiceInfo } from "../engine/wav";
 
-export const FPS = 30;
-export const WIDTH = 1920;
-export const HEIGHT = 1080;
-/** секунды -> кадры (30 fps) */
-export const sec = (s: number) => Math.round(s * FPS);
-/** кадров на смену позы: рваная кукольная анимация - поза обновляется раз в 4 кадра = 7.5 поз/с (между позами крупная разница, холды перед акцентами) */
-export const STEP = 4;
-/** рот (створка) обновляется чаще позы - раз в 2 кадра, чтобы попадать в слоги */
-export const MSTEP = 2;
-const even = (n: number) => Math.round(n / 2) * 2;
-
+export { FPS, WIDTH, HEIGHT, sec } from "./fps";
+import { FPS, sec } from "./fps";
 /** Реплики по порядку (voice_s2_NN_<имя>.wav) */
 export const VOICE_FILES = ["voice_s2_01_tony", "voice_s2_02_markus", "voice_s2_03_chloe_mega", "voice_s2_04_greg", "voice_s2_05_chloe", "voice_s2_06_tony"] as const;
 export type Who = "tony" | "markus" | "chloe" | "greg";
@@ -37,7 +27,7 @@ export const SHOT_DEFS: ShotDef[] = [
 export interface ShotT {
   i: number;
   n: number;
-  from: number; // кадр начала плана (30 fps)
+  from: number; // кадр начала плана (60 fps)
   len: number; // длина плана, кадров
   vFrom: number; // кадр начала реплики внутри плана
   vLen: number; // длина реплики, кадров
@@ -46,13 +36,13 @@ export interface Timeline {
   shots: ShotT[];
   total: number;
 }
-/** durs: длительности реплик в секундах (null = файла нет, берём сценарную). Все длины - из wav, в кадрах 30 fps, чётные. */
+/** durs: длительности реплик в секундах (null = файла нет, берём сценарную). Все длины - из wav, в кадрах (60 fps). */
 export const buildTimeline = (durs: Array<number | null>): Timeline => {
   let from = 0;
   const shots = SHOT_DEFS.map((d, i) => {
-    const vFrom = even(sec(d.lead));
+    const vFrom = sec(d.lead);
     const vLen = durs[i] != null ? Math.ceil(durs[i]! * FPS) : Math.max(FPS, sec(d.defSec) - vFrom - sec(d.tail));
-    const len = even(vFrom + vLen + sec(d.tail));
+    const len = vFrom + vLen + sec(d.tail);
     const s: ShotT = { i, n: d.n, from, len, vFrom, vLen };
     from += len;
     return s;
@@ -66,23 +56,7 @@ export const shotAt = (tl: Timeline, frame: number): ShotT => {
   return tl.shots[tl.shots.length - 1];
 };
 
-/**
- * Рот по огибающей wav (30 кадров/с, обновление на двойках = 15 раз/с):
- * 0 закрыт (пауза, провал между слогами, вне реплики), 1 «о» (тихий слог), 2 «а» (громкий слог).
- * Берём максимум огибающей на паре кадров: на слог - открыт, в паузе и на провале - закрыт.
- */
-export const MOUTH_CLOSED = 0.2;
-export const MOUTH_WIDE = 0.52;
-export const mouthFromEnv = (env: number[] | undefined, k: number, vLen: number): number => {
-  if (k < 0 || k >= vLen) return 0;
-  const f = Math.floor(k / MSTEP) * MSTEP;
-  if (!env) return (f >> 2) % 3 === 0 ? 1 : 2;
-  const e = Math.max(env[f] ?? 0, env[f + 1] ?? 0);
-  return e < MOUTH_CLOSED ? 0 : e < MOUTH_WIDE ? 1 : 2;
-};
-/** Идёт ли звук (не пауза) в кадре k реплики */
-export const voicedAt = (env: number[] | undefined, k: number, vLen: number): boolean => mouthFromEnv(env, k, vLen) > 0;
-export const envAt = (env: number[] | undefined, k: number): number => (env ? env[Math.floor(k / MSTEP) * MSTEP] ?? 0 : 0.4);
+// Рот: непрерывное раскрытие по огибающей wav - см. mouthLevel() в three/blend.ts (0 закрыт .. 1 широко открыт, сглажено ~50 мс).
 
 // ---------- ключевые моменты внутри планов (СЕКУНДЫ от начала плана) ----------
 /** Прыжок Хлои: присед в кусте 0.4 с (0.4-0.8), вылет по дуге с разворотом 0.67 с (0.8-1.47), приземление 0.4 с (1.47-1.87), затем сирена */

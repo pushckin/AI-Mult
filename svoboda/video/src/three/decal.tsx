@@ -69,10 +69,14 @@ export interface DecalProps {
   ring?: number; // радианы: чёрная окантовка вокруг
   ringColor?: string;
   visible?: boolean;
+  mo?: number; // раскрытие рта 0..1 (если задано и >= 0: полуоси шапки масштабируются - рот открывается непрерывно); -1/undefined - без изменений
   children?: React.ReactNode;
 }
-export const Decal: React.FC<DecalProps> = ({ lon, lat, rx, ry = rx, rot = 0, color, lift = 1.004, ring = 0, ringColor = "#0c0a10", visible = true, children }) => {
+export const Decal: React.FC<DecalProps> = ({ lon, lat, rx: rx0, ry: ry0, rot = 0, color, lift = 1.004, ring = 0, ringColor = "#0c0a10", visible = true, mo = -1, children }) => {
   const q = useMemo(() => basisAt(lon, lat), [lon, lat]);
+  const m = mo >= 0 ? Math.round(Math.min(1, mo) * 20) / 20 : -1; // 21 уровень раскрытия: геометрия шапок кэшируется
+  const rx = m < 0 ? rx0 : rx0 * (0.55 + 0.45 * m);
+  const ry = (ry0 ?? rx0) * (m < 0 ? 1 : 0.14 + 0.86 * m);
   const g = capGeo(rx, ry);
   const rg = STYLE.v5 ? ring * 1.6 : ring;
   const gr = ring > 0 ? capGeo(rx + rg, ry + rg) : null;

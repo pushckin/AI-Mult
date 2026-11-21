@@ -105,6 +105,7 @@ const World: React.FC<{ tl: S.Timeline; voices: Array<VoiceInfo | null> }> = ({ 
 
 export const Scene3: React.FC<Scene3Props> = ({ audio, voices, names }) => {
   STYLE.v5 = true;
+  STYLE.smooth = true; // 60 fps: эффекты без «двоек»
   LIGHT_DIR.set(0.62, 0.7, 0.36).normalize();
   const tl = useMemo(() => S.buildTimeline(voices.map((v) => v?.dur ?? null)), [voices]);
   const cues = useMemo(() => S.buildCues(tl, names), [tl, names]);

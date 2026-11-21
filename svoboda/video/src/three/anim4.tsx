@@ -1,5 +1,6 @@
-// Сцена 4 «Закон и порядок» (30 fps): планы 19-26 как функции ВРЕМЕНИ (секунды). Рваная кукольная анимация: поза обновляется раз в 4 кадра, рот - раз в 2 кадра.
-// Каждый план возвращает камеру и готовый набор 3D-объектов; склейки между планами и внутри планов - только жёсткие.
+// Сцена 4 «Закон и порядок» (60 fps): планы 19-26 как функции ВРЕМЕНИ (секунды). Ключевые позы/биты описаны как раньше, но время непрерывное;
+// готовое дерево 3D-объектов затем сглаживается по окну ~0.16 с (three/blend.ts: числовые props и позы усредняются по времени, дискретные поля нет).
+// Каждый план возвращает камеру и готовый набор 3D-объектов; склейки между планами и внутри планов - только жёсткие (seg).
 import React from "react";
 import * as THREE from "three";
 import { PP, PPatch, mixP, Person } from "./Person";
@@ -11,10 +12,11 @@ import { Flame, SmokeColumn, GroundDust, Puff, Chunk } from "./Fx";
 import { Part, Flat, planeGeo, circleGeo, sphereGeo, flatMat, rbox, INK } from "./toon";
 import { armIK, fromTorso } from "./ik";
 import { clamp, lerp, easeOut, hash, D2R } from "./util";
-import { ShotT, STEP, FPS, mouthFromEnv, K } from "../data/scene4";
+import { ShotT, FPS, K } from "../data/scene4";
+import { smoothFrame, mouthLevel } from "./blend";
 
 export interface Cam { x: number; y: number; z: number; tx: number; ty: number; tz?: number }
-export interface Out { cam: Cam; street: boolean; node: React.ReactNode; flash?: boolean }
+export interface Out { cam: Cam; street: boolean; node: React.ReactNode; flash?: boolean; seg?: number }
 export interface Voices { env: Array<number[] | undefined> }
 type V3 = [number, number, number];
 
@@ -27,12 +29,14 @@ const SCL = { greg: 1.45, tony: 1.5, marcus: 1.35, chloe: 1.3, jackson: 1.55, st
 type AKind = keyof typeof SCL;
 const q2 = (v: number) => Math.round(v * 50) / 50;
 
-let RAW = 0; // кадр плана, округлённый на MSTEP вниз (для рта)
+let RAW = 0; // текущий момент внутри плана, кадры (непрерывный, дробный) - для рта
+/** Раскрытие рта 0..1 по огибающей реплики (непрерывно), 0 вне реплики */
 const mouthOf = (sh: ShotT, env: number[] | undefined): number => {
   const k = RAW - sh.vFrom;
   if (sh.vLen === 0 || k < 0 || k >= sh.vLen) return 0;
-  return mouthFromEnv(env, k, sh.vLen);
+  return mouthLevel(env, k, sh.vLen);
 };
+const inVoice = (sh: ShotT) => sh.vLen > 0 && RAW >= sh.vFrom && RAW < sh.vFrom + sh.vLen;
 
 type Beat<T> = readonly [number, T];
 const beatAt = <T,>(T0: number, list: ReadonlyArray<Beat<T>>, off = 0): { p: T; i: number; k: number } => {
@@ -252,7 +256,7 @@ const jackson19 = (T: number): PP4 | null => {
     const { dy, ...rest } = b;
     o = { x: J19.x, z: J19.z, ry: 62, tl: -12, y: 0.43 * SCL.jackson + 0.08 + dy, gx: 0.2, gy: 0.68, gz: 0.52, eyeL: 1, eyeR: 1, ps: 1, sp: 1, brow: -1, llk: 6, lrk: 6, ...rest };
   }
-  const trem = Math.floor(T * FPS) % 4 < 2 ? 1 : -1;
+  const trem = Math.floor(T * 15) % 2 ? -1 : 1; // дрожь рук 7.5 Гц
   const p = base4("jackson", { ...o, gun: 1, gp: (o.gp ?? 0) + trem * 2.5, gw: trem * 2 });
   return gunHold(p);
 };
@@ -263,7 +267,7 @@ const shot19 = (T: number, T2: number): Out => {
   const door = T2 < K.s19.door ? 0 : T2 < K.s19.door + 0.13 ? 30 : 68;
   const camX = lerp(0.6, -2.4, easeOut(clamp(T2 / (stop + 0.8))));
   const jk = jackson19(T);
-  const dust = T2 >= stop - 0.05 ? Math.round((T2 - stop + 0.05) * 24) : -1;
+  const dust = T2 >= stop - 0.05 ? (T2 - stop + 0.05) * 24 : -1;
   return {
     cam: { x: camX, y: 3.5, z: 11.6, tx: camX, ty: 1.7, tz: 3 },
     street: true,
@@ -285,7 +289,7 @@ const shot19 = (T: number, T2: number): Out => {
 // ПЛАНЫ 20 и 22a: экстремально крупный план глаз
 // =====================================================================================
 const shot20 = (T: number, sh: ShotT, v: Voices): Out => {
-  const talk = mouthOf(sh, v.env[0]) > 0 ? 1 : 0;
+  const talk = mouthOf(sh, v.env[0]);
   // длинный шёпот: жёсткие склейки между ракурсами (оба глаза, правый глаз, усы со слюной, левый глаз, ещё ближе)
   const CUTS: Array<[number, Cam]> = [
     [0, { x: 0, y: 0, z: 6.6, tx: 0, ty: 0, tz: 0 }],
@@ -299,20 +303,28 @@ const shot20 = (T: number, sh: ShotT, v: Voices): Out => {
     [6.9, { x: 0, y: 0.5, z: 3.4, tx: 0, ty: 0.5, tz: 0 }],
   ];
   let cam: Cam = CUTS[0][1];
-  for (const [t, c] of CUTS) if (T >= t) cam = c;
-  const beat = Math.floor((T * FPS) / 18) % 2; // сердцебиение: пульс формы
+  let seg = 0;
+  CUTS.forEach(([t, c], i) => {
+    if (T >= t) {
+      cam = c;
+      seg = i;
+    }
+  });
+  const beat = Math.floor(T / 0.6) % 2; // сердцебиение: пульс формы (раз в 0.6 с)
   return {
     cam,
+    seg,
     street: false,
-    node: <Ecu pupil={0.21} lid={0} mst={Math.floor(T * FPS) % 8 < 4 ? 1 : 0} vein={9} pulse={beat} drool={clamp((T - 0.3) / 2.5)} talk={talk} />,
+    node: <Ecu pupil={0.21} lid={0} mst={Math.floor(T / 0.1333) % 2 ? 0 : 1} vein={9} pulse={beat} drool={clamp((T - 0.3) / 2.5)} talk={talk} />,
   };
 };
 const shot22a = (T: number): Out => {
   const pupil = T < 0.13 ? 0.2 : T < 0.27 ? 0.13 : T < 0.4 ? 0.08 : 0.045;
   return {
     cam: { x: 0, y: 0, z: T < 0.27 ? 5.6 : 5.0, tx: 0, ty: 0, tz: 0 },
+    seg: T < 0.27 ? 0 : 1,
     street: false,
-    node: <Ecu pupil={pupil} lid={0.32} mst={Math.floor(T * FPS) % 8 < 4 ? 1 : 0} vein={14} pulse={Math.floor(T * FPS / 8) % 2} drool={1} talk={0} />,
+    node: <Ecu pupil={pupil} lid={0.32} mst={Math.floor(T / 0.1333) % 2 ? 0 : 1} vein={14} pulse={Math.floor(T / 0.2667) % 2} drool={1} talk={0} />,
   };
 };
 
@@ -339,7 +351,7 @@ const shot21 = (T: number, T2: number, f2: number): Out => {
   const cam: Cam = { x: -1.1, y: 2.7, z: 12.4, tx: -1.5, ty: 1.9, tz: 4.8 };
   const sp = staceyAt(T, { x: -3.5 + clamp(T / 1.0) * 0.5, z: 4.9 });
   const touch = T >= K.s21.tuk;
-  const k = Math.round((T2 - K.s21.tuk) * 24);
+  const k = (T2 - K.s21.tuk) * 24;
   const shake = touch && k < 4 ? 0.04 : 0;
   return {
     cam,
@@ -369,7 +381,7 @@ const shot21 = (T: number, T2: number, f2: number): Out => {
 // =====================================================================================
 const shot22b = (T: number, T2: number): Out => {
   const cam: Cam = { x: -1.3, y: 2.3, z: 9.2, tx: -1.1, ty: 2.1, tz: 4.8 };
-  const k = Math.round(T2 * 24);
+  const k = T2 * 24;
   const cp = chloeAt(T, { x: -0.6, z: 4.62, hx: -4, hy: 6, eyeL: 1, eyeR: 1, mouth: T < 0.3 ? 1 : 0, brow: 1, alx: 40, alz: 40, ale: 50, arx: 40, arz: 40, are: 50, tl: -2, ry: -80 });
   return {
     cam,
@@ -396,14 +408,15 @@ const bangT = (sh: ShotT) => (sh.vFrom + sh.vLen) / FPS + 0.05;
 const shot23a = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
   const tb = bangT(sh);
   const bang = T2 >= tb;
-  const kb = Math.round((T2 - tb) * 30);
+  const kb = (T2 - tb) * 30;
   const racks = [0.12, 0.27, 0.4];
   const rk = T < racks[0] ? 0 : T < racks[1] ? 1 : T < racks[2] ? 0.35 : 0;
   const talking = mouthOf(sh, v.env[1]);
+  const talkNow = inVoice(sh);
   const kick = bang && kb < 6;
   let jp = base4("jackson", {
-    x: J23.x, z: J23.z, ry: 90, tl: kick ? -18 : -4, hx: kick ? 8 : -2, hy: kick ? 0 : 4 * (Math.floor(T * 7) % 2 ? 1 : -1), eyeL: 1, eyeR: 1, ps: 1, brow: -1, sp: 1, mst: Math.floor(T * FPS) % 4 < 2 ? 1 : 0,
-    mouth: talking ? (talking === 2 ? 5 : 2) : bang ? 2 : 0, gun: 1, gx: 0.2, gy: 0.74, gz: 0.52, gp: kick ? 14 : 2, gw: 0, rk: bang ? (kb < 4 ? 0.2 : 0) : rk, y: 0.43 * SCL.jackson + 0.06,
+    x: J23.x, z: J23.z, ry: 90, tl: kick ? -18 : -4, hx: kick ? 8 : -2, hy: kick ? 0 : 4 * (Math.floor(T * 7) % 2 ? 1 : -1), eyeL: 1, eyeR: 1, ps: 1, brow: -1, sp: 1, mst: Math.floor(T * 15) % 2 ? 0 : 1,
+    mouth: talkNow ? 5 : bang ? 2 : 0, mo: talkNow ? talking : -1, gun: 1, gx: 0.2, gy: 0.74, gz: 0.52, gp: kick ? 14 : 2, gw: 0, rk: bang ? (kb < 4 ? 0.2 : 0) : rk, y: 0.43 * SCL.jackson + 0.06,
     llk: 8, lrk: 8, llx: 10, lrx: -10,
   });
   jp = gunHold(jp);
@@ -418,14 +431,15 @@ const shot23a = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
   return {
     cam,
     street: true,
-    flash: bang && kb === 0,
+    flash: bang && kb < 1, // вспышка выстрела 1 кадр @30 (≈0.033 с)
+    seg: useClose ? 1 : 0,
     node: (
       <>
         <Statics />
         {car("car", { x: CAR.x, z: CAR.z, lights: T2 > 0.4 ? ((Math.floor(T2 * 7.5) % 2 ? 1 : 2) as 1 | 2) : 0, door: 68 })}
         {A("chloe", cp)}
         {A("jackson", jp)}
-        {bang && <Muzzle position={[mz[0] + 0.5, mz[1], mz[2]]} rotZ={0} yaw={yawTo(cam, mz[0], mz[2])} size={1.1} k={Math.floor(kb / 2)} />}
+        {bang && <Muzzle position={[mz[0] + 0.5, mz[1], mz[2]]} rotZ={0} yaw={yawTo(cam, mz[0], mz[2])} size={1.1} k={kb / 2} />}
         {bang && <GunSmoke at={[mz[0] + 0.5, mz[1], mz[2]]} k={kb} />}
       </>
     ),
@@ -444,18 +458,21 @@ const shot23b = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
   const pz = lerp(C23.z, DUMP.z, u);
   const py = 0.9 + 1.5 * 4 * u * (1 - u) + (1 - u) * 0.2 + u * 0.4;
   const tumble = -360 * 2 * easeOut(u);
-  const mouth = mouthOf(sh, v.env[2]);
+  const talk = mouthOf(sh, v.env[2]);
+  const talkNow = inVoice(sh);
   const inside = T >= land;
   const cp = base("chloe", {
-    x: px, z: pz, y: inside ? 0.6 : py, ry: -90, rx: inside ? -400 : tumble, rz: 12, eyeL: 1, eyeR: 1, brow: 1, mouth,
-    alx: 150 + (Math.floor(T * FPS) % 8 < 4 ? 20 : -10), alz: 50, ale: 20, arx: 120, arz: 60, are: 30, llx: 40, lrx: -20, llk: 50, lrk: 80, llz: 30, lrz: 30, hr: 2, hl: 0,
+    x: px, z: pz, y: inside ? 0.6 : py, ry: -90, rx: inside ? -400 : tumble, rz: 12, eyeL: 1, eyeR: 1, brow: 1, mouth: talkNow ? 2 : 0, mo: talkNow ? talk : -1,
+    alx: 150 + (Math.floor(T / 0.1333) % 2 ? -10 : 20), alz: 50, ale: 20, arx: 120, arz: 60, are: 30, llx: 40, lrx: -20, llk: 50, lrk: 80, llz: 30, lrz: 30, hr: 2, hl: 0,
   });
   const slamT = dur - 0.15;
   const lid = T2 < slamT ? 100 : T2 < slamT + 0.07 ? 55 : 0;
-  const sk = T2 >= slamT && T2 < slamT + 0.27 ? (Math.floor(T2 * 30) % 4 < 2 ? 0.05 : -0.05) : 0;
-  const cam: Cam = T >= 1.6 && T < land - 0.4 ? { x: px - 0.6, y: py + 0.5, z: 9.0, tx: px, ty: py, tz: 4.2 } : { x: 0.9, y: 3.0, z: 13.6, tx: 0.9, ty: 2.5, tz: 4.0 };
+  const sk = T2 >= slamT && T2 < slamT + 0.27 ? (Math.floor(T2 * 15) % 2 ? -0.05 : 0.05) : 0;
+  const follow = T >= 1.6 && T < land - 0.4;
+  const cam: Cam = follow ? { x: px - 0.6, y: py + 0.5, z: 9.0, tx: px, ty: py, tz: 4.2 } : { x: 0.9, y: 3.0, z: 13.6, tx: 0.9, ty: 2.5, tz: 4.0 };
   return {
     cam,
+    seg: follow ? 1 : 0,
     street: true,
     node: (
       <>
@@ -465,7 +482,7 @@ const shot23b = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
         {car("car", { x: CAR.x, z: CAR.z, lights: Math.floor(T2 * 7.5) % 2 ? 1 : 2, door: 68 })}
         {A("jackson", gunHold(base4("jackson", { x: J23.x, z: J23.z, ry: 90, tl: -6, hx: -4, eyeL: 1, eyeR: 1, ps: 1, mouth: 2, brow: -1, sp: 1, gun: 1, gx: 0.2, gy: 0.74, gz: 0.52, gp: 4, y: 0.43 * SCL.jackson + 0.06 })))}
         {A("chloe", cp)}
-        {T2 >= slamT && <ImpactLines at={[DUMP.x, 1.6, DUMP.z + 0.9]} k={Math.round((T2 - slamT) * 24)} r={0.9} yaw={yawTo(cam, DUMP.x, DUMP.z)} />}
+        {T2 >= slamT && <ImpactLines at={[DUMP.x, 1.6, DUMP.z + 0.9]} k={(T2 - slamT) * 24} r={0.9} yaw={yawTo(cam, DUMP.x, DUMP.z)} />}
       </>
     ),
   };
@@ -481,13 +498,14 @@ const shot24a = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
   const tR = vEnd - 0.4;
   const tI = vEnd;
   const released = T2 >= tR;
-  const mouth = mouthOf(sh, v.env[3]);
+  const talk = mouthOf(sh, v.env[3]);
+  const talkNow = inVoice(sh);
   let st: Partial<PP4>;
   if (T < tR - 0.27) st = { arx: 60, arz: 18, are: 70, hp: 10, tl: 6, hx: 4 };
   else if (T < tR) st = { arx: -70, arz: 14, are: 80, hp: 70, tl: -14, hx: -6 };
   else if (T < tR + 0.27) st = { arx: 120, arz: 10, are: 10, hp: 0, tl: 20, hx: 12, cb: 0 };
   else st = { arx: 80, arz: 14, are: 30, hp: 0, tl: 12, hx: 8, cb: 0 };
-  const sp = base4("stacey", { x: ST24.x, z: ST24.z, ry: 90, cb: 1, hl: 2, hr: 2, brow: -1, eyeL: 1, eyeR: 1, mouth: mouth ? (mouth === 2 ? 5 : 3) : released ? 5 : 4, alx: 14, alz: 24, ale: 50, llx: 14, lrx: -14, llz: 12, lrz: 12, ...st });
+  const sp = base4("stacey", { x: ST24.x, z: ST24.z, ry: 90, cb: 1, hl: 2, hr: 2, brow: -1, eyeL: 1, eyeR: 1, mouth: talkNow ? 5 : released ? 5 : 4, mo: talkNow ? talk : -1, alx: 14, alz: 24, ale: 50, llx: 14, lrx: -14, llz: 12, lrz: 12, ...st });
   const br = brendaAt(T, { x: BR24.x, z: BR24.z, ry: 80, brow: -1 });
   // монтировка в полёте: от руки до лобового стекла
   const hand = wp(sp, [-0.5, 0.75, 0.5]);
@@ -495,9 +513,9 @@ const shot24a = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
   const fl = clamp((T2 - tR) / (tI - tR));
   const cbPos: V3 = [lerp(hand[0], target[0], fl), lerp(hand[1], target[1], fl) + Math.sin(fl * Math.PI) * 0.6, lerp(hand[2], target[2], fl)];
   const hit = T2 >= tI;
-  const kh = Math.round((T2 - tI) * 30);
+  const kh = (T2 - tI) * 30;
   const cam: Cam = { x: -6.4, y: 2.2, z: 11.4, tx: -6.2, ty: 1.9, tz: 3.4 };
-  const starK = Math.round((T2 - tI - 0.2) * 24);
+  const starK = (T2 - tI - 0.2) * 24;
   return {
     cam,
     street: true,
@@ -511,7 +529,7 @@ const shot24a = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
         {A("brenda", br)}
         {A("stacey", sp)}
         {released && !hit && (
-          <group position={cbPos} rotation={[0, 0, Math.floor(T2 * 30 / 2) * 1.2]}>
+          <group position={cbPos} rotation={[0, 0, T2 * 18]}>
             <Part geo={rbox(0.06, 0.9, 0.06, 0.02)} color="#d8353b" px={3} />
           </group>
         )}
@@ -557,8 +575,8 @@ const shot24b = (T: number, T2: number): Out => {
         {A("brenda", br)}
         {hits.map((h, i) => (
           <React.Fragment key={i}>
-            <ImpactLines at={[-14.5 + i * 0.4, 1.4, lanes[i] + 1]} k={Math.round((T2 - h) * 24)} r={1.1} yaw={yawTo(cam, -14.5, lanes[i])} />
-            {T2 >= h && T2 < h + 1.0 && <Blast at={[-14.2 + i * 0.5, 1.2, lanes[i] + 0.8]} k={Math.round((T2 - h) * 30)} seed={i + 2} big={0.3} />}
+            <ImpactLines at={[-14.5 + i * 0.4, 1.4, lanes[i] + 1]} k={(T2 - h) * 24} r={1.1} yaw={yawTo(cam, -14.5, lanes[i])} />
+            {T2 >= h && T2 < h + 1.0 && <Blast at={[-14.2 + i * 0.5, 1.2, lanes[i] + 0.8]} k={(T2 - h) * 30} seed={i + 2} big={0.3} />}
           </React.Fragment>
         ))}
         <Puff position={[px - 1, 2.2, 3.6]} r={0.5 + nh * 0.12} color={nh ? "#8f8ea8" : "#cfd0dc"} />
@@ -578,13 +596,13 @@ const shot25a = (T: number, T2: number): Out => {
   let tony: React.ReactNode = null;
   if (T < 0.73) {
     const run = T < 0.53;
-    const ph = Math.floor(T / 0.133) % 2;
+    const s = Math.sin((T * Math.PI * 2) / 0.2667); // бег: непрерывный цикл (шаг 0.133 с на ногу)
     const x = run ? lerp(0.6, -3.0, T / 0.53) : lerp(-3.0, -3.7, (T - 0.53) / 0.2);
     tony = A(
       "tony",
       base("tony", {
-        x, z: run ? 5.2 : 4.6, y: run ? 0.43 * SCL.tony + (ph ? 0.1 : 0) : 0.43 * SCL.tony + 0.8 + (T < 0.6 ? 0.3 : 0), ry: -90, tl: 16, hy: 20, hx: 8, eyeL: 1, eyeR: 1, mouth: 2, brow: 1,
-        llx: run ? (ph ? 50 : -40) : 70, lrx: run ? (ph ? -40 : 50) : 30, llk: run ? (ph ? 6 : 70) : 90, lrk: run ? 70 : 40, alx: run ? (ph ? -50 : 50) : 140, arx: run ? (ph ? 50 : -50) : 140, ale: 70, are: 70, hl: 2, hr: 2,
+        x, z: run ? 5.2 : 4.6, y: run ? 0.43 * SCL.tony + 0.05 * (1 - s) : 0.43 * SCL.tony + 0.8 + (T < 0.6 ? 0.3 : 0), ry: -90, tl: 16, hy: 20, hx: 8, eyeL: 1, eyeR: 1, mouth: 2, brow: 1,
+        llx: run ? 5 - 45 * s : 70, lrx: run ? 5 + 45 * s : 30, llk: run ? 38 + 32 * s : 90, lrk: run ? 38 - 32 * s : 40, alx: run ? 50 * s : 140, arx: run ? -50 * s : 140, ale: 70, are: 70, hl: 2, hr: 2,
       }),
     );
   }
@@ -612,7 +630,7 @@ const shot25a = (T: number, T2: number): Out => {
     });
   })();
   const cam: Cam = { x: -6.2, y: 2.3, z: 12.0, tx: -6.2, ty: 1.5, tz: 3.4 };
-  const kh = Math.round((T2 - hitT) * 30);
+  const kh = (T2 - hitT) * 30;
   return {
     cam,
     street: true,
@@ -633,9 +651,9 @@ const shot25a = (T: number, T2: number): Out => {
           </group>
         )}
         {hit && <ImpactLines at={[MK.x + 0.3, 1.3, MK.z + 1.6]} k={kh} r={1.0} yaw={yawTo(cam, MK.x, MK.z)} color="#fff6c8" />}
-        {hit && kh < 14 && <Tink position={[MK.x + 0.2, 1.8, MK.z + 1.5]} k={Math.floor(kh / 2)} yaw={yawTo(cam, MK.x, MK.z)} size={2.0} />}
+        {hit && kh < 14 && <Tink position={[MK.x + 0.2, 1.8, MK.z + 1.5]} k={kh / 2} yaw={yawTo(cam, MK.x, MK.z)} size={2.0} />}
         <group position={[0, ROAD_Y, 0]}>
-          <GroundDust at={[cx + 3, 0, CAR.z + 1.5]} k={go > 0 ? Math.round(go * 24) % 15 : -1} r={1.0} />
+          <GroundDust at={[cx + 3, 0, CAR.z + 1.5]} k={go > 0 ? (go * 24) % 15 : -1} r={1.0} />
         </group>
       </>
     ),
@@ -651,14 +669,15 @@ const shot25b = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
   const tg = vEnd + 0.0; // граната прилетает
   const tb = tg + 0.17; // взрыв
   const boom = T2 >= tb;
-  const kb = Math.round((T2 - tb) * 30);
-  const mouth = mouthOf(sh, v.env[4]);
+  const kb = (T2 - tb) * 30;
+  const talk = mouthOf(sh, v.env[4]);
+  const talkNow = inVoice(sh);
   const gT = clamp((T2 - (tg - 0.5)) / 0.67);
   const cam: Cam = { x: -7.0, y: 3.0, z: 12.0, tx: -7.4, ty: 2.1, tz: 3.6 };
   // Тони внутри, высунулся по грудь: корпус наклонён к окну
   const beat = Math.floor(T / 0.267) % 2;
   const tony = base("tony", {
-    x: CAR25.x - 0.35, z: CAR25.z + 0.8, scale: 1.1, y: 1.4 + 0.1, ry: 8, tl: 38 + beat * 6, hx: -8, hy: beat ? 14 : -10, hz: beat ? 6 : -6, eyeL: 1, eyeR: 1, brow: 1, mouth: mouth ? (mouth === 2 ? 2 : 1) : 0, tear: beat ? 1 : 2,
+    x: CAR25.x - 0.35, z: CAR25.z + 0.8, scale: 1.1, y: 1.4 + 0.1, ry: 8, tl: 38 + beat * 6, hx: -8, hy: beat ? 14 : -10, hz: beat ? 6 : -6, eyeL: 1, eyeR: 1, brow: 1, mouth: talkNow ? 2 : 0, mo: talkNow ? talk : -1, tear: beat ? 1 : 2,
     alx: 150, alz: 40, ale: 30, arx: 90 + beat * 30, arz: 50, are: 40, llx: 80, lrx: 80, llk: 90, lrk: 90, hl: 2, hr: 2,
   });
   const gx = lerp(-1.8, CAR25.x - 0.4, easeOut(gT));
@@ -719,10 +738,10 @@ const shot26 = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
       [0.533, { hy: -6, hx: 4, hz: -4, arx: 60, are: 90 }],
       [0.4, { hy: 4, hx: -10, hz: 0, alx: 40, ale: 60 }],
     ] as ReadonlyArray<Beat<PPatch>>).p;
-    gp = { ...gp, ...bt, mouth: talking ? (talking === 2 ? 6 : 3) : 0, brow: -1 };
+    gp = { ...gp, ...bt, mouth: 6, mo: talking, brow: -1 };
   }
   gp = { ...gp, y: gp.y };
-  const spitK = Math.round((T2 - 1.2) * 30);
+  const spitK = (T2 - 1.2) * 30;
   const dolly = lerp(12.8, 9.8, clamp(T2 / (sh.len / FPS)));
   const cam: Cam = { x: 1.0, y: 3.0, z: dolly, tx: 1.1, ty: 2.0, tz: 4.0 };
   const tick = Math.floor(T2 * 10);
@@ -768,17 +787,16 @@ const shot26 = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
 };
 
 // =====================================================================================
-export const renderShot = (frame: number, sh: ShotT, v: Voices): Out => {
-  const fr = frame - sh.from;
-  const f = Math.floor(fr / STEP) * STEP;
-  const f2 = Math.floor(fr / 2) * 2;
-  RAW = f2;
+/** План в непрерывный момент frame (кадры композиции, дробные) без сглаживания: время не квантуется */
+const renderShotRaw = (frame: number, sh: ShotT, v: Voices): Out => {
+  const f = frame - sh.from;
+  RAW = f;
   const T = f / FPS;
-  const T2 = f2 / FPS;
+  const T2 = T;
   switch (sh.id) {
     case "s19": return shot19(T, T2);
     case "s20": return shot20(T, sh, v);
-    case "s21": return shot21(T, T2, f2);
+    case "s21": return shot21(T, T2, f);
     case "s22a": return shot22a(T);
     case "s22b": return shot22b(T, T2);
     case "s23a": return shot23a(T, T2, sh, v);
@@ -790,6 +808,15 @@ export const renderShot = (frame: number, sh: ShotT, v: Voices): Out => {
     case "s26": return shot26(T, T2, sh, v);
     default: return { cam: { x: 0, y: 0, z: 6, tx: 0, ty: 0 }, street: false, node: null };
   }
+};
+
+let memo: { frame: number; sh: ShotT; v: Voices; out: Out } | null = null;
+/** План в момент frame: сглаженная анимация (окно в пределах плана и отрезка без склеек камеры). Результат кэшируется на кадр */
+export const renderShot = (frame: number, sh: ShotT, v: Voices): Out => {
+  if (memo && memo.frame === frame && memo.sh === sh && memo.v.env.length === v.env.length && memo.v.env.every((e, i) => e === v.env[i])) return memo.out;
+  const out = smoothFrame((f) => renderShotRaw(f, sh, v), frame, sh.from, sh.from + sh.len, (o) => o.seg ?? 0);
+  memo = { frame, sh, v, out };
+  return out;
 };
 void Chunk;
 void circleGeo;

@@ -23,14 +23,19 @@ export interface PP {
   acc: number; tear: number; hl: number; hr: number; hp: number; sir: number;
   sw: number; toe: number; my: number; py: number; // пот-капли (0 нет, 1..3 фаза), наклон стоп (носки вниз +), поворот мегафона (рыскание)
   pl: number; // плакат Хлои: 0 в левой руке, 1 воткнут в землю слева от неё (экранная левая сторона), 2 справа
+  mo: number; // раскрытие рта при речи 0..1 (непрерывно, по огибающей wav); -1 - не используется (рот рисуется по mouth как раньше)
   atl: number; atr: number; // скрутка плеча вокруг своей оси (град): локоть сгибает предплечье вверх при отведённой руке (бицепс)
 }
 export const P0: PP = {
   x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, tl: 0, ty: 0, tz: 0, hx: 0, hy: 0, hz: 0, hdx: 0, hdy: 0,
   alx: 0, alz: 8, ale: 0, arx: 0, arz: 8, are: 0, llx: 0, llz: 4, llk: 0, lrx: 0, lrz: 4, lrk: 0,
-  mouth: 0, eyeL: 0, eyeR: 2, lx: 0, ly: 0, brow: 0, cup: 0, scale: 1, acc: 0, tear: 0, hl: 0, hr: 0, hp: 0, sir: 0, sw: 0, toe: 0, my: 0, py: 0, pl: 0, atl: 0, atr: 0,
+  mouth: 0, eyeL: 0, eyeR: 2, lx: 0, ly: 0, brow: 0, cup: 0, scale: 1, acc: 0, tear: 0, hl: 0, hr: 0, hp: 0, sir: 0, sw: 0, toe: 0, my: 0, py: 0, pl: 0, mo: -1, atl: 0, atr: 0,
 };
 export type PPatch = Partial<PP>;
+/** Рот при речи (mo >= 0): форма `shape` видна, пока рот открыт; mo < 0 - как раньше, по mouth */
+export const mOpen = (p: PP, shape: number) => p.mouth === shape && (p.mo < 0 || p.mo > 0.05);
+/** Закрытая линия рта: mouth 0 либо рот между слогами (mo ~ 0) */
+export const mClosed = (p: PP) => p.mouth === 0 || (p.mo >= 0 && p.mo <= 0.05 && (p.mouth === 1 || p.mouth === 2 || p.mouth === 3 || p.mouth === 5 || p.mouth === 6));
 export const mixP = (...parts: Array<PPatch | undefined>): PP => Object.assign({}, P0, ...parts.filter(Boolean)) as PP;
 
 export interface Palette {
@@ -76,15 +81,15 @@ const GregFace: React.FC<{ p: PP; c: Palette; big?: boolean }> = ({ p, c, big: b
         <Line lon={-25} lat={-12} pts={SCAR_PTS} w={0.026} color="#cc2a3c" lift={1.012} />
       )}
       {/* рот-створка */}
-      <Line lon={0} lat={-37} pts={[[-0.26, -0.02], [0, 0.03], [0.26, -0.02]]} w={0.026} color="#0c0a10" lift={1.008} visible={p.mouth === 0} />
-      <Decal lon={0} lat={-37} rx={0.13} ry={0.17} color="#0c0a10" lift={1.008} visible={p.mouth === 1} />
-      <Decal lon={0} lat={-40} rx={0.3} ry={0.21} color="#0c0a10" lift={1.008} visible={p.mouth === 2} />
-      <Decal lon={0} lat={-46} rx={0.2} ry={0.07} color="#d9505f" lift={1.012} visible={p.mouth === 2} />
-      <Decal lon={0} lat={-38} rx={0.27} ry={0.1} color="#0c0a10" lift={1.008} visible={p.mouth === 3} />
+      <Line lon={0} lat={-37} pts={[[-0.26, -0.02], [0, 0.03], [0.26, -0.02]]} w={0.026} color="#0c0a10" lift={1.008} visible={mClosed(p)} />
+      <Decal lon={0} lat={-37} rx={0.13} ry={0.17} color="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 1)} />
+      <Decal lon={0} lat={-40} rx={0.3} ry={0.21} color="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 2)} />
+      <Decal lon={0} lat={-46} rx={0.2} ry={0.07} color="#d9505f" lift={1.012} mo={p.mo} visible={mOpen(p, 2) && (p.mo < 0 || p.mo > 0.4)} />
+      <Decal lon={0} lat={-38} rx={0.27} ry={0.1} color="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 3)} />
       {/* отвращение: перекошенная дуга вниз (4) и зубастая гримаса (6) */}
       <Line lon={0} lat={-41} pts={[[-0.3, -0.06], [-0.1, 0.05], [0.12, 0.03], [0.32, -0.08]]} w={0.034} color="#0c0a10" lift={1.009} visible={p.mouth === 4} />
-      <Decal lon={0} lat={-40} rx={0.34} ry={0.15} color="#0c0a10" ring={0.015} lift={1.008} visible={p.mouth === 6} />
-      <Decal lon={0} lat={-36.5} rx={0.28} ry={0.05} color="#fbfbf6" lift={1.012} visible={p.mouth === 6} />
+      <Decal lon={0} lat={-40} rx={0.34} ry={0.15} color="#0c0a10" ring={0.015} lift={1.008} mo={p.mo} visible={mOpen(p, 6)} />
+      <Decal lon={0} lat={-36.5} rx={0.28} ry={0.05} color="#fbfbf6" lift={1.012} mo={p.mo} visible={mOpen(p, 6) && (p.mo < 0 || p.mo > 0.35)} />
     </>
   );
 };

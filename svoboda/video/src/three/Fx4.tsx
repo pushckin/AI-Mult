@@ -1,7 +1,7 @@
 // Сцена 4: звёзды розыска, дульная вспышка, взрыв гранаты, осколки стекла, искра «тук», плевок. Всё плоскими формами 2-3 тонов.
 import React from "react";
-import { Part, Flat, planeGeo, circleGeo, extrude, sphereGeo, rbox, flatMat, INK } from "./toon";
-import { Puff, Star, Flame, Chunk } from "./Fx";
+import { Part, Flat, planeGeo, circleGeo, extrude, sphereGeo, rbox, flatMat, INK, STYLE } from "./toon";
+import { Puff, Star, Flame, Chunk, qk } from "./Fx";
 import { hash } from "./util";
 
 const starPoly = (n: number, ro: number, ri: number, off = -Math.PI / 2): Array<[number, number]> => {
@@ -19,8 +19,9 @@ export const WantedStar: React.FC<{ position: [number, number, number]; size?: n
   if (k < 0) return null;
   const a = extrude("wanted_a", starPoly(5, 1, 0.45), 0.14, 0.03);
   const b = extrude("wanted_b", starPoly(5, 0.62, 0.28), 0.14, 0.02);
-  const pop = k < 2 ? 1.5 : k < 4 ? 0.86 : 1;
-  const bob = k > 8 ? Math.round(Math.sin(k * 0.5) * 2) * 0.012 : 0;
+  const ss = (u: number) => u * u * (3 - 2 * u);
+  const pop = STYLE.smooth ? (k < 2 ? 1.5 - 0.64 * ss(k / 2) : k < 4 ? 0.86 + 0.14 * ss((k - 2) / 2) : 1) : k < 2 ? 1.5 : k < 4 ? 0.86 : 1;
+  const bob = k > 8 ? (STYLE.smooth ? Math.sin(k * 0.5) * 0.024 : Math.round(Math.sin(k * 0.5) * 2) * 0.012) : 0;
   return (
     <group position={[position[0], position[1] + bob * size * 10, position[2]]} rotation={[0, yaw, 0]} scale={size * pop}>
       <Part flat geo={a.geo} hull={a.hull} color={k < 2 ? "#fff3a0" : "#ffc61a"} px={5} />
@@ -57,7 +58,7 @@ export const Muzzle: React.FC<{ position: [number, number, number]; rotZ?: numbe
 /** Взрыв: звезда-огненный шар, клубы дыма, обломки. k - кадры с момента взрыва (30 fps), на двойках */
 export const Blast: React.FC<{ at: [number, number, number]; k: number; seed?: number; big?: number; yaw?: number }> = ({ at, k, seed = 3, big = 1, yaw = 0 }) => {
   if (k < 0 || k > 90) return null;
-  const kh = Math.floor(k / 2) * 2;
+  const kh = qk(k);
   const [x, y, z] = at;
   const out: React.ReactNode[] = [];
   if (kh < 14) {
@@ -96,7 +97,7 @@ export const Blast: React.FC<{ at: [number, number, number]; k: number; seed?: n
 const triG = () => extrude("shard", [[0, 0.14], [-0.1, -0.08], [0.1, -0.06]], 0.03, 0.004);
 export const Shards: React.FC<{ at: [number, number, number]; k: number; n?: number; spread?: number; dir?: number }> = ({ at, k, n = 14, spread = 1, dir = 1 }) => {
   if (k < 0 || k > 30) return null;
-  const kh = Math.floor(k / 2) * 2;
+  const kh = qk(k);
   const g = triG();
   return (
     <>
@@ -132,7 +133,7 @@ export const Tink: React.FC<{ position: [number, number, number]; k: number; yaw
 /** Плевок кофе: капли летят вниз и лужа. k - кадры */
 export const Spit: React.FC<{ from: [number, number, number]; groundY: number; k: number }> = ({ from, groundY, k }) => {
   if (k < 0) return null;
-  const kh = Math.floor(k / 2) * 2;
+  const kh = qk(k);
   const land = 10;
   return (
     <>
@@ -162,7 +163,7 @@ export const Spit: React.FC<{ from: [number, number, number]; groundY: number; k
 /** Пороховой дым дульный: 3 клуба */
 export const GunSmoke: React.FC<{ at: [number, number, number]; k: number; dir?: number }> = ({ at, k, dir = 1 }) => {
   if (k < 0 || k > 24) return null;
-  const kh = Math.floor(k / 2) * 2;
+  const kh = qk(k);
   return (
     <>
       {[0, 1, 2].map((i) => (

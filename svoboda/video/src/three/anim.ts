@@ -1,7 +1,9 @@
-// Анимация сцены 1 как функции кадра. Все позы - на двойках (hold), жёсткие смены.
+// Анимация сцены 1 как функции НЕПРЕРЫВНОГО времени f (кадр24 как float: секунды = f/24). 60 fps, без квантований и холдов:
+// позы - PCHIP-сплайны между ключами, циклы - синусы, тряска - затухающая синусоида. Жёсткие склейки остаются в сцене как cut.
 import { PP, PPatch, mixP } from "./Person";
 import * as S from "../data/scene1";
-import { clamp, hold, holdKeys, hash, jitter, lerp, remap } from "./util";
+import { clamp, lerp, remap } from "./util";
+import { curve, KeyPose, loopCR, mixPose, snoise, splinePose, sstep } from "./smooth";
 
 export const GS = 1.5; // масштаб Грега
 export const GZ = 0.42; // глубина Грега
@@ -13,7 +15,7 @@ export const HIT_X = -1.0;
 const G = (o: PPatch = {}): PP => mixP({ scale: GS, z: GZ, y: STAND_Y, x: 0, ry: 72, eyeR: 2 }, o);
 
 // ---------------- Фаза 1: бредёт по тротуару (0-167) ----------------
-const walkX = (f: number) => -2.0 + 0.027 * Math.floor(Math.min(f, 150) / 4);
+const walkX = (f: number) => -2.0 + (0.027 * Math.min(f, 150)) / 4;
 
 /** Куда смотрит/что делает: [от, до, заплатка] */
 const WALK_LOOKS: ReadonlyArray<readonly [number, number, PPatch]> = [
@@ -27,11 +29,15 @@ const WALK_LOOKS: ReadonlyArray<readonly [number, number, PPatch]> = [
   [108, 124, { hy: -6, hx: -20, eyeL: 1, brow: 0.8 }],
   [124, 140, { hy: -30, hx: 4, mouth: 3 }],
 ];
-export const gregFlinch = (f: number) => {
+/** Вес «вздрагивания» (0..1) от ближних взрывов: быстрая атака (~0.05 с), затухание ~0.15 с */
+export const flinchW = (f: number) => {
+  let w = 0;
   for (const [ef, ex] of EXPLOSIONS) {
-    if (f >= ef && f < ef + 7 && Math.abs(ex - walkX(f)) < 2.3) return true;
+    const d = f - ef;
+    if (d < 0 || d >= 7 || Math.abs(ex - walkX(ef)) >= 2.3) continue;
+    w = Math.max(w, sstep(d / 1.2) * (1 - sstep((d - 4) / 3)));
   }
-  return false;
+  return w;
 };
 
 // ---------------- Ракеты и цели ----------------
@@ -66,36 +72,28 @@ export const FLIGHT_KEYS: FK[] = [
 ];
 export const flightPos = (f: number) => {
   const F0 = S.FLIGHT_FROM;
-  const t = clamp((Math.min(S.LAND_FRAME - 1, F0 + Math.floor((f - F0) / 4) * 4) - F0) / (S.LAND_FRAME - 1 - F0));
+  const t = clamp((f - F0) / (S.LAND_FRAME - 1 - F0));
   const x = lerp(HIT_X + 0.55, LIE_X + 0.1, 1 - Math.pow(1 - t, 2.4));
   const APEX_T = 0.22;
   const y = t < APEX_T ? lerp(1.5, 3.1, 1 - Math.pow(1 - t / APEX_T, 2)) : lerp(3.1, 0.5, Math.pow((t - APEX_T) / (1 - APEX_T), 2));
   return { x, y, z: GZ + 0.35 * Math.sin(t * Math.PI) };
 };
-/** Контакт с машиной: 3 жёстких кадра (168, 170, 172) */
-const CONTACT: ReadonlyArray<readonly [number, number]> = [[HIT_X, 0.82], [HIT_X + 0.2, 0.98], [HIT_X + 0.4, 1.2]];
-const flightPatch = (frame: number): PPatch => {
-  const F0 = S.FLIGHT_FROM;
-  const f4 = F0 + Math.floor((frame - F0) / 4) * 4;
-  let k0 = FLIGHT_KEYS[0];
-  let k1 = FLIGHT_KEYS[FLIGHT_KEYS.length - 1];
-  for (let i = 0; i < FLIGHT_KEYS.length - 1; i++) {
-    if (FLIGHT_KEYS[i].f <= f4 && f4 <= FLIGHT_KEYS[i + 1].f) {
-      k0 = FLIGHT_KEYS[i];
-      k1 = FLIGHT_KEYS[i + 1];
-      break;
-    }
-  }
-  const t = k1.f === k0.f ? 1 : clamp((f4 - k0.f) / (k1.f - k0.f));
-  const out: Record<string, number> = {};
-  for (const key of Object.keys(k1) as Array<keyof FK>) {
-    if (key === "f" || key === "alt" || key === "px" || key === "py") continue;
-    const a = (k0[key] as number | undefined) ?? 0;
-    const b = k1[key] as number;
-    out[key] = lerp(a, b, t);
-  }
-  return out as PPatch;
+/** Контакт с машиной (168-174): путь тела в 3 опорных точках, дальше - полёт */
+const CONTACT_X: ReadonlyArray<readonly [number, number]> = [[S.HIT_FRAME, HIT_X], [S.HIT_FRAME + 2, HIT_X + 0.2], [S.HIT_FRAME + 4, HIT_X + 0.4], [S.FLIGHT_FROM, HIT_X + 0.55]];
+const CONTACT_Y: ReadonlyArray<readonly [number, number]> = [[S.HIT_FRAME, 0.82], [S.HIT_FRAME + 2, 0.98], [S.HIT_FRAME + 4, 1.2], [S.FLIGHT_FROM, 1.5]];
+const fkPatch = (k: FK): PPatch => {
+  const { f: _f, alt: _a, px: _px, py: _py, ...patch } = k;
+  void _f; void _a; void _px; void _py;
+  return patch;
 };
+/** Ключи полёта: контакт (3 позы) + кувырок */
+const FLIGHT_SPLINE: KeyPose[] = (() => {
+  const base = FLIGHT_KEYS[0];
+  const ks: KeyPose[] = [0, 1, 2].map((ci) => ({ f: S.HIT_FRAME + ci * 2, pose: G({ ...fkPatch(base), z: GZ, rx: 0, tl: base.tl! + ci * 6 }) }));
+  FLIGHT_KEYS.slice(1).forEach((k) => ks.push({ f: k.f, pose: G(fkPatch(k)) }));
+  return ks;
+})();
+const FLIGHT_LAG = { alx: 1.4, arx: 1.4, ale: 1.2, are: 1.2, hx: 1, hy: 1 }; // follow-through: руки и голова чуть запаздывают
 
 // Лежит на спине: rx -90, ry 90 - голова к -x
 const LIE = (o: PPatch = {}): PP => mixP({ scale: GS, z: GZ - 0.05, x: LIE_X, y: 0.5, rx: -90, ry: 90, hy: -72, tl: 0, alx: 0, arx: 6, ale: 0, are: 0, llz: 6, lrz: 6, mouth: 0, eyeL: 0, eyeR: 0, ...o });
@@ -170,74 +168,110 @@ export const RISE_KEYS: LK[] = [
   RK(594, { hy: -6, hx: -32, tl: -12 }),
   RK(600, { hy: -8, hx: -34, tl: -12 }),
 ];
-/** Шёпот: покачивания каждые 6 кадров [tl, hx, alx, hdx] */
-const SWAY: ReadonlyArray<readonly [number, number, number, number]> = [[0, 0, 0, 0], [-3, -3, 4, 0.02], [3, 3, -3, -0.02], [-2, 5, 5, 0.01], [3, -4, -4, -0.01], [-4, 4, 3, 0.03]];
+// Ключи лёжа/подъёма как полные позы (для сплайна). До 514 - лёжачая основа, дальше - стоячая.
+const riseBase = (f: number, patch: PPatch): PP => {
+  if (f < 514) return LIE(patch);
+  const p = G({ ry: 0, x: remap(f, [[514, LIE_X - 0.3], [538, STAND_X]]), arx: 24, are: 80, alz: 8, ...patch });
+  return { ...p, scale: GS, z: f < 538 ? GZ + 0.04 - (f - 514) * 0.0006 : GZ + 0.04 };
+};
+const LIE_SPLINE: KeyPose[] = (() => {
+  const ks: KeyPose[] = [];
+  LIE_KEYS.filter((k) => k.f < S.RISE_FROM).forEach((k) => {
+    const { f, ...patch } = k;
+    ks.push({ f, pose: LIE(patch) });
+  });
+  RISE_KEYS.forEach((k) => {
+    const { f, ...patch } = k;
+    ks.push({ f, pose: riseBase(f, patch) });
+  });
+  return ks;
+})();
+const LIE_LAG = { alx: 1, arx: 1, ale: 1, are: 1 };
 
-export const gregPose = (frame: number): PP => {
-  const f = hold(frame);
-  // ---- 0..167 ----
-  if (frame < S.HIT_FRAME) {
-    const ph = Math.floor(f / 4) % 2;
-    const look = WALK_LOOKS.find(([a, b]) => f >= a && f < b)?.[2] ?? {};
-    const turning = f >= 140;
-    const ryK: Array<[number, number]> = [[0, 72], [138, 72], [142, 48], [146, 22], [150, 0], [154, -22], [158, -40], [162, -54], [168, -58]];
-    const ry = remap(hold(f, 4) === f ? f : hold(f, 2), ryK);
-    const walking = !turning && !gregFlinch(f);
-    const wl = walking ? { llx: ph ? 24 : -24, lrx: ph ? -24 : 24, llk: ph ? 0 : 12, lrk: ph ? 12 : 0, alx: ph ? -16 : 16, arx: 30 + (ph ? 4 : -4), are: 78, tz: ph ? 2.5 : -2.5, tl: 4, y: STAND_Y + (ph ? 0.025 : 0) } : {};
-    let p = G({ x: turning ? walkX(150) : walkX(f), ry: turning ? ry : 72, arx: 30, are: 78, ...wl, ...look });
-    if (gregFlinch(f)) p = { ...p, tl: 18, alx: 70, alz: 34, arx: 60, arz: 24, are: 90, hx: 14, eyeL: 1, eyeR: 1, mouth: 1, brow: 1, hy: -20, llx: 8, lrx: -6, ry: 60 };
-    if (turning && f >= 150) p = { ...p, hy: ry < -20 ? 18 : -10, eyeL: 1, eyeR: 1, mouth: f >= 158 ? 1 : 0, brow: 1, tl: -4, alx: 20, arx: 44, are: 86, llx: 6, lrx: -4, cup: ((f / 2) % 2) * 6 - 3 };
-    if (turning && f < 150) p = { ...p, hy: -20, eyeL: 1 };
-    return p;
+/** Шёпот: покачивания, цикл 6 значений по 6 кадров24 [tl, hx, alx, hdx], между ними - плавный Catmull-Rom */
+const SWAY_V = [
+  [0, 0, 0, 0], [-3, -3, 4, 0.02], [3, 3, -3, -0.02], [-2, 5, 5, 0.01], [3, -4, -4, -0.01], [-4, 4, 3, 0.03],
+];
+
+// ---- ходьба ----
+const RY_K: Array<[number, number]> = [[0, 72], [138, 72], [142, 48], [146, 22], [150, 0], [154, -22], [158, -40], [162, -54], [168, -58]];
+const LOOK_HY: Array<[number, number]> = WALK_LOOKS.map(([a, b, p]) => [(a + b) / 2, p.hy ?? 0]);
+const LOOK_HX: Array<[number, number]> = WALK_LOOKS.map(([a, b, p]) => [(a + b) / 2, p.hx ?? 0]);
+const LOOK_BROW: Array<[number, number]> = WALK_LOOKS.map(([a, b, p]) => [(a + b) / 2, p.brow ?? 0]);
+const FLINCH_POSE = (f: number): PP => G({ x: walkX(f), ry: 60, tl: 18, alx: 70, alz: 34, arx: 60, arz: 24, are: 90, hx: 14, eyeL: 1, eyeR: 1, mouth: 1, brow: 1, hy: -20, llx: 8, lrx: -6 });
+
+const walkPose = (f: number): PP => {
+  const s = -Math.sin((2 * Math.PI * f) / 8); // непрерывный цикл шага (период 8 кадров24)
+  const amt = remap(f, [[134, 1], [142, 0]]); // шаг затухает перед разворотом
+  const seg = WALK_LOOKS.find(([a, b]) => f >= a && f < b)?.[2] ?? {};
+  const ry = remap(f, RY_K);
+  let p = G({
+    x: walkX(f), ry, arx: 30 + 4 * s * amt, are: 78, alx: -16 * s * amt, tz: 2.5 * s * amt, tl: 4 * amt,
+    y: STAND_Y + 0.0125 * (1 + s) * amt, llx: 24 * s * amt, lrx: -24 * s * amt, llk: 6 * (1 - s) * amt, lrk: 6 * (1 + s) * amt,
+    hy: curve(f, LOOK_HY), hx: curve(f, LOOK_HX), brow: curve(f, LOOK_BROW),
+    eyeL: seg.eyeL ?? 0, eyeR: seg.eyeR ?? 2, mouth: seg.mouth ?? 0,
+  });
+  // вздрагивание от близких взрывов (до разворота)
+  const wF = flinchW(f) * (1 - sstep((f - 138) / 3));
+  if (wF > 0) p = mixPose(p, FLINCH_POSE(f), wF);
+  // разворот к машине: два этапа, плавно
+  const w1 = sstep((f - 139) / 3);
+  const w2 = sstep((f - 149) / 4);
+  if (w1 > 0) {
+    p = { ...p, hy: lerp(p.hy, -20, w1), eyeL: f >= 140 ? 1 : p.eyeL };
   }
-  // ---- удар и полёт ----
-  if (frame < S.LAND_FRAME) {
-    if (frame < S.FLIGHT_FROM) {
-      const ci = Math.min(2, Math.floor((frame - S.HIT_FRAME) / 2));
-      const { f: _kf, alt, px, py, ...patch } = FLIGHT_KEYS[0];
-      void _kf; void px; void py;
-      const [cx, cy] = CONTACT[ci];
-      const jt = ci === 1 ? alt : {};
-      return G({ ...patch, ...jt, x: cx, y: cy, z: GZ, rx: 0, tl: patch.tl! + ci * 6 });
-    }
-    const patch = flightPatch(frame);
-    const odd = Math.floor((frame - S.FLIGHT_FROM) / 4) % 2 === 1;
-    const k = holdKeys(frame, FLIGHT_KEYS) ?? FLIGHT_KEYS[0];
-    const pos = flightPos(f);
-    return G({ ...patch, ...(odd ? k.alt : {}), x: pos.x + (odd ? 0.04 : 0), y: pos.y + (odd ? 0.06 : 0), z: pos.z, rx: patch.rx ?? 0 });
+  if (w2 > 0) {
+    const hy2 = lerp(-10, 18, sstep((-ry - 10) / 20));
+    p = {
+      ...p, hy: lerp(p.hy, hy2, w2), tl: lerp(p.tl, -4, w2), alx: lerp(p.alx, 20, w2), arx: lerp(p.arx, 44, w2), are: lerp(p.are, 86, w2),
+      llx: lerp(p.llx, 6, w2), lrx: lerp(p.lrx, -4, w2), brow: lerp(p.brow, 1, w2), cup: 3 * Math.sin((2 * Math.PI * f) / 4) * w2,
+      eyeL: 1, eyeR: f >= 150 ? 1 : p.eyeR, mouth: f >= 158 ? 1 : f >= 150 ? 0 : p.mouth,
+    };
   }
-  // ---- лежит и встаёт ----
-  if (frame < S.RISE_FROM) {
-    const k = holdKeys(frame, LIE_KEYS) ?? LIE_KEYS[0];
-    const { f: _f, ...patch } = k;
-    void _f;
-    let p = LIE(patch);
-    if (frame >= S.LAND_FRAME + 14) {
-      // дрожь на двойках: нет паузы без изменений
-      const j = (s: number, a: number) => jitter(frame, s, 2) * a;
-      p = { ...p, hy: p.hy + j(1, 2.5), hx: p.hx + j(2, 2), alx: p.alx + j(3, 4), llx: p.llx + j(4, 3), arx: p.arx + j(5, 3), lrx: p.lrx + j(6, 3) };
-    }
-    return p;
+  return p;
+};
+
+/** Поза Грега в момент f (непрерывный кадр24) */
+export const gregPose = (f: number): PP => {
+  // ---- 0..167: идёт ----
+  if (f < S.HIT_FRAME) return walkPose(f);
+  // ---- удар и полёт: сплайн по ключам, позиция - непрерывная траектория ----
+  if (f < S.LAND_FRAME) {
+    const p = splinePose(FLIGHT_SPLINE, f, FLIGHT_LAG);
+    const post = f >= S.FLIGHT_FROM;
+    const pos = post ? flightPos(f) : { x: curve(f, CONTACT_X), y: curve(f, CONTACT_Y), z: GZ };
+    // мелкая «трепетность» конечностей в полёте (вторичное движение), нарастает после контакта
+    const w = sstep((f - 174) / 6);
+    const fl = (per: number, ph: number) => Math.sin((2 * Math.PI * f) / per + ph) * w;
+    return {
+      ...p, x: pos.x, y: pos.y, z: pos.z, alx: p.alx + 6 * fl(9, 0), arx: p.arx + 6 * fl(9, 1.9), llx: p.llx + 6 * fl(11, 0.7), lrx: p.lrx + 6 * fl(11, 2.6),
+      hx: p.hx + 3 * fl(13, 1.1), tl: p.tl + 3 * fl(15, 0.3),
+    };
   }
-  const rk = holdKeys(frame, RISE_KEYS) ?? RISE_KEYS[0];
-  const { f: _g, ...rpatch } = rk;
-  void _g;
-  // до 510 лежит/сидит (LIE-основа), после - стоячая основа
-  let p: PP = frame < 514 ? LIE(rpatch) : G({ ry: 0, x: remap(f, [[514, LIE_X - 0.3], [538, STAND_X]]), arx: 24, are: 80, alz: 8, ...rpatch });
-  if (frame >= 514 && frame < 538) p = { ...p, scale: GS, z: GZ + 0.04 - (frame - 514) * 0.0006 };
-  if (frame >= 538) p = { ...p, z: GZ + 0.04 };
-  // тик глаза
-  if (frame >= 626 && Math.floor(f / 2) % 15 === 7) p = { ...p, eyeL: 2, eyeR: 3, brow: -1 };
-  if (frame >= S.GREG_LINE.from && frame < S.GREG_LINE.to) {
+  // ---- лежит, встаёт, стоит: сплайн по ключам ----
+  let p = splinePose(LIE_SPLINE, f, LIE_LAG);
+  if (f >= S.LAND_FRAME + 14 && f < S.RISE_FROM) {
+    // непрерывная дрожь вместо шума на двойках, плавно включается и выключается
+    const w = 0.8 * sstep((f - (S.LAND_FRAME + 14)) / 4) * (1 - sstep((f - 470) / 10));
+    const j = (sd: number, a: number) => snoise(f, sd) * a * w;
+    p = { ...p, hy: p.hy + j(1, 2.5), hx: p.hx + j(2, 2), alx: p.alx + j(3, 4), llx: p.llx + j(4, 3), arx: p.arx + j(5, 3), lrx: p.lrx + j(6, 3) };
+  }
+  if (f < S.RISE_FROM) return p;
+  // тик глаза (мгновенный нервный тик, дискретно): раз в 30 кадров24, 2 кадра24
+  if (f >= 626 && f % 30 >= 14 && f % 30 < 16) p = { ...p, eyeL: 2, eyeR: 3, brow: -1 };
+  if (f >= S.GREG_LINE.from && f < S.GREG_LINE.to) {
     const k0 = f - S.GREG_LINE.from;
-    const e = S.VOICE_ENV[k0] ?? 0;
-    p = { ...p, mouth: e > 0.5 ? 2 : e > 0.24 ? 1 : 0, hx: p.hx + (e > 0.5 ? 3 : 0) };
+    const i = Math.floor(k0);
+    const e = lerp(S.VOICE_ENV[i] ?? 0, S.VOICE_ENV[i + 1] ?? 0, k0 - i);
+    p = { ...p, mouth: e > 0.5 ? 2 : e > 0.24 ? 1 : 0, hx: p.hx + 3 * sstep((e - 0.4) / 0.2) };
   }
-  if (frame >= 604) {
-    const w = SWAY[Math.floor((f - 604) / 6) % SWAY.length];
-    p = { ...p, tl: p.tl + w[0], hx: p.hx + w[1], alx: p.alx + w[2], hdx: p.hdx + w[3] };
+  if (f >= 604) {
+    const u = (f - 604) / 6;
+    const a = sstep((f - 604) / 6);
+    const sw = (c: number) => loopCR(SWAY_V.map((v) => v[c]), u) * a;
+    p = { ...p, tl: p.tl + sw(0), hx: p.hx + sw(1), alx: p.alx + sw(2), hdx: p.hdx + sw(3) };
   }
-  if (frame >= 566 && frame < 600 && frame % 12 < 2) p = { ...p, eyeR: 3 };
+  if (f >= 566 && f < 600 && f % 12 < 2) p = { ...p, eyeR: 3 };
   return p;
 };
 
@@ -246,26 +280,30 @@ export const CAR_Z = -0.2;
 export const CAR_SCALE = 0.93;
 export interface CarSt { on: boolean; x: number; z: number; yaw: number; dy: number; pitch: number; spin: number; fast: boolean; braking: boolean }
 const R = (arr: Array<[number, number]>, f: number) => remap(f, arr);
-export const carState = (frame: number): CarSt => {
-  const f = hold(frame);
+const PITCH_BASE: Array<[number, number]> = [[S.HIT_FRAME, -3], [S.HIT_FRAME + 4, -3], [S.FLIGHT_FROM + 3, 1.2], [227, 1.2], [231, 0], [1000, 0]];
+const DY_BOUNCE: Array<[number, number]> = [[158, 0.18], [160, 0.05], [162, 0.12], [164, 0], [166, 0]];
+export const carState = (f: number): CarSt => {
   if (f >= S.VANISH_FRAME) return { on: false, x: 0, z: 0, yaw: 0, dy: 0, pitch: 0, spin: 0, fast: false, braking: false };
   const lane = 3.5;
   let x = 0, z = lane, yaw = 0, dy = 0, pitch = 0, fast = false, braking = false, on = true;
   if (f >= 58 && f <= 92) { x = R([[58, -15], [92, 15]], f); fast = true; }
   else if (f >= 98 && f <= 130) { x = R([[98, 15], [130, -15]], f); z = lane - 0.9; yaw = 180; fast = true; }
   else if (f >= 134 && f < S.HIT_FRAME) {
-    x = R([[134, -17], [150, -11], [156, -8.6], [160, -6.9], [164, -5.2], [166, -4.3], [S.HIT_FRAME - 1, -3.6]], f);
-    z = R([[134, lane], [152, lane], [156, 3.0], [160, 1.6], [163, 0.3], [165, CAR_Z], [S.HIT_FRAME - 1, CAR_Z]], f);
-    yaw = R([[134, 0], [152, 0], [156, 16], [160, 24], [163, 12], [165, 3], [S.HIT_FRAME - 1, 0]], f);
-    dy = f >= 158 && f < 166 ? ([0.18, 0.05, 0.12, 0][Math.floor((f - 158) / 2)] ?? 0) : 0;
+    x = R([[134, -17], [150, -11], [156, -8.6], [160, -6.9], [164, -5.2], [166, -4.3], [S.HIT_FRAME, -3.6]], f);
+    z = R([[134, lane], [152, lane], [156, 3.0], [160, 1.6], [163, 0.3], [165, CAR_Z], [S.HIT_FRAME, CAR_Z]], f);
+    yaw = R([[134, 0], [152, 0], [156, 16], [160, 24], [163, 12], [165, 3], [S.HIT_FRAME, 0]], f);
+    dy = f >= 158 && f < 166 ? curve(f, DY_BOUNCE) : 0;
     fast = true;
   } else if (f >= S.HIT_FRAME) {
     z = CAR_Z;
-    x = R([[S.HIT_FRAME, -3.55], [S.FLIGHT_FROM - 1, -3.3], [186, -2.8], [206, -1.4], [230, 1.2], [254, 2.6], [276, 3.2], [S.LAND_FRAME, 3.35], [1000, 3.35]], f);
+    x = R([[S.HIT_FRAME, -3.55], [S.FLIGHT_FROM, -3.3], [186, -2.8], [206, -1.4], [230, 1.2], [254, 2.6], [276, 3.2], [S.LAND_FRAME, 3.35], [1000, 3.35]], f);
     braking = f > 228 && f < S.LAND_FRAME;
-    pitch = braking ? (Math.floor(f / 2) % 2 ? -3.2 : -1.6) : f >= S.FLIGHT_FROM && f < 230 ? 1.2 : 0;
-    if (f >= S.HIT_FRAME && f < S.FLIGHT_FROM) { dy = Math.floor(f / 2) % 2 ? 0.05 : 0; pitch = -3; }
-    yaw = braking ? (Math.floor(f / 2) % 2 ? 3 : 1) : 0;
+    // торможение: плавный вход/выход, внутри - мелкая вибрация подвески (синус), а не переключение каждые 2 кадра
+    const br = sstep((f - 228) / 3) * (1 - sstep((f - (S.LAND_FRAME - 2)) / 3));
+    const vib = Math.sin((2 * Math.PI * f) / 4);
+    pitch = lerp(curve(f, PITCH_BASE), -2.4 + 0.8 * vib, br);
+    yaw = br * (2 + vib);
+    if (f < S.FLIGHT_FROM) dy = 0.05 * Math.abs(Math.sin((Math.PI * f) / 2));
   } else on = false;
   if (!on) return { on, x, z, yaw, dy, pitch, spin: 0, fast, braking };
   const dir = Math.abs(yaw) > 100 ? -1 : 1;
@@ -273,21 +311,49 @@ export const carState = (frame: number): CarSt => {
   return { on, x, z, yaw, dy, pitch, spin: spin * (dir === -1 ? -1 : 1), fast, braking };
 };
 
+/** Фазы пришельца в кабине: плавный переход ~2-4 кадра24 между позами */
+const ALIEN_BASE: PPatch = { x: -0.15, z: 0, ry: 90, scale: 0.88, llx: 88, lrx: 88, llk: 88, lrk: 88, llz: 6, lrz: 6, alx: 52, arx: 52, ale: 24, are: 24, alz: 18, arz: 18, eyeL: 0, eyeR: 0 };
+const AL = (o: PPatch): PP => mixP(ALIEN_BASE, { y: 0.93 }, o);
+const ALIEN_PH: ReadonlyArray<readonly [number, number, PP]> = [
+  [0, 3, AL({ mouth: 0 })],
+  [S.HIT_FRAME, 2, AL({ y: 1.0, alx: 170, arx: 170, ale: 0, are: 0, mouth: 1, hx: -10, hy: -30, tl: -10 })], // подпрыгнул, руки вверх
+  [S.FLIGHT_FROM, 3, AL({ alx: 120, arx: 130, ale: 20, are: 20, mouth: 1, hy: -62, hx: -14, tl: -6 })],
+  [206, 3, AL({ alx: 80, arx: 70, ale: 40, are: 40, mouth: 1, hy: -72, hx: -24, tl: -8 })],
+  [S.LAND_FRAME, 3, AL({ alx: 40, arx: 40, ale: 60, are: 60, mouth: 1, hy: -76, hx: -6, tl: 4 })],
+  [330, 4, AL({ alx: 40, arx: 40, ale: 60, are: 60, mouth: 0, hy: -78, hx: -4, tl: 2, alz: 24, arz: 24 })],
+];
+const ALIEN_SPLINE: KeyPose[] = (() => {
+  const ks: KeyPose[] = [];
+  ALIEN_PH.forEach(([f0, ramp, pose], i) => {
+    if (i > 0) ks.push({ f: f0, pose: ALIEN_PH[i - 1][2] }); // конец предыдущей фазы
+    ks.push({ f: f0 + ramp, pose });
+  });
+  return ks;
+})();
 /** Поза пришельца в кабине (в системе координат машины) */
-export const alienPose = (frame: number): PP => {
-  const f = hold(frame);
-  const bob = carState(frame).fast ? (Math.floor(f / 2) % 2 ? 0.03 : 0) : 0;
-  let o: PPatch = { y: 0.93 + bob };
-  if (f < S.HIT_FRAME) o = { ...o, mouth: f % 24 < 6 ? 1 : 0, hy: f > 120 ? -8 : 0, tl: carState(frame).fast ? 6 : 0 };
-  else if (f < S.FLIGHT_FROM) o = { ...o, y: 1.0, alx: 170, arx: 170, ale: 0, are: 0, mouth: 1, hx: -10, hy: -30, tl: -10 }; // подпрыгнул, руки вверх
-  else if (f < 206) o = { ...o, alx: 120, arx: 130, ale: 20, are: 20, mouth: 1, hy: -62, hx: -14, tl: -6 };
-  else if (f < S.LAND_FRAME) o = { ...o, alx: f % 8 < 4 ? 70 : 90, arx: f % 8 < 4 ? 80 : 60, ale: 40, are: 40, mouth: 1, hy: -72, hx: -24, tl: -8 };
-  else if (f < 330) o = { ...o, alx: 40, arx: 40, ale: 60, are: 60, mouth: 1, hy: -76, hx: -6, tl: 4 };
-  else {
-    const t = Math.floor((f - 330) / 14) % 4;
-    o = { ...o, alx: 40, arx: 40, ale: 60, are: 60, mouth: t === 1 ? 1 : 0, hy: -78 + (t === 2 ? 6 : 0), hx: -4 + (t === 3 ? -6 : 0), tl: 2, alz: 24 + t * 3, arz: 24 + t * 3 };
+export const alienPose = (f: number): PP => {
+  const st = carState(f);
+  let p = splinePose(ALIEN_SPLINE, f);
+  const wob = (per: number, ph: number) => Math.sin((2 * Math.PI * f) / per + ph);
+  // руки в полёте машут, голова чуть покачивается: кадры никогда не повторяются
+  const wave = sstep((f - 206) / 4) * (1 - sstep((f - S.LAND_FRAME) / 4));
+  p = { ...p, alx: p.alx + 10 * wave * wob(8, 0) + 2.5 * wob(9, 0.5), arx: p.arx - 10 * wave * wob(8, 0) + 2.5 * wob(9, 2), hy: p.hy + 1.5 * wob(11, 1) };
+  if (f < S.HIT_FRAME) {
+    const fastW = sstep((f - 58) / 2);
+    p = {
+      ...p, y: p.y + (st.fast ? 0.015 * (1 + wob(4, 0)) : 0) * fastW, mouth: f % 24 < 6 ? 1 : 0,
+      hy: curve(f, [[116, 0], [124, -8]]), tl: 6 * fastW,
+    };
+  } else if (f >= 330) {
+    const u = (f - 330) / 14;
+    const w = sstep((f - 330) / 4);
+    const t = Math.floor(u) % 4;
+    p = {
+      ...p, mouth: t === 1 ? 1 : 0,
+      hy: p.hy + (loopCR([0, 0, 6, 0], u) - 0) * w, hx: p.hx + loopCR([0, 0, 0, -6], u) * w, alz: 24 + loopCR([0, 3, 6, 9], u) * w, arz: 24 + loopCR([0, 3, 6, 9], u) * w,
+    };
   }
-  return mixP({ x: -0.15, z: 0, ry: 90, scale: 0.88, llx: 88, lrx: 88, llk: 88, lrk: 88, llz: 6, lrz: 6, alx: 52, arx: 52, ale: 24, are: 24, alz: 18, arz: 18, eyeL: 0, eyeR: 0 }, o);
+  return p;
 };
 
 // ---------------- Байк ----------------
@@ -307,27 +373,31 @@ const buildBikeKeys = (): BK[] => {
   for (let b = 172; b < 520; b += 77) add(b, LOOP);
   return ks.sort((a, b) => a[0] - b[0]);
 };
-const BIKE_K = buildBikeKeys();
+const BIK = (() => {
+  const k = buildBikeKeys();
+  const ch = (idx: number) => k.map((q) => [q[0], q[idx]] as [number, number]);
+  return { x: ch(1), y: ch(2), z: ch(3), yaw: ch(4) };
+})();
 export interface BikeSt { x: number; y: number; z: number; yaw: number; roll: number; pitch: number; flame: number }
-export const bikeState = (frame: number): BikeSt => {
-  const f = hold(frame);
-  const ch = (idx: number) => remap(f, BIKE_K.map((k) => [k[0], k[idx]] as [number, number]));
-  const x = ch(1);
-  const y = ch(2);
-  const z = ch(3);
-  const yawBase = ch(4);
-  const odd = Math.floor(f / 2) % 2;
-  const yaw = yawBase + (yawBase % 180 === 0 ? Math.sin(f * 0.11) * 16 : 0);
-  const yawN = remap(f + 4, BIKE_K.map((k) => [k[0], k[4]] as [number, number]));
-  const turning = Math.abs(yawN - yawBase) > 6;
-  const roll = (turning ? 22 : 0) + (odd ? 6 : -6) + Math.sin(f * 0.21) * 4;
-  const bob = Math.sin(f * 0.37) * 0.14 + (odd ? 0.06 : 0);
-  return { x, y: y + bob - 0.9, z, yaw, roll, pitch: (odd ? 3 : -3) + Math.sin(f * 0.13) * 4, flame: 1 + (Math.floor(f / 2) % 2) };
+export const bikeState = (f: number): BikeSt => {
+  const x = remap(f, BIK.x);
+  const y = remap(f, BIK.y);
+  const z = remap(f, BIK.z);
+  const yawBase = remap(f, BIK.yaw);
+  const dm = ((yawBase % 180) + 180) % 180;
+  const flat = 1 - clamp(Math.min(dm, 180 - dm) / 20); // 1 в «ровных» позициях (0/180), плавно гаснет в развороте
+  const yaw = yawBase + Math.sin(f * 0.11) * 16 * flat;
+  const yawN = remap(f + 4, BIK.yaw);
+  const turning = clamp((Math.abs(yawN - yawBase) - 4) / 6);
+  const v = Math.sin((2 * Math.PI * f) / 4); // вибрация двигателя ~6 Гц, непрерывная
+  const roll = 22 * turning + 6 * v + Math.sin(f * 0.21) * 4;
+  const bob = Math.sin(f * 0.37) * 0.14 + 0.03 * (1 + v);
+  return { x, y: y + bob - 0.9, z, yaw, roll, pitch: 3 * v + Math.sin(f * 0.13) * 4, flame: 1.5 + 0.5 * Math.sin((2 * Math.PI * f) / 4 + 1) };
 };
-export const podHidden = (frame: number): boolean[] => {
+export const podHidden = (f: number): boolean[] => {
   const h = [false, false, false, false, false, false];
   FIRE_FRAMES.forEach((ff, i) => {
-    if (frame >= ff && frame < ff + 8) h[i % 6] = true;
+    if (f >= ff && f < ff + 8) h[i % 6] = true;
   });
   return h;
 };
@@ -340,38 +410,42 @@ export const EXTRAS: ExtraDef[] = [
   { f0: 74, f1: 104, x0: 4.4, x1: -3.2, z: 2.7, colorsKey: 2 },
   { f0: 100, f1: 134, x0: -4.5, x1: 5.5, z: -1.3, colorsKey: 0 },
 ];
-export const extraPose = (frame: number, e: ExtraDef): PP | null => {
-  const f = hold(frame);
+export const extraPose = (f: number, e: ExtraDef): PP | null => {
   if (f < e.f0 || f > e.f1) return null;
   const t = (f - e.f0) / (e.f1 - e.f0);
   const dir = Math.sign(e.x1 - e.x0);
-  const ph = Math.floor(f / 4) % 2;
+  const s = -Math.sin((2 * Math.PI * f) / 8); // непрерывный бег
   return mixP({
-    scale: 1.0, x: lerp(e.x0, e.x1, t), z: e.z, y: 0.43 * 1.0 + (ph ? 0.07 : 0), ry: dir * 84, tl: 16,
-    llx: ph ? 54 : -50, lrx: ph ? -50 : 54, llk: ph ? 0 : 50, lrk: ph ? 50 : 0, alx: ph ? -60 : 60, arx: ph ? 60 : -60, ale: 40, are: 40, alz: 20, arz: 20,
+    scale: 1.0, x: lerp(e.x0, e.x1, t), z: e.z, y: 0.43 * 1.0 + 0.035 * (1 + s), ry: dir * 84, tl: 16,
+    llx: 52 * s + 2, lrx: -52 * s + 2, llk: 25 * (1 - s), lrk: 25 * (1 + s), alx: 60 * s, arx: -60 * s, ale: 40, are: 40, alz: 20, arz: 20,
     mouth: 1, eyeL: 1, eyeR: 1, hy: -dir * 20,
   });
 };
 
 // ---------------- Камера ----------------
 // Статичная: общий план (0-479) с еле заметным боковым дрейфом без зума, затем жёсткий стык на средний план (480+).
-export const cameraAt = (frame: number) => {
-  if (frame < S.RISE_FROM) {
-    const camX = remap(frame, [[0, -1.05], [S.VANISH_FRAME, -0.4]]);
+export const cameraAt = (f: number) => {
+  if (f < S.RISE_FROM) {
+    const camX = remap(f, [[0, -1.05], [S.VANISH_FRAME, -0.4]]);
     return { camX, camY: 2.0, camZ: 9.9, tgtX: -0.65, tgtY: 3.0 };
   }
   return { camX: -0.5, camY: 1.55, camZ: 7.4, tgtX: -0.5, tgtY: 1.85 };
 };
-export const shakeAt = (frame: number): { x: number; y: number } => {
-  const kick = (f0: number, amp: number, dur: number) => {
-    const d = frame - f0;
-    if (d < 0 || d > dur) return 0;
-    return amp * Math.pow(1 - d / dur, 1.4);
+/** Тряска: затухающая синусоида на каждом ударе/взрыве (≈8-11 Гц), не шум */
+export const shakeAt = (f: number): { x: number; y: number } => {
+  let sx = 0;
+  let sy = 0;
+  const kick = (f0: number, amp: number, dur: number, ph: number) => {
+    const d = f - f0;
+    if (d < 0 || d > dur) return;
+    const env = amp * Math.pow(1 - d / dur, 1.4);
+    const ts = d / S.SRC_FPS; // секунды
+    sx += env * Math.cos(2 * Math.PI * 8 * ts + ph);
+    sy += env * Math.sin(2 * Math.PI * 11 * ts + 1.3 + ph);
   };
-  let a = kick(S.HIT_FRAME, 0.22, 10) + kick(S.LAND_FRAME, 0.2, 10) + kick(S.SHOULDER_FRAME, 0.07, 6);
-  EXPLOSIONS.forEach(([ef], i) => {
-    if (i < TARGETS.length) a += kick(ef, 0.035, 5);
-  });
-  const n = Math.floor(frame / 2);
-  return { x: (hash(n, 4) * 2 - 1) * a, y: (hash(n, 9) * 2 - 1) * a };
+  kick(S.HIT_FRAME, 0.22, 10, 0);
+  kick(S.LAND_FRAME, 0.2, 10, 0.8);
+  kick(S.SHOULDER_FRAME, 0.07, 6, 1.6);
+  EXPLOSIONS.forEach(([ef], i) => kick(ef, 0.035, 5, i * 1.7));
+  return { x: sx, y: sy };
 };

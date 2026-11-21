@@ -3,7 +3,7 @@ import React from "react";
 import * as THREE from "three";
 import { Part, Flat, rbox, rcyl, sphereGeo, Shadow, planeGeo, circleGeo, extrude } from "./toon";
 import { Decal, Line } from "./decal";
-import { PP, P0 } from "./Person";
+import { PP, P0, mOpen, mClosed } from "./Person";
 import { Eye3, HeadDim } from "./Eyes3d";
 import { D2R } from "./util";
 import type { ArmGeom } from "./ik";
@@ -123,14 +123,14 @@ const Brows: React.FC<{ p: PP; lat: number; lon?: number; w?: number; color: str
 );
 const Mouth: React.FC<{ p: PP; lat: number; line?: string; inner?: string; teeth?: string }> = ({ p, lat, line = "#0c0a10", inner = "#2a0a12", teeth = "#fbfbf6" }) => (
   <>
-    <Line lon={0} lat={lat} pts={[[-0.26, -0.02], [0, 0.03], [0.26, -0.02]]} w={0.026} color={line} lift={1.008} visible={p.mouth === 0} />
-    <Decal lon={0} lat={lat} rx={0.13} ry={0.17} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} visible={p.mouth === 1} />
-    <Decal lon={0} lat={lat - 3} rx={0.3} ry={0.21} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} visible={p.mouth === 2} />
-    <Decal lon={0} lat={lat - 9} rx={0.2} ry={0.07} color="#e8607a" lift={1.012} visible={p.mouth === 2} />
-    <Decal lon={0} lat={lat - 1} rx={0.27} ry={0.1} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} visible={p.mouth === 3} />
+    <Line lon={0} lat={lat} pts={[[-0.26, -0.02], [0, 0.03], [0.26, -0.02]]} w={0.026} color={line} lift={1.008} visible={mClosed(p)} />
+    <Decal lon={0} lat={lat} rx={0.13} ry={0.17} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 1)} />
+    <Decal lon={0} lat={lat - 3} rx={0.3} ry={0.21} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 2)} />
+    <Decal lon={0} lat={lat - 9} rx={0.2} ry={0.07} color="#e8607a" lift={1.012} mo={p.mo} visible={mOpen(p, 2) && (p.mo < 0 || p.mo > 0.4)} />
+    <Decal lon={0} lat={lat - 1} rx={0.27} ry={0.1} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 3)} />
     <Line lon={0} lat={lat - 3} pts={[[-0.22, -0.05], [0, 0.04], [0.22, -0.05]]} w={0.028} color={line} lift={1.008} visible={p.mouth === 4} />
-    <Decal lon={0} lat={lat - 2} rx={0.3} ry={0.17} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} visible={p.mouth === 5} />
-    <Decal lon={0} lat={lat + 2} rx={0.26} ry={0.05} color={teeth} lift={1.012} visible={p.mouth === 5} />
+    <Decal lon={0} lat={lat - 2} rx={0.3} ry={0.17} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 5)} />
+    <Decal lon={0} lat={lat + 2} rx={0.26} ry={0.05} color={teeth} lift={1.012} mo={p.mo} visible={mOpen(p, 5) && (p.mo < 0 || p.mo > 0.35)} />
     <Line lon={0} lat={lat - 2} pts={[[-0.26, -0.03], [-0.13, 0.05], [0, -0.03], [0.13, 0.05], [0.26, -0.03]]} w={0.026} color={line} lift={1.008} visible={p.mouth === 6} />
   </>
 );
@@ -231,7 +231,7 @@ const StaceyFace: React.FC<{ p: PP4 }> = ({ p }) => (
     <Brows p={{ ...p, brow: Math.min(p.brow, -0.6) }} lat={33} lon={21} w={0.075} color={S.hair} />
     <Mouth p={p} lat={-36} line="#2a0a12" inner="#4a0a14" />
     {/* щербинка */}
-    {p.mouth > 0 && <Decal lon={5} lat={-30} rx={0.04} ry={0.06} color="#2a0a12" lift={1.02} />}
+    {p.mouth > 0 && !mClosed(p) && <Decal lon={5} lat={-30} rx={0.04} ry={0.06} color="#2a0a12" lift={1.02} />}
   </>
 );
 const BrendaFace: React.FC<{ p: PP4 }> = ({ p }) => (

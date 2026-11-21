@@ -1,8 +1,11 @@
 // Плоские непрозрачные эффекты из 3D-форм: звезда-импакт, облака дыма, пламя, обломки, пыль, мусор.
 import React from "react";
 import * as THREE from "three";
-import { Part, Flat, rbox, sphereGeo, extrude, planeGeo, rcyl, circleGeo, flatMat, INK } from "./toon";
+import { Part, Flat, rbox, sphereGeo, extrude, planeGeo, rcyl, circleGeo, flatMat, INK, STYLE } from "./toon";
 import { hash, clamp, hold } from "./util";
+
+/** Время эффекта: сцены 2-4 (60 fps, STYLE.smooth) - непрерывное, остальные - рывками «на двойках» (чётные k) */
+export const qk = (k: number) => (STYLE.smooth ? k : Math.floor(k / 2) * 2);
 
 const starPts = (n: number, ro: number, ri: number, seed: number): Array<[number, number]> => {
   const out: Array<[number, number]> = [];
@@ -46,7 +49,7 @@ export const Puff: React.FC<{ position: [number, number, number]; r: number; col
 
 /** Дымовой столб: клубы растут и сносятся ветром, цикл на двойках */
 export const SmokeColumn: React.FC<{ x: number; y: number; z: number; frame: number; n?: number; dark?: boolean; h?: number }> = ({ x, y, z, frame, n = 6, dark = true, h = 2.3 }) => {
-  const f = hold(frame, 2) / 2;
+  const f = (STYLE.smooth ? frame : hold(frame, 2)) / 2;
   return (
     <>
       {Array.from({ length: n }).map((_, j) => {
@@ -81,7 +84,7 @@ export const Chunk: React.FC<{ position: [number, number, number]; rot: [number,
 /** Взрыв ракеты: звезда + облака + обломки. k - кадров с момента взрыва */
 export const Explosion: React.FC<{ at: [number, number, number]; k: number; seed: number }> = ({ at, k, seed }) => {
   if (k < 0 || k > 44) return null;
-  const kh = Math.floor(k / 2) * 2;
+  const kh = qk(k);
   const [x, y, z] = at;
   const out: React.ReactNode[] = [];
   if (kh < 8) out.push(<Star key="s" position={[x, y, z + 0.5]} size={0.45 + Math.min(kh, 6) * 0.1} rot={seed * 0.7 + kh * 0.16} seed={seed} />);
@@ -105,7 +108,7 @@ export const Explosion: React.FC<{ at: [number, number, number]; k: number; seed
 const paperGeo = new THREE.PlaneGeometry(0.34, 0.26);
 /** Летящая по ветру бумага (плоская непрозрачная, кувыркается на двойках) */
 export const Paper: React.FC<{ frame: number; seed: number; y: number; z: number; v: number; x0: number }> = ({ frame, seed, y, z, v, x0 }) => {
-  const f = hold(frame, 2);
+  const f = STYLE.smooth ? frame : hold(frame, 2);
   const x = ((x0 + v * f) % 22) - 11 + 0.6;
   const bob = Math.sin(f * 0.35 + seed * 3) * 0.35;
   return (
@@ -118,7 +121,7 @@ export const Paper: React.FC<{ frame: number; seed: number; y: number; z: number
 /** Пыльное облако: кольцо плоских шаров от шлёпа/удара */
 export const DustRing: React.FC<{ at: [number, number, number]; k: number; r?: number }> = ({ at, k, r = 1 }) => {
   if (k < 0 || k > 14) return null;
-  const kh = Math.floor(k / 2) * 2;
+  const kh = qk(k);
   return (
     <>
       {[-1, 1].map((s) => (
@@ -147,7 +150,7 @@ void Flat;
 /** Пыль от приземления: плоские кольца на земле (светлее плиты) + плоские кружки, разлетающиеся в стороны. Рывками на двойках. */
 export const GroundDust: React.FC<{ at: [number, number, number]; k: number; r?: number }> = ({ at, k, r = 1 }) => {
   if (k < 0 || k > 14) return null;
-  const kh = Math.floor(k / 2) * 2;
+  const kh = qk(k);
   const u = kh / 14;
   const rad = (0.35 + u * 1.15) * r;
   return (

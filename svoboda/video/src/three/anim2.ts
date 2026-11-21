@@ -1,9 +1,10 @@
-// Анимация сцены 2 (30 fps): позы по планам 07-12 как функции ВРЕМЕНИ (секунды).
-// Рваная кукольная анимация: поза обновляется раз в 4 кадра (7.5 поз/с), между позами крупная разница (≥15-25° у конечностей), никакого «дыхания»
-// и плавного покачивания: «биты» держатся 0.4-0.67 с, холды перед акцентами. Тело, руки, голова - на отдельных шарнирах (корпус ry, голова hy, руки IK).
+// Анимация сцены 2 (60 fps): позы по планам 07-12 как функции ВРЕМЕНИ (секунды).
+// Ключевые позы/«биты» (0.4-0.67 с) описаны как раньше (поза-акцент, холд перед акцентом), но кадр считается в непрерывном времени и затем сглаживается
+// по окну ~0.16 с (three/blend.ts): переход между позами - ease in-out с лёгким перелётом, без «двоек». Жёсткие склейки планов/камеры остаются жёсткими.
 // Все тайминги в секундах - от длительностей реплик (см. data/scene2.ts). Развороты персонажей: корпус (ry) и голова (hy) вращаются вокруг вертикальной оси.
 import { PP, PPatch, mixP } from "./Person";
-import { ShotT, S09, S12, CUTS08, STEP_AT, STEP, FPS, mouthFromEnv } from "../data/scene2";
+import { ShotT, S09, S12, CUTS08, STEP_AT, FPS } from "../data/scene2";
+import { smoothFrame, mouthLevel, MO_ON } from "./blend";
 import { clamp } from "./util";
 import { ARM_GEOM, armIK, fromTorso, toTorso } from "./ik";
 
@@ -72,19 +73,19 @@ export interface Frame {
   leaves: number; // «тики 1/24 с» полёта листьев (или -1)
   dust: Array<{ x: number; z: number; k: number }>; // k - тики 1/24 с (эффекты рассчитаны на 24)
   tl: number;
+  seg: number; // номер отрезка без жёстких склеек внутри плана (окно сглаживания не пересекает склейку)
   bushX?: number; // x кадки с кустом (в финале сдвинута, чтобы не сливаться с Хлоей)
   signY?: number; // высота вывески VEGAN COFFEE (подбирается под кадр, чтобы не обрезалась краем)
 }
 
-// Рот обновляется чаще позы (каждые 2 кадра), чтобы попадать в слоги: RAW - кадр плана, округлённый на MSTEP вниз
+// RAW - текущий момент внутри плана в кадрах (непрерывный, дробный). Рот: раскрытие mo (0..1) по огибающей wav, форма рта (mouth) - постоянная на реплику.
 let RAW = 0;
-/** Реплика: рот по огибающей (пауза/провал между слогами - закрыт) */
-const speak = (p: PP, sh: ShotT, env: number[] | undefined): PP => {
+/** Реплика: рот по огибающей (раскрытие непрерывно; пауза/провал между слогами - закрыт). shape - форма рта персонажа при речи */
+const speak = (p: PP, sh: ShotT, env: number[] | undefined, shape = 2): PP => {
   const k = RAW - sh.vFrom;
-  if (k < 0 || k >= sh.vLen) return { ...p, mouth: 0 };
-  return { ...p, mouth: mouthFromEnv(env, k, sh.vLen) };
+  if (k < 0 || k >= sh.vLen) return { ...p, mouth: 0, mo: -1 };
+  return { ...p, mouth: shape, mo: mouthLevel(env, k, sh.vLen) };
 };
-const voiced = (sh: ShotT, env: number[] | undefined, ahead = 0) => mouthFromEnv(env, RAW - sh.vFrom + ahead, sh.vLen) > 0;
 const isSpeaking = (sh: ShotT) => RAW >= sh.vFrom && RAW < sh.vFrom + sh.vLen;
 
 // =====================================================================================
@@ -175,11 +176,11 @@ const shot08 = (f: number, sh: ShotT, v: Voices): Actor[] => {
   const leap = T >= 0.4 && T < 0.667;
   let mp: PP;
   if (run) {
-    const ph = alt(T, 0.2);
-    const step = Math.floor(T / 0.2);
+    // бег: непрерывный цикл по синусоиде фазы (полный цикл 0.4 с), скорость 1.7 м/с
+    const s = Math.sin((T * Math.PI * 2) / 0.4);
     mp = mixP({
-      scale: SC.marcus, x: M08.x - 2.55 + step * 0.34, z: 0.62, ry: 80, y: 0.58 + (ph ? 0.07 : 0), tl: 14, hy: -28, hx: 6, mouth: 0, brow: 1, eyeL: 0, eyeR: 0,
-      llx: ph ? 52 : -48, lrx: ph ? -48 : 52, llk: ph ? 6 : 64, lrk: ph ? 64 : 6, alx: ph ? -50 : 50, arx: ph ? 50 : -50, ale: 64, are: 64, alz: 14, arz: 14,
+      scale: SC.marcus, x: M08.x - 2.55 + T * 1.7, z: 0.62, ry: 80, y: 0.58 + 0.035 * (1 - s), tl: 14, hy: -28, hx: 6, mouth: 0, brow: 1, eyeL: 0, eyeR: 0,
+      llx: 2 - 50 * s, lrx: 2 + 50 * s, llk: 35 + 29 * s, lrk: 35 - 29 * s, alx: 50 * s, arx: -50 * s, ale: 64, are: 64, alz: 14, arz: 14,
     });
   } else if (leap) {
     mp = mixP({
@@ -324,13 +325,13 @@ const shot09 = (f: number, sh: ShotT, v: Voices): { actors: Actor[]; leaves: num
     pose = CB("chloe", { x: CH_LAND.x, z: CH_LAND.z, y: 0.56, brow: 0.8, llz: 14, lrz: 14, ...patch, mouth: 0 });
     pose = chloeHands(pose, mega, plac, undefined, lt, 1);
     const env = v.env[2];
-    if (loud) pose = { ...pose, sir: 1 + cyc(T, 0.3, 3), eyeL: 1, eyeR: 1, mouth: i % 2 ? 2 : 1 };
+    if (loud) pose = { ...pose, sir: 1 + cyc(T, 0.3, 3), eyeL: 1, eyeR: 1, mouth: 2, mo: 0.7 + 0.3 * Math.sin(T * 24 + i * 2) };
     if (speakingNow) {
       pose = speak({ ...pose, eyeL: 0, eyeR: 0, brow: 1 }, sh, env);
-      if (pose.mouth === 2 && mega !== "down") pose = { ...pose, sir: 1 + cyc(T, 0.3, 3) };
+      if (pose.mo > 0.45 && mega !== "down") pose = { ...pose, sir: 1 + cyc(T, 0.3, 3) };
     } else if (RAW >= sh.vFrom + sh.vLen) pose = { ...pose, sir: 0, mouth: 0, eyeL: 0, eyeR: 0 };
   }
-  return { actors: [{ kind: "chloe", pose }], leaves: Math.round((T - S09.jump) * 24) };
+  return { actors: [{ kind: "chloe", pose }], leaves: (T - S09.jump) * 24 };
 };
 
 // =====================================================================================
@@ -374,8 +375,7 @@ const gregPose = (T: number, base: PPatch, sh: ShotT, env: number[] | undefined,
   gp = { ...gp, y: gp.y + dy * (sc / SC.greg) };
   if (talkingWin) {
     // говорит с отвращением: рот открывается только на слоги своей реплики (по огибающей wav), форма - скривлённая
-    gp = speak(gp, sh, env);
-    gp = { ...gp, mouth: !voiced(sh, env) ? 0 : gp.mouth === 2 ? 6 : 3, brow: -1 };
+    gp = { ...speak(gp, sh, env, 6), brow: -1 };
   } else {
     // молчит: рот закрыт или дугой вниз (отвращение), без открытого рта
     gp = { ...gp, mouth: gp.mouth === 1 || gp.mouth === 6 ? 4 : gp.mouth, brow: gp.brow > 0 ? -0.4 : gp.brow };
@@ -625,16 +625,16 @@ const signFor = (c: { y: number; z: number; ty: number }) => c.ty + 0.74 * 0.364
 /** x кофейни (VEGAN COFFEE) в мире = 0.2; фон сдвигаем так, чтобы она была в центре кадра */
 const bgFor = (camX: number) => camX - 0.2;
 const jit = (f: number, seed: number) => {
-  const s = Math.sin(Math.floor(f / STEP) * 127.1 + seed * 311.7) * 43758.5453;
+  const s = Math.sin(Math.floor(f / (FPS / 7.5)) * 127.1 + seed * 311.7) * 43758.5453;
   return (s - Math.floor(s)) * 2 - 1;
 };
 const camShake = (f: number, amp: number, seed = 1) => ({ x: jit(f, seed) * amp, y: jit(f, seed + 7) * amp });
 
-export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): Frame => {
-  // внутри плана время квантуется на STEP (4 кадра): 7.5 поз в секунду; рот - чаще (2 кадра)
+/** Кадр для непрерывного момента frame (кадры композиции, дробные): «рваные» ключи без квантования времени, сглаживание делает frameAt */
+const frameRaw = (frame: number, sh: ShotT, tlCount: number, v: Voices): Frame => {
   const fr = frame - sh.from;
-  const f = Math.floor(fr / STEP) * STEP;
-  RAW = Math.floor(fr / 2) * 2;
+  const f = fr;
+  RAW = fr;
   const T = f / FPS;
   let actors: Actor[] = [];
   let cam: Cam = { ...CAMS.c07, shake: 0 };
@@ -647,6 +647,7 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
   let signY: number | undefined;
   let bushX: number | undefined;
   let bin: number | null = null;
+  let segId = 0;
   switch (sh.n) {
     case 7: {
       actors = shot07(f, sh, v);
@@ -658,6 +659,7 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
     case 8: {
       actors = shot08(f, sh, v);
       cam = cam08(T);
+      segId = CUTS08.filter((c) => T >= c - 1e-6).length;
       bgx = bgFor(cam.tx);
       signY = signFor(cam);
       bin = 8.2; // урна сдвинута вправо: не закрывает пару ни с одного ракурса
@@ -673,11 +675,12 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
       const land = T >= S09.land;
       if (T >= S09.land) bushX = 10.3;
       const talk = T >= S09.siren; // крупнее: лицо Хлои, жёсткая склейка
+      segId = talk ? 2 : land ? 1 : 0;
       cam = talk ? { ...camTo(7.5, 1.35, 5.4, 7.5, 1.3), shake: 0 } : land ? { ...camAt(7.7, 7.8, 1.4), shake: 0, ty: 1.85 } : { ...CAMS.c09, shake: 0, ty: 2.2 };
       if (talk) signY = signFor(cam);
       bushShake = T >= S09.rustle && T < S09.jump + 0.133 ? 0.07 : 0;
-      if (T >= S09.land && T < S09.land + 0.58) dust.push({ x: CH_LAND.x, z: CH_LAND.z + 0.1, k: Math.round((T - S09.land) * 24) });
-      if (T >= S09.jump && T < S09.jump + 0.58) dust.push({ x: BUSH.x - 0.5, z: BUSH.z + 0.55, k: Math.round((T - S09.jump) * 24) });
+      if (T >= S09.land && T < S09.land + 0.58) dust.push({ x: CH_LAND.x, z: CH_LAND.z + 0.1, k: (T - S09.land) * 24 });
+      if (T >= S09.jump && T < S09.jump + 0.58) dust.push({ x: BUSH.x - 0.5, z: BUSH.z + 0.55, k: (T - S09.jump) * 24 });
       break;
     }
     case 10:
@@ -698,10 +701,17 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
       const c = sub === "a" ? CAMS.c12a : sub === "a2" ? CAMS.c12a2 : sub === "b" ? CAMS.c12b : sub === "c" ? CAMS.c12c : CAMS.c12d;
       cam = { ...c, shake: 0 };
       bgx = bgFor(c.x);
+      segId = ["a", "a2", "b", "c", "d"].indexOf(sub);
     }
   }
   cam = { ...cam, x: cam.x + sx, y: cam.y + sy, tx: cam.tx + sx * 0.5, ty: cam.ty + sy * 0.5 };
   dust = dust.slice();
-  return { actors, cam, bgx, bin, bushShake, leaves, dust, tl: tlCount, signY, bushX };
+  return { actors, cam, bgx, bin, bushShake, leaves, dust, tl: tlCount, seg: segId, signY, bushX };
 };
+
+/** Кадр сцены 2 в момент frame: сглаженная анимация (окно в пределах плана, камера со склейками не интерполируется) */
+export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): Frame =>
+  smoothFrame((f) => frameRaw(f, sh, tlCount, v), frame, sh.from, sh.from + sh.len, (o) => o.seg);
 void clamp;
+void MO_ON;
+void alt;

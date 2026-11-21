@@ -3,7 +3,7 @@ import React from "react";
 import * as THREE from "three";
 import { Part, Flat, rbox, rcyl, sphereGeo, Shadow, planeGeo, circleGeo, extrude } from "./toon";
 import { Decal, Line } from "./decal";
-import { PP } from "./Person";
+import { PP, mOpen, mClosed } from "./Person";
 import { Eye3, HeadDim, headPt, headNormalQ } from "./Eyes3d";
 import { D2R } from "./util";
 
@@ -284,14 +284,14 @@ const Brows: React.FC<{ p: PP; lat: number; lon?: number; w?: number; color: str
 /** Рот-створка: 0 закрыт, 1 «о», 2 широкий «а», 3 «э», 4 грусть (дрожит), 5 оскал */
 const Mouth: React.FC<{ p: PP; lat: number; line?: string; inner?: string }> = ({ p, lat, line = "#0c0a10", inner = "#0c0a10" }) => (
   <>
-    <Line lon={0} lat={lat} pts={[[-0.26, -0.02], [0, 0.03], [0.26, -0.02]]} w={0.026} color={line} lift={1.008} visible={p.mouth === 0} />
-    <Decal lon={0} lat={lat} rx={0.13} ry={0.17} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} visible={p.mouth === 1} />
-    <Decal lon={0} lat={lat - 3} rx={0.3} ry={0.21} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} visible={p.mouth === 2} />
-    <Decal lon={0} lat={lat - 9} rx={0.2} ry={0.07} color="#e8607a" lift={1.012} visible={p.mouth === 2} />
-    <Decal lon={0} lat={lat - 1} rx={0.27} ry={0.1} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} visible={p.mouth === 3} />
+    <Line lon={0} lat={lat} pts={[[-0.26, -0.02], [0, 0.03], [0.26, -0.02]]} w={0.026} color={line} lift={1.008} visible={mClosed(p)} />
+    <Decal lon={0} lat={lat} rx={0.13} ry={0.17} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 1)} />
+    <Decal lon={0} lat={lat - 3} rx={0.3} ry={0.21} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 2)} />
+    <Decal lon={0} lat={lat - 9} rx={0.2} ry={0.07} color="#e8607a" lift={1.012} mo={p.mo} visible={mOpen(p, 2) && (p.mo < 0 || p.mo > 0.4)} />
+    <Decal lon={0} lat={lat - 1} rx={0.27} ry={0.1} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 3)} />
     <Line lon={0} lat={lat - 3} pts={[[-0.22, -0.05], [0, 0.04], [0.22, -0.05]]} w={0.028} color={line} lift={1.008} visible={p.mouth === 4} />
-    <Decal lon={0} lat={lat - 2} rx={0.3} ry={0.17} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} visible={p.mouth === 5} />
-    <Decal lon={0} lat={lat + 2} rx={0.26} ry={0.05} color="#fbfbf6" lift={1.012} visible={p.mouth === 5} />
+    <Decal lon={0} lat={lat - 2} rx={0.3} ry={0.17} color={inner} ring={0.02} ringColor="#0c0a10" lift={1.008} mo={p.mo} visible={mOpen(p, 5)} />
+    <Decal lon={0} lat={lat + 2} rx={0.26} ry={0.05} color="#fbfbf6" lift={1.012} mo={p.mo} visible={mOpen(p, 5) && (p.mo < 0 || p.mo > 0.35)} />
     <Line lon={0} lat={lat - 2} pts={[[-0.26, -0.03], [-0.13, 0.05], [0, -0.03], [0.13, 0.05], [0.26, -0.03]]} w={0.026} color={line} lift={1.008} visible={p.mouth === 6} />
   </>
 );

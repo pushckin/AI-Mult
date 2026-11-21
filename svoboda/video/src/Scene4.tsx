@@ -95,6 +95,7 @@ const Title: React.FC = () => {
 
 export const Scene4: React.FC<Scene4Props> = ({ audio, voices, names }) => {
   STYLE.v5 = true;
+  STYLE.smooth = true; // 60 fps: эффекты без «двоек»
   LIGHT_DIR.set(0.62, 0.7, 0.36).normalize();
   const frame = useCurrentFrame();
   const tl = useMemo(() => S.buildTimeline(voices.map((v) => v?.dur ?? null)), [voices]);
@@ -113,7 +114,7 @@ export const Scene4: React.FC<Scene4Props> = ({ audio, voices, names }) => {
         </AbsoluteFill>
       )}
       {out?.flash && <AbsoluteFill style={{ backgroundColor: "#fff4cc" }} />}
-      {isTitle && frame - sh.from >= 3 && <Title />}
+      {isTitle && frame - sh.from >= S.sec(0.1) && <Title />}
       <AudioLayers cues={cues} avail={audio} total={tl.total} />
     </AbsoluteFill>
   );

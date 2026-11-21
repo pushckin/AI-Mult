@@ -1,4 +1,4 @@
-// Разбор PCM-wav в браузере: длительность и огибающая громкости по кадрам (для рта «по слогам»).
+// Разбор PCM-wav в браузере: длительность и огибающая громкости по кадрам (для рта: непрерывное раскрытие по амплитуде).
 export interface VoiceInfo {
   dur: number; // секунды
   env: number[]; // 0..1 на каждый кадр
@@ -38,8 +38,9 @@ export const probeWav = async (url: string, fps: number): Promise<VoiceInfo | nu
     const frames = Math.ceil(dur * fps);
     const rms: number[] = [];
     for (let f = 0; f < frames; f++) {
-      const a = Math.floor(((f - 0.25) / fps) * rate);
-      const b = Math.floor(((f + 1.25) / fps) * rate);
+      // окно ~50 мс (3 кадра при 60 fps): сглаживание огибающей, чтобы рот открывался плавно, а не «щёлкал»
+      const a = Math.floor(((f - 1) / fps) * rate);
+      const b = Math.floor(((f + 2) / fps) * rate);
       let acc = 0;
       let cnt = 0;
       for (let i = Math.max(0, a); i < Math.min(n, b); i += 2) {

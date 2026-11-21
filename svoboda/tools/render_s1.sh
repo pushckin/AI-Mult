@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Рендер сцены 1.
-#   tools/render_s1.sh                 -> out/scene1_final.mp4 (полный рендер, 720 кадров)
+#   tools/render_s1.sh                 -> out/scene1_final.mp4 (полный рендер, 1800 кадров, 60 fps)
 #   tools/render_s1.sh checks [frames] -> кадры-проверки out/check/s1_<кадр>.png (по умолчанию 12 таймкодов)
-#   tools/render_s1.sh range A B       -> быстрый рендер части кадров в out/scene1_<A>-<B>.mp4
+#   tools/render_s1.sh range A B       -> быстрый рендер части кадров (номера кадров 60 fps) в out/scene1_<A>-<B>.mp4
 # Переменные: BROWSER=/usr/bin/google-chrome (если headless-shell не скачивается), CONC=2
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -29,8 +29,8 @@ case "$MODE" in
   checks)
     shift || true
     FRAMES=("$@")
-    # 12 таймкодов: по одному на кадр раскадровки + ключевые моменты
-    [ ${#FRAMES[@]} -eq 0 ] && FRAMES=(60 120 172 210 290 330 380 420 470 500 600 700)
+    # 12 таймкодов (кадры 60 fps): по одному на кадр раскадровки + ключевые моменты
+    [ ${#FRAMES[@]} -eq 0 ] && FRAMES=(150 300 430 525 725 825 950 1050 1175 1250 1500 1750)
     for f in "${FRAMES[@]}"; do
       npx remotion still src/index.ts Scene1 "$OUT/check/s1_$(printf '%03d' "$f").png" --frame="$f" "${FLAGS[@]}" 2>&1 | grep -E "error|Error|Rendered 1/1" || true
     done

@@ -2,15 +2,8 @@
 import { staticFile } from "remotion";
 import type { AudioCue } from "../engine/audio";
 
-export const FPS = 30;
-export const WIDTH = 1920;
-export const HEIGHT = 1080;
-export const sec = (s: number) => Math.round(s * FPS);
-/** поза обновляется раз в 4 кадра = 7.5 поз/с */
-export const STEP = 4;
-/** рот обновляется чаще позы - раз в 2 кадра */
-export const MSTEP = 2;
-const even = (n: number) => Math.round(n / 2) * 2;
+export { FPS, WIDTH, HEIGHT, sec } from "./fps";
+import { FPS, sec } from "./fps";
 
 /** Реплики по порядку: 01 Хлоя, 02 Бренда, 03 Стейси, 04 Маркус, 05 Тони, 06 Грег. Имена по умолчанию (уточняются по voice_s3_durations.json) */
 export const VOICE_FILES = ["voice_s3_01_chloe", "voice_s3_02_brenda", "voice_s3_03_stacey", "voice_s3_04_markus", "voice_s3_05_tony", "voice_s3_06_greg"];
@@ -56,15 +49,15 @@ export interface Timeline {
 export const buildTimeline = (durs: Array<number | null>): Timeline => {
   let from = 0;
   const shots = SHOT_DEFS.map((d, i) => {
-    let t = even(sec(d.lead));
+    let t = sec(d.lead);
     const voices: VoiceT[] = d.voices.map((idx, k) => {
-      if (k > 0) t += even(sec(d.gap));
+      if (k > 0) t += sec(d.gap);
       const len = durs[idx] != null ? Math.ceil(durs[idx]! * FPS) : sec(VOICE_DEF_SEC[idx]);
       const v = { idx, from: t, len };
       t += len;
       return v;
     });
-    const len = d.fixed != null ? even(sec(d.fixed)) : even(t + sec(d.tail));
+    const len = d.fixed != null ? sec(d.fixed) : t + sec(d.tail);
     const s: ShotT = { i, n: d.n, from, len, voices };
     from += len;
     return s;
@@ -78,16 +71,7 @@ export const shotAt = (tl: Timeline, frame: number): ShotT => {
   return tl.shots[tl.shots.length - 1];
 };
 
-/** Рот по огибающей wav: 0 закрыт (пауза, провал между слогами), 1 «о», 2 «а» */
-export const MOUTH_CLOSED = 0.2;
-export const MOUTH_WIDE = 0.52;
-export const mouthFromEnv = (env: number[] | undefined, k: number, vLen: number): number => {
-  if (k < 0 || k >= vLen) return 0;
-  const f = Math.floor(k / MSTEP) * MSTEP;
-  if (!env) return (f >> 2) % 3 === 0 ? 1 : 2;
-  const e = Math.max(env[f] ?? 0, env[f + 1] ?? 0);
-  return e < MOUTH_CLOSED ? 0 : e < MOUTH_WIDE ? 1 : 2;
-};
+// Рот: непрерывное раскрытие по огибающей wav - см. mouthLevel() в three/blend.ts.
 
 // ---------- аудио ----------
 /** Имена файлов, найденных в public/audio (заполняется в calculateMetadata): voice_s3_NN_<имя> по voice_s3_durations.json */
@@ -126,7 +110,7 @@ export const buildCues = (tl: Timeline, voiceNames: string[]): AudioCue[] => {
   cues.push({ base: "sfx_s3_megaphone_feedback", from: hit.from + sec(0.2), to: hit.from + sec(2.3), volume: 0.5 });
   cues.push({ base: "sfx_s3_crowbar_palm", from: hit.from + sec(1.0), to: hit.from + sec(2.2), volume: 0.5 });
   // 18: обрыв и голос Грега
-  cues.push({ base: "sfx_s3_shutup_cut", from: f.from + f.voices[0].from - 4, to: f.from + f.voices[0].from + sec(2.8), volume: 0.7 });
+  cues.push({ base: "sfx_s3_shutup_cut", from: f.from + f.voices[0].from - sec(0.133), to: f.from + f.voices[0].from + sec(2.8), volume: 0.7 });
   cues.push({ base: VOICE_FILES[5], from: f.from + f.voices[0].from, volume: 1.0 });
   // голоса идут под актуальными именами файлов
   voiceNames.forEach((n, i) => {

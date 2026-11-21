@@ -1,7 +1,9 @@
-// Анимация сцены 3 (30 fps): позы по планам 13-18 как функции ВРЕМЕНИ (секунды). Рваная кукольная анимация: поза обновляется раз в 4 кадра (7.5/с),
-// «биты» держатся ≥0.3 с, никакого плавного покачивания; камера - только жёсткие склейки (в плане 17 - редкие удары-подпрыгивания).
+// Анимация сцены 3 (60 fps): позы по планам 13-18 как функции ВРЕМЕНИ (секунды). Ключевые позы/«биты» (≥0.3 с) описаны как раньше, кадр считается
+// в непрерывном времени и сглаживается по окну ~0.16 с (three/blend.ts): переходы между позами плавные, жёсткие склейки камеры остаются жёсткими
+// (в плане 17 - редкие удары-подпрыгивания).
 import { PP, PPatch, mixP } from "./Person";
-import { ShotT, STEP, FPS, mouthFromEnv, sec } from "../data/scene3";
+import { ShotT, FPS, sec } from "../data/scene3";
+import { smoothFrame, mouthLevel } from "./blend";
 import { ARM_GEOM, armIK, armFK, fromTorso, toTorso, ArmGeom } from "./ik";
 import { ARM3, X3 } from "./Cast3";
 import { D2R } from "./util";
@@ -42,6 +44,7 @@ export interface Frame3 {
   dust: Array<{ x: number; z: number; k: number }>;
   star: null | { x: number; y: number; z: number; s: number; rot: number };
   bar: null | { x: number; y: number; z: number; rot: number }; // батончик, который тянут Тони и Маркус
+  seg: number; // номер отрезка без жёстких склеек камеры внутри плана (окно сглаживания не пересекает склейку)
 }
 
 // ---------- время и поза ----------
@@ -87,9 +90,9 @@ export const headW = (p: PP, kind: Kind3): V3 => fromTorso(p, [p.hdx, HEAD_Y[kin
 
 // ---------- контекст кадра: рот по огибающей ----------
 interface Ctx {
-  f: number; // кадр плана (квантованный на STEP)
+  f: number; // кадр плана (непрерывный, дробный)
   T: number;
-  raw: number; // кадр плана (на MSTEP)
+  raw: number; // то же (для рта)
   sh: ShotT;
   env: Array<number[] | undefined>;
 }
@@ -98,11 +101,11 @@ const speaking = (c: Ctx, idx: number) => {
   const v = voiceOf(c, idx);
   return !!v && c.raw >= v.from && c.raw < v.from + v.len;
 };
-/** Рот 0/1/2 по огибающей реплики idx */
+/** Раскрытие рта 0..1 по огибающей реплики idx (непрерывно) */
 const mouthOf = (c: Ctx, idx: number): number => {
   const v = voiceOf(c, idx);
   if (!v) return 0;
-  return mouthFromEnv(c.env[idx], c.raw - v.from, v.len);
+  return mouthLevel(c.env[idx], c.raw - v.from, v.len);
 };
 const TM = (c: Ctx, idx: number) => {
   const v = voiceOf(c, idx);
@@ -110,11 +113,9 @@ const TM = (c: Ctx, idx: number) => {
 };
 type Style = "plain" | "bare" | "shout";
 const say = (c: Ctx, p: PP, idx: number, style: Style = "plain"): PP => {
-  const m = mouthOf(c, idx);
-  if (!m) return { ...p, mouth: 0 };
-  if (style === "bare") return { ...p, mouth: m === 2 ? 5 : 3 }; // Стейси: оскал / «э»
-  if (style === "shout") return { ...p, mouth: m === 2 ? 2 : 1 };
-  return { ...p, mouth: m };
+  if (!speaking(c, idx)) return { ...p, mouth: 0, mo: -1 };
+  const mo = mouthOf(c, idx);
+  return { ...p, mouth: style === "bare" ? 5 : 2, mo }; // Стейси: оскал; остальные - широкий рот (раскрытие по огибающей)
 };
 
 // ---------- пресеты рук ----------
@@ -152,15 +153,14 @@ const placardCenter = (cp: PP, plac: string): V3 => {
 };
 
 // ---------- ходьба ----------
-/** шаг пошагово (рывками): позиция меняется раз в period, ноги чередуются */
+/** ходьба: x растёт линейно (непрерывное движение), фаза шага ph - косинус 1..0..1 (период 2·period): ноги/руки качаются по синусоиде */
 const walkX = (T: number, t0: number, t1: number, a: number, b: number, period = 0.267) => {
-  if (T < t0) return { v: a, ph: 0, n: 0, moving: false };
-  const n = Math.max(1, Math.round((t1 - t0) / period));
-  const i = Math.min(n, Math.floor((T - t0) / period + 1e-6) + 1);
-  return { v: a + ((b - a) * i) / n, ph: i % 2, n: i, moving: T < t1 - 1e-6 };
+  if (T < t0) return { v: a, ph: 1, moving: false };
+  const u = Math.min(1, (T - t0) / (t1 - t0));
+  return { v: a + (b - a) * u, ph: 0.5 + 0.5 * Math.cos((Math.PI * (T - t0)) / period), moving: T < t1 - 1e-6 };
 };
-const legs = (ph: number, amp = 30, kn = 40): PPatch => ({ llx: ph ? amp : -amp * 0.7, lrx: ph ? -amp * 0.7 : amp, llk: ph ? 0 : kn, lrk: ph ? kn : 0 });
-const swing = (ph: number, amp = 26): PPatch => ({ alx: ph ? -amp : amp, arx: ph ? amp : -amp });
+const legs = (ph: number, amp = 30, kn = 40): PPatch => ({ llx: amp * (-0.7 + 1.7 * ph), lrx: amp * (1 - 1.7 * ph), llk: kn * (1 - ph), lrk: kn * ph });
+const swing = (ph: number, amp = 26): PPatch => ({ alx: amp * (1 - 2 * ph), arx: -amp * (1 - 2 * ph) });
 
 // =====================================================================================
 // ПЛАН 13: общий. Пикап с заносом справа, Бренда и Стейси выходят, Хлоя подбегает
@@ -190,7 +190,7 @@ const shot13 = (c: Ctx): Partial<Frame3> => {
   const puffs: Puff3[] = [];
   // пыль и дым из-под колёс на заносе
   [0.533, 0.667, 0.8, 0.933, 1.067].forEach((t0, i) => {
-    if (T >= t0 && T < t0 + 0.58) dust.push({ x: (truckK.x ?? 0) - 2.6 + (i % 2) * 0.8, z: TRUCK_Z + 1.3 + (i % 2) * 0.5, k: Math.round((T - t0) * 24) });
+    if (T >= t0 && T < t0 + 0.58) dust.push({ x: (truckK.x ?? 0) - 2.6 + (i % 2) * 0.8, z: TRUCK_Z + 1.3 + (i % 2) * 0.5, k: (T - t0) * 24 });
   });
   if (T >= 1.3 && T < 2.6) puffs.push({ x: TRUCK_X - 1.65, y: 3.9 + (T - 1.3) * 0.7, z: TRUCK_Z + 1.08, r: 0.2 + (T - 1.3) * 0.15, color: "#6b6a82" });
   if (T >= 1.5 && T < 2.9) puffs.push({ x: TRUCK_X - 1.4, y: 4.5 + (T - 1.5) * 0.6, z: TRUCK_Z + 1.0, r: 0.16 + (T - 1.5) * 0.12, color: "#7d7c94" });
@@ -226,7 +226,7 @@ const shot13 = (c: Ctx): Partial<Frame3> => {
   let cMega = "down";
   let cPlac = "up";
   if (T >= 1.9) {
-    cp = { ...cp, x: run.v, z: cz, ry: 78, hy: 4, hx: -4, tl: -4, brow: 1, ...(run.moving ? { ...legs(run.ph, 36, 50), y: 0.43 * SC3.chloe + (run.ph ? 0.07 : 0) } : { llx: 0, lrx: 0, llk: 0, lrk: 0 }) };
+    cp = { ...cp, x: run.v, z: cz, ry: 78, hy: 4, hx: -4, tl: -4, brow: 1, ...(run.moving ? { ...legs(run.ph, 36, 50), y: 0.43 * SC3.chloe + 0.07 * run.ph } : { llx: 0, lrx: 0, llk: 0, lrk: 0 }) };
     const sp: Beat<{ m: string; pl: string; ry?: number }>[] = [
       [0.4, { m: "air", pl: "up" }],
       [0.533, { m: "out", pl: "up", ry: 66 }],
@@ -258,7 +258,7 @@ const shot13 = (c: Ctx): Partial<Frame3> => {
     if (T < 1.8) bp = mk("brenda", { x: 7.1, z: 5.5, ry: -48, tl: 24, hx: 10, y: 0.47 * SC3.brenda - 0.35, llx: 50, lrx: -10, llk: 80, lrk: 30, alx: 30, ale: 40, arx: 30, are: 40, brow: -1, eyeL: 2, eyeR: 2 });
     else if (T < 2.2) bp = mk("brenda", { x: 6.9, z: 5.9, ry: -78, tl: 6, hx: 2, y: 0.465 * SC3.brenda + (T < 1.933 ? 0.12 : 0), llx: 18, lrx: -6, llk: 10, lrk: 6, brow: -1, eyeL: 2, eyeR: 2, alx: 8, ale: 30, arx: 14, are: 30 });
     else {
-      bp = mk("brenda", { x: bw.v, z: bz, ry: -82, tl: 4, hx: -2, hy: -6, brow: -1, eyeL: 2, eyeR: 2, ...swing(bw.ph, 18), ale: 30, are: 30, y: 0.465 * SC3.brenda + (bw.moving && bw.ph ? 0.05 : 0), ...(bw.moving ? legs(bw.ph, 28, 36) : {}) });
+      bp = mk("brenda", { x: bw.v, z: bz, ry: -82, tl: 4, hx: -2, hy: -6, brow: -1, eyeL: 2, eyeR: 2, ...swing(bw.ph, 18), ale: 30, are: 30, y: 0.465 * SC3.brenda + (bw.moving ? 0.05 * bw.ph : 0), ...(bw.moving ? legs(bw.ph, 28, 36) : {}) });
     }
     // пиво в ближней (левой) руке; к концу идёт к губам и глоток
     const sip = T >= 5.8 && (T - 5.8) % 2.4 < 0.6;
@@ -274,7 +274,7 @@ const shot13 = (c: Ctx): Partial<Frame3> => {
     const tapT = (Math.floor(T / 0.4) % 2) as 0 | 1;
     let sp2: PP;
     if (T < 2.2) sp2 = mk("stacey", { x: 5.7, z: 5.5, ry: -60, tl: 22, hx: 8, y: 0.465 * SC3.stacey - 0.3, llx: 46, lrx: -8, llk: 76, lrk: 28, brow: -1, eyeL: 2, eyeR: 2, alx: 30, ale: 40, arx: 30, are: 40 });
-    else sp2 = mk("stacey", { x: sw.v, z: sz, ry: -80, tl: 6, hx: -4, hy: -8, brow: -1, eyeL: 2, eyeR: 2, y: 0.465 * SC3.stacey + (sw.moving && sw.ph ? 0.05 : 0), ...(sw.moving ? legs(sw.ph, 34, 40) : {}) });
+    else sp2 = mk("stacey", { x: sw.v, z: sz, ry: -80, tl: 6, hx: -4, hy: -8, brow: -1, eyeL: 2, eyeR: 2, y: 0.465 * SC3.stacey + (sw.moving ? 0.05 * sw.ph : 0), ...(sw.moving ? legs(sw.ph, 34, 40) : {}) });
     // монтировка в левой руке (ближняя): поднимает и бьёт по правой ладони
     sp2 = arm(sp2, "stacey", 1, tapT ? [0.1, 0.28, 0.5] : [0.34, 0.62, 0.34], 30);
     sp2 = arm(sp2, "stacey", -1, [-0.14, 0.26, 0.5], 40);
@@ -537,9 +537,8 @@ const shot18 = (c: Ctx): Partial<Frame3> => {
     gp = mk("greg", { x: GREG_C.x, z: GREG_C.z, ry: b.ry, hy: b.hy, hx: b.hx, tl: b.tl, brow: b.brow, eyeL: b.eye, eyeR: b.eye, llz: 12, lrz: 12, llx: 4, lrx: -4 });
     gp = arm(gp, "greg", 1, qv(calm ? [0.55, 0.0, 0.2] : b.l), 40);
     gp = arm(gp, "greg", -1, qv(calm ? [-0.5, 0.5, 0.4] : b.r), 40);
-    const m = mouthOf(c, 5);
-    gp = { ...gp, mouth: m === 2 ? 2 : m === 1 ? 1 : 0, cup: 0 };
-    if (calm) gp = { ...gp, ry: 20, tl: 8, hx: 12, brow: 0.2, eyeL: 3, eyeR: 3, mouth: 0, y: gp.y - 0.04 };
+    gp = { ...gp, mouth: 2, mo: mouthOf(c, 5), cup: 0 };
+    if (calm) gp = { ...gp, ry: 20, tl: 8, hx: 12, brow: 0.2, eyeL: 3, eyeR: 3, mouth: 0, mo: -1, y: gp.y - 0.04 };
   }
   let actors = ch.actors;
   if (frozen) {
@@ -573,16 +572,18 @@ const cutIdx = (T: number, cuts: number[]) => {
   return i;
 };
 
-export const frameAt3 = (frame: number, sh: ShotT, env: Array<number[] | undefined>): Frame3 => {
+/** Кадр в непрерывный момент frame (кадры композиции, дробные) без сглаживания; сглаживание - в frameAt3 */
+const frameRaw3 = (frame: number, sh: ShotT, env: Array<number[] | undefined>): Frame3 => {
   const fr = frame - sh.from;
-  const f = Math.floor(fr / STEP) * STEP;
-  const raw = Math.floor(fr / 2) * 2;
+  const f = fr;
+  const raw = fr;
   const T = f / FPS;
   const c: Ctx = { f, T, raw, sh, env };
   let out: Partial<Frame3> = {};
   let cam: Cam3 = camTo(1.8, 2.4, 13, 1.8, 1.9, 0.5);
   let bgOff = 0;
-  const base: Frame3 = { actors: [], cam, bgOff, truck: null, machine: { shake: 0, tilt: 0 }, hole: 0, puffs: [], dust: [], star: null, bar: null };
+  let segId = 0;
+  const base: Frame3 = { actors: [], cam, bgOff, seg: 0, truck: null, machine: { shake: 0, tilt: 0 }, hole: 0, puffs: [], dust: [], star: null, bar: null };
   const v0 = sh.voices[0];
   const vs = v0 ? v0.from / FPS : 0;
   const vl = v0 ? v0.len / FPS : 1;
@@ -593,6 +594,7 @@ export const frameAt3 = (frame: number, sh: ShotT, env: Array<number[] | undefin
       const cut = Math.max(4.2, vs + 0.4 * vl);
       cam = T < cut ? camTo(2.6, 2.7, 14.8, 2.6, 2.0, 0.5) : T < fr0(0.78) ? camTo(0.5, 2.0, 10.0, 0.5, 1.7, 3.0) : camTo(0.3, 1.5, 6.6, 0.3, 2.0, 3.6);
       bgOff = T < cut ? -2.6 : 0.6;
+      segId = T < cut ? 0 : T < fr0(0.78) ? 1 : 2;
       break;
     }
     case 14: {
@@ -615,6 +617,7 @@ export const frameAt3 = (frame: number, sh: ShotT, env: Array<number[] | undefin
         orbit(bh, 2.8, -6, -0.45, 0, 0.15),
       ];
       cam = cams[cutIdx(T, cuts)];
+      segId = cutIdx(T, cuts);
       bgOff = 0.8;
       break;
     }
@@ -636,6 +639,7 @@ export const frameAt3 = (frame: number, sh: ShotT, env: Array<number[] | undefin
         orbit(o.Q, 2.0, 25, 0.2, -7, 0.1),
       ];
       cam = cams[cutIdx(T, cuts)];
+      segId = cutIdx(T, cuts);
       bgOff = 1.4;
       break;
     }
@@ -660,6 +664,7 @@ export const frameAt3 = (frame: number, sh: ShotT, env: Array<number[] | undefin
         orbit(headW(tp, "tony"), 2.4, -8, -0.1, 0, 0.0),
       ];
       cam = cams[cutIdx(T, cuts)];
+      segId = cutIdx(T, cuts);
       bgOff = 2.2;
       break;
     }
@@ -692,12 +697,17 @@ export const frameAt3 = (frame: number, sh: ShotT, env: Array<number[] | undefin
         orbit(headW(gp, "greg"), 2.6, 4, 0.0),
       ];
       cam = cams[cutIdx(T, cuts)];
+      segId = cutIdx(T, cuts);
       bgOff = 1.6;
       break;
     }
   }
-  const res: Frame3 = { ...base, ...out, cam, bgOff } as Frame3;
+  const res: Frame3 = { ...base, ...out, cam, bgOff, seg: segId } as Frame3;
   res.signY = signFor(cam);
   void sec;
   return res;
 };
+
+/** Кадр сцены 3 в момент frame: сглаженная анимация (окно в пределах плана и отрезка без склеек камеры) */
+export const frameAt3 = (frame: number, sh: ShotT, env: Array<number[] | undefined>): Frame3 =>
+  smoothFrame((f) => frameRaw3(f, sh, env), frame, sh.from, sh.from + sh.len, (o) => o.seg);

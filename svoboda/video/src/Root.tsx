@@ -40,6 +40,6 @@ export const RemotionRoot: React.FC = () => (
     />
     <Scene3Entry />
     <Scene4Comp />
-    <Composition id="Turn" component={Turntable} durationInFrames={16} fps={FPS} width={WIDTH} height={HEIGHT} />
+    <Composition id="Turn" component={Turntable} durationInFrames={16} fps={24} width={WIDTH} height={HEIGHT} />
   </>
 );

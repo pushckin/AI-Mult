@@ -111,7 +111,7 @@ export const Rocket: React.FC<{ flame?: number; scale?: number }> = ({ flame = 0
     ))}
     {flame > 0 && (
       <group position={[0, -0.42 - 0.12 * flame, 0]} rotation={[Math.PI, 0, 0]}>
-        <Part geo={rcyl(0.075, 0.0, 0.26 * flame + 0.1, 0.005, 12)} color={flame > 1 ? "#ffd23a" : "#ff8a1c"} px={2.4} />
+        <Part geo={rcyl(0.075, 0.0, 1, 0.005, 12)} scale={[1, 0.26 * flame + 0.1, 1]} color={flame > 1.5 ? "#ffd23a" : "#ff8a1c"} px={2.4} />
       </group>
     )}
   </group>
@@ -172,7 +172,7 @@ export const Bike: React.FC<{ spin?: number; flame?: number; rockets?: boolean[]
           <Part geo={rcyl(0.17, 0.13, 0.5, 0.03)} color="#454c66" px={3} />
           {flame > 0 && (
             <group position={[0, 0.25 + 0.2 * flame, 0]} rotation={[0, 0, Math.PI]}>
-              <Part geo={rcyl(0.13, 0.0, 0.4 + 0.3 * flame, 0.01, 14)} color={flame > 1 ? "#ffe04a" : "#ff8a1c"} px={2.6} />
+              <Part geo={rcyl(0.13, 0.0, 1, 0.01, 14)} scale={[1, 0.4 + 0.3 * flame, 1]} color={flame > 1.5 ? "#ffe04a" : "#ff8a1c"} px={2.6} />
             </group>
           )}
         </group>

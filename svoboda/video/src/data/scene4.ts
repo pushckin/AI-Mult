@@ -1,15 +1,8 @@
-// СЦЕНА 4 «Закон и порядок» (кадры раскадровки 19-27). Длины планов вычисляются из длительностей реплик (wav в public/audio), 30 fps.
+// СЦЕНА 4 «Закон и порядок» (кадры раскадровки 19-27). Длины планов вычисляются из длительностей реплик (wav в public/audio), 60 fps.
 import type { AudioCue, AudioAvail } from "../engine/audio";
-import { MSTEP, mouthFromEnv } from "./scene2";
 
-export const FPS = 30;
-export const WIDTH = 1920;
-export const HEIGHT = 1080;
-export const sec = (s: number) => Math.round(s * FPS);
-/** кадров на смену позы (рваная кукольная анимация, 7.5 поз/с) */
-export const STEP = 4;
-export { MSTEP, mouthFromEnv };
-const even = (n: number) => Math.round(n / 2) * 2;
+export { FPS, WIDTH, HEIGHT, sec } from "./fps";
+import { FPS, sec } from "./fps";
 
 /** Реплики: индекс 0..5 -> voice_s4_NN_<имя>.wav (имя берём из voice_s4_durations.json или перебором) */
 export const VOICE_NN = ["01", "02", "03", "04", "05", "06"] as const;
@@ -70,10 +63,10 @@ export const buildTimeline = (durs: Array<number | null>): Timeline => {
     let vLen = 0;
     let len: number;
     if (d.voice >= 0) {
-      vFrom = even(sec(d.lead));
+      vFrom = sec(d.lead);
       vLen = Math.ceil((durs[d.voice] ?? DEF_DUR[d.voice]) * FPS);
-      len = even(vFrom + vLen + sec(d.tail));
-    } else len = even(sec(d.fixed ?? 1));
+      len = vFrom + vLen + sec(d.tail);
+    } else len = sec(d.fixed ?? 1);
     const s: ShotT = { i, id: d.id, n: d.n, from, len, vFrom, vLen, voice: d.voice };
     from += len;
     return s;

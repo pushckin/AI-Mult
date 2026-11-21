@@ -1,11 +1,22 @@
-// СЦЕНА 1 «Великое исчезновение» (0:00-0:30): тайминги и аудио. 24 fps, 720 кадров. v5: настоящая 3D-сцена (src/three/*).
+// СЦЕНА 1 «Великое исчезновение» (0:00-0:30): тайминги и аудио. v6: 60 fps, 1800 кадров (30.0 с), настоящая 3D-сцена (src/three/*).
+// Все события ниже заданы в «кадрах24» (исходная раскадровка 24 fps): секунды = кадр24 / 24. Анимация работает на непрерывном времени f24 = frame*24/FPS.
 import type { AudioCue } from "../engine/audio";
 
-export const FPS = 24;
+export const FPS = 60;
+export const SRC_FPS = 24; // раскадровка/тайминги заданы в кадрах 24 fps
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
-export const DURATION = 720;
+export const DURATION_SEC = 30;
+export const DURATION = DURATION_SEC * FPS; // 1800
+/** кадр24 -> секунды */
+export const t24 = (f24: number) => f24 / SRC_FPS;
+/** секунды -> кадр композиции (60 fps) */
 export const sec = (s: number) => Math.round(s * FPS);
+/** кадр24 -> кадр композиции (60 fps) */
+export const fr = (f24: number) => sec(t24(f24));
+/** кадр композиции (60 fps) -> непрерывный кадр24 (float); вся анимация считается от него */
+export const toF24 = (frame: number) => (frame * SRC_FPS) / FPS;
+export const END24 = DURATION_SEC * SRC_FPS; // 720
 
 export const SHOTS = [
   { n: 1, from: 0, to: 168, name: "Хаос: байк, ракеты, взрывы; Грег бредёт по тротуару; суперкар на тротуар" },
@@ -39,35 +50,39 @@ export const VOICE_ENV = [
 ];
 
 // ---------- Аудио ----------
+// Cue заданы в кадрах24 (секунды = /24), в кадры композиции (60 fps) переводятся через fr(). null/undefined `to` = до конца сцены.
 export const TOOTH_FRAME = 588; // SPIT_FRAME + 22: зуб приземляется
+const cue = (base: string, from24: number, to24: number | undefined, volume: number, extra: { loop?: boolean; note?: string } = {}): AudioCue => ({
+  base, from: fr(from24), to: to24 === undefined ? DURATION : fr(to24), volume, ...extra,
+});
 export const AUDIO_CUES: AudioCue[] = [
   // Приоритет файлов: wav, затем mp3 в public/audio/. Синтез-дубли лежат в public/audio/synth/ (не подхватываются).
-  // Музыка: ровно 19.0 с (456 кадров), играет до исчезновения, дальше тишина
-  { base: "music_s1", from: 0, to: VANISH_FRAME, volume: 0.35, note: "тревожный фон до исчезновения" },
+  // Музыка: ровно 19.0 с (кадр24 456), играет до исчезновения, дальше тишина
+  cue("music_s1", 0, VANISH_FRAME, 0.35, { note: "тревожный фон до исчезновения" }),
+  cue("sfx_sirens", 0, VANISH_FRAME, 0.3, { loop: true, note: "сирены до самого исчезновения" }),
   // Хаос 0-168
-  { base: "sfx_sirens", from: 0, to: VANISH_FRAME, volume: 0.3, loop: true, note: "сирены до самого исчезновения" },
-  { base: "sfx_explosions", from: 0, to: HIT_FRAME, volume: 0.35 },
-  { base: "sfx_rockets", from: 10, to: 107, volume: 0.3 },
-  { base: "sfx_rockets", from: 80, to: HIT_FRAME, volume: 0.3 },
-  { base: "sfx_supercar", from: 20, to: HIT_FRAME, volume: 0.35, note: "суперкар обрывается ударом" },
+  cue("sfx_explosions", 0, HIT_FRAME, 0.35),
+  cue("sfx_rockets", 10, 107, 0.3),
+  cue("sfx_rockets", 80, HIT_FRAME, 0.3),
+  cue("sfx_supercar", 20, HIT_FRAME, 0.35, { note: "суперкар обрывается ударом" }),
   // Удар
-  { base: "sfx_hit_crunch", from: HIT_FRAME - 1, to: HIT_FRAME + 48, volume: 0.35 },
-  { base: "sfx_bass_drop", from: HIT_FRAME, to: HIT_FRAME + 73, volume: 0.28 },
+  cue("sfx_hit_crunch", HIT_FRAME - 1, HIT_FRAME + 48, 0.35),
+  cue("sfx_bass_drop", HIT_FRAME, HIT_FRAME + 73, 0.28),
   // Слоу-мо
-  { base: "sfx_slowmo_hum", from: FLIGHT_FROM, to: LAND_FRAME + 4, volume: 0.4 },
+  cue("sfx_slowmo_hum", FLIGHT_FROM, LAND_FRAME + 4, 0.4),
   // Шлёп
-  { base: "sfx_body_thud", from: LAND_FRAME, to: LAND_FRAME + 36, volume: 0.9 },
+  cue("sfx_body_thud", LAND_FRAME, LAND_FRAME + 36, 0.9),
   // Билборд 23:59 -> 00:00
-  { base: "sfx_billboard_click", from: BILLBOARD_FLIP - 1, to: BILLBOARD_FLIP + 36, volume: 0.7 },
+  cue("sfx_billboard_click", BILLBOARD_FLIP - 1, BILLBOARD_FLIP + 36, 0.7),
   // Исчезновение: всё хаотическое обрывается на VANISH_FRAME, остаётся только unplug/glitch
-  { base: "sfx_unplug_glitch", from: VANISH_FRAME, to: VANISH_FRAME + 4, volume: 0.4, note: "короткий обрыв-глитч 0.17 с, дальше тишина" },
+  cue("sfx_unplug_glitch", VANISH_FRAME, VANISH_FRAME + 4, 0.4, { note: "короткий обрыв-глитч 0.17 с, дальше тишина" }),
   // Пустая улица: сверчки и капли до конца
-  { base: "sfx_crickets", from: 486, to: DURATION, volume: 0.5, note: "12 с > 234 кадров, без лупа" },
-  { base: "sfx_water_drip", from: 500, to: DURATION, volume: 0.55, loop: true },
+  cue("sfx_crickets", 486, undefined, 0.5, { note: "12 с > 234 кадров24, без лупа" }),
+  cue("sfx_water_drip", 500, undefined, 0.55, { loop: true }),
   // Плечо, плевок, зуб
-  { base: "sfx_shoulder_pop", from: SHOULDER_FRAME - 1, to: SHOULDER_FRAME + 36, volume: 0.5 },
-  { base: "sfx_spit", from: SPIT_FRAME - 2, to: SPIT_FRAME + 25, volume: 0.5 },
-  { base: "sfx_tooth_clink", from: TOOTH_FRAME, to: TOOTH_FRAME + 25, volume: 0.8 },
+  cue("sfx_shoulder_pop", SHOULDER_FRAME - 1, SHOULDER_FRAME + 36, 0.5),
+  cue("sfx_spit", SPIT_FRAME - 2, SPIT_FRAME + 25, 0.5),
+  cue("sfx_tooth_clink", TOOTH_FRAME, TOOTH_FRAME + 25, 0.8),
   // Реплика Грега 3.35 с
-  { base: "voice_greg_01", from: GREG_LINE.from, to: DURATION, volume: 0.9, note: "реплика Грега, 3.35 с" },
+  cue("voice_greg_01", GREG_LINE.from, undefined, 0.9, { note: "реплика Грега, 3.35 с" }),
 ];

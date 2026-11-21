@@ -10,7 +10,7 @@ export const VIEW_H = 1080;
 const FOCAL_PX = VIEW_H / 2 / Math.tan((FOV * Math.PI) / 360);
 export const LIGHT_DIR = new THREE.Vector3(-0.42, 0.78, 0.5).normalize();
 /** Стиль v5 (сцена 2): все материалы строго 2-ступенчатые, одна толщина контура, яркие плоские цвета. Сцена 1 остаётся как была. */
-export const STYLE = { v5: false };
+export const STYLE = { v5: false, smooth: false }; // smooth: сцены 2-4 (60 fps) - эффекты без квантования «на двойках»
 export const OUTLINE_PX = 5.6;
 const INK_L = 0.14;
 /** Подкрутка цвета: насыщеннее и чуть ярче (почти чёрное и почти белое не трогаем) */

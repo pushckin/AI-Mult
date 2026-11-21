@@ -14,6 +14,7 @@ import { Street, PAL_COLD, Bin } from "./three/Env";
 import { Flame, SmokeColumn, GroundDust, Chunk } from "./three/Fx";
 import { frameAt, BIN, BUSH, Frame } from "./three/anim2";
 import { hash } from "./three/util";
+import { FPS } from "./data/fps";
 
 /** Постеризация кадра: каждый канал схлопывается в N плоских ступеней (никаких плавных градиентов, бликов, мягких переходов) */
 const POSTER_LEVELS = 6;
@@ -67,9 +68,10 @@ const BUSH_BALLS: Array<[number, number, number, number, string]> = [
   [-0.6, 0.85, 0.46, 0.35, "#2fbf4e"], [0.0, 0.95, 0.5, 0.4, "#2fbf4e"], [0.6, 0.85, 0.46, 0.3, "#2fbf4e"], [-0.25, 0.72, 0.42, 0.75, "#2fbf4e"], [0.3, 0.7, 0.42, 0.7, "#2fbf4e"],
 ];
 const Bush: React.FC<{ shake: number; frame: number; x: number }> = ({ shake, frame, x }) => {
-  const n = Math.floor(frame / 6); // дрожит рывками раз в 0.2 с
-  const ox = shake ? (hash(n, 3) * 2 - 1) * shake : 0;
-  const oy = shake ? (hash(n, 8) * 2 - 1) * shake * 0.8 : 0;
+  // дрожит непрерывно: две несоизмеримые частоты (~5-6 Гц), без рывков раз в 0.2 с
+  const t = frame / FPS;
+  const ox = shake ? (Math.sin(t * 36 + 1) * 0.6 + Math.sin(t * 23 + 2.3) * 0.4) * shake : 0;
+  const oy = shake ? (Math.sin(t * 29 + 4) * 0.6 + Math.sin(t * 41 + 0.7) * 0.4) * shake * 0.8 : 0;
   return (
     <group position={[x, 0, BUSH.z]}>
       <Part geo={rbox(1.9, 0.5, 0.8, 0.06)} color="#7a5a8a" px={3.4} position={[0, 0.25, 0]} />
@@ -85,7 +87,7 @@ const Bush: React.FC<{ shake: number; frame: number; x: number }> = ({ shake, fr
 };
 const Leaves: React.FC<{ k: number }> = ({ k }) => {
   if (k < 0 || k > 18) return null;
-  const kh = Math.floor(k / 2) * 2;
+  const kh = k;
   return (
     <>
       {Array.from({ length: 7 }).map((_, i) => (
@@ -106,7 +108,7 @@ const World: React.FC<{ tl: S.Timeline; voices: Array<VoiceInfo | null> }> = ({ 
   const sh = S.shotAt(tl, frame);
   const env = useMemo(() => voices.map((v) => v?.env), [voices]);
   const f = frameAt(frame, sh, tl.shots.length, { env });
-  const tick = Math.floor(frame / 3) * 2; // огонь: смена формы пламени каждые 3 кадра
+  const tick = Math.floor((frame / FPS) * 10) * 2; // огонь: смена формы пламени 10 раз в секунду
   return (
     <>
       <color attach="background" args={[PAL_COLD.sky]} />
@@ -129,6 +131,7 @@ const World: React.FC<{ tl: S.Timeline; voices: Array<VoiceInfo | null> }> = ({ 
 
 export const Scene2: React.FC<Scene2Props> = ({ audio, voices }) => {
   STYLE.v5 = true; // яркие плоские цвета, 2-ступенчатый свет, контур 5.6 px
+  STYLE.smooth = true; // 60 fps: эффекты без «двоек»
   // направленный свет справа-сверху (двухступенчатая тень чётко меняется при развороте тел и голов)
   LIGHT_DIR.set(0.62, 0.7, 0.36).normalize();
   const tl = useMemo(() => S.buildTimeline(voices.map((v) => v?.dur ?? null)), [voices]);
