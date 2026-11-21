@@ -32,7 +32,7 @@ const seg = (keys: K[], T: number): PPatch => {
   return out;
 };
 /** Бит - поза, которая держится d секунд; список битов крутится по кругу */
-type BP = PPatch & { dy?: number; ryd?: number; mega?: Mega; plac?: keyof typeof PLAC; cross?: boolean };
+type BP = PPatch & { dy?: number; ryd?: number; mega?: Mega; plac?: Plac; lt?: keyof typeof LT; cross?: boolean };
 type Beat = readonly [number, BP];
 const beatAt = (T: number, list: ReadonlyArray<Beat>, off = 0): { p: BP; i: number; k: number } => {
   let tot = 0;
@@ -72,6 +72,8 @@ export interface Frame {
   leaves: number; // «тики 1/24 с» полёта листьев (или -1)
   dust: Array<{ x: number; z: number; k: number }>; // k - тики 1/24 с (эффекты рассчитаны на 24)
   tl: number;
+  bushX?: number; // x кадки с кустом (в финале сдвинута, чтобы не сливаться с Хлоей)
+  signY?: number; // высота вывески VEGAN COFFEE (подбирается под кадр, чтобы не обрезалась краем)
 }
 
 // Рот обновляется чаще позы (каждые 2 кадра), чтобы попадать в слоги: RAW - кадр плана, округлённый на MSTEP вниз
@@ -97,11 +99,11 @@ const TONY_CRY: Beat[] = [
   [0.667, { ry: 2, hy: -16, hx: -22, tl: -4, alx: 92, alz: 40, ale: 62, arx: 92, arz: 40, are: 62, eyeL: 2, eyeR: 2, brow: 1 }], // вой с поднятым подбородком
 ];
 const MARCUS_CRY: Beat[] = [
-  [0.533, { tl: 14, hx: 16, hy: 0, alx: 55, alz: 14, ale: 105, arx: 55, arz: 14, are: 105, mouth: 4, ryd: 0 }], // всхлип: кивок, руки у груди
-  [0.667, { tl: 2, hx: 2, hy: 8, alx: 24, alz: 12, ale: 50, arx: 24, arz: 12, are: 50, mouth: 4, ryd: 14 }], // смотрит на Тони, руки вниз
-  [0.4, { tl: 6, hx: 6, hz: -10, alx: 55, alz: 14, ale: 105, arx: 152, arz: 12, are: 122, mouth: 1, ryd: -10 }], // вытирает глаза рукой
-  [0.533, { tl: 8, hx: 10, alx: 158, alz: 20, ale: 130, arx: 158, arz: 20, are: 130, mouth: 3, ryd: 8 }], // обе ладони на щеках
-  [0.4, { tl: -6, hx: -14, hy: -8, alx: 20, alz: 52, ale: 30, arx: 20, arz: 52, are: 30, mouth: 2, ryd: -18 }], // вой: руки в стороны
+  [0.533, { tl: 14, hx: 16, hy: 0, alx: 55, alz: 14, ale: 105, arx: 55, arz: 14, are: 105, ryd: 0 }], // всхлип: кивок, руки у груди
+  [0.667, { tl: 2, hx: 2, hy: 8, alx: 24, alz: 12, ale: 50, arx: 24, arz: 12, are: 50, ryd: 14 }], // смотрит на Тони, руки вниз
+  [0.4, { tl: 6, hx: 6, hz: -10, alx: 55, alz: 14, ale: 105, arx: 152, arz: 12, are: 122, ryd: -10 }], // вытирает глаза рукой
+  [0.533, { tl: 8, hx: 10, alx: 158, alz: 20, ale: 130, arx: 158, arz: 20, are: 130, ryd: 8 }], // обе ладони на щеках
+  [0.4, { tl: -6, hx: -14, hy: -8, alx: 20, alz: 52, ale: 30, arx: 20, arz: 52, are: 30, ryd: -18 }], // вой: руки в стороны
 ];
 const shot07 = (f: number, sh: ShotT, v: Voices): Actor[] => {
   const T = f / FPS;
@@ -122,7 +124,7 @@ const shot07 = (f: number, sh: ShotT, v: Voices): Actor[] => {
   let tpose = mixP({ scale: SC.tony, x: TONY_X, z: 0.25, eyeL: 0, eyeR: 0, llz: 4, lrz: 4, alz: 10, arz: 10, ...seg(tk, T) });
   if (T >= 1.867) {
     const { p } = beatAt(T - 1.867, TONY_CRY);
-    tpose = { ...tpose, ...p, tear: 1 + cyc(T - 1.6, 0.267, 3) };
+    tpose = { ...tpose, ...p, tear: 1 + cyc(T - 1.6, 0.8, 3) };
   } else if (T >= 1.6) tpose = { ...tpose, tear: 1 };
   tpose = speak(tpose, sh, v.env[0]);
 
@@ -140,7 +142,7 @@ const shot07 = (f: number, sh: ShotT, v: Voices): Actor[] => {
   const mb = seg(mk, T);
   const { p: mbeat } = beatAt(T, MARCUS_CRY);
   const { ryd = 0, ...mrest } = mbeat;
-  const mp = mixP({ scale: SC.marcus, z: 0.3, eyeL: 0, eyeR: 0, llz: 4, lrz: 4, brow: 1, ...mb, ...mrest, x: mx, ry: (mb.ry ?? -74) + ryd, tear: T > 4.0 ? 1 + cyc(T, 0.267, 3) : 0 });
+  const mp = mixP({ scale: SC.marcus, z: 0.3, eyeL: 0, eyeR: 0, llz: 4, lrz: 4, brow: 1, ...mb, ...mrest, x: mx, ry: (mb.ry ?? -74) + ryd, tear: T > 4.0 ? 1 + cyc(T, 0.8, 3) : 0 });
   return [
     { kind: "marcus", pose: mp },
     { kind: "tony", pose: tpose },
@@ -150,74 +152,74 @@ const shot07 = (f: number, sh: ShotT, v: Voices): Actor[] => {
 // =====================================================================================
 // ПЛАН 08: Маркус бросается Тони на шею; объятие в профиль. Камера - только жёсткие склейки (см. cam08)
 // =====================================================================================
-const T08 = { x: 3.95, z: 0.5 };
-const M08 = { x: 2.85, z: 0.62 };
+const T08 = { x: 4.05, z: 0.5 };
+const M08 = { x: 2.3, z: 0.5 };
 const shot08 = (f: number, sh: ShotT, v: Voices): Actor[] => {
   const T = f / FPS;
-  // ----- Тони: профиль влево. A (0.67-1.67) руки вверх от неожиданности; B (1.67-4.0) обнимает в ответ; C (4.0-5.4) стискивает; D (5.4+) прижал -----
+  // ----- Тони: корпус в 3/4 к камере (лицом влево к Маркусу, голова повёрнута в камеру). A (0.67-1.67) руки врозь от неожиданности; B (1.67-4.0) обнимает; C (4.0-5.4) стискивает; D (5.4+) прижал -----
   const tk: K[] = [
-    { t: 0, ry: -84, tl: 0, hy: 34, hx: 4, alx: 30, ale: 40, arx: 30, are: 40, alz: 30, arz: 30, brow: 1, eyeL: 2, eyeR: 2 },
-    { t: 0.667, tl: 5, hy: 16, hx: 12, alx: 52, arx: 60, ale: 20, are: 20, alz: 70, arz: 70, brow: 1 },
-    { t: 1.667, tl: 12, ry: -78, hx: 24, hy: 34, eyeL: 3, eyeR: 3, llx: 14, lrx: 14, llk: 26, lrk: 26, y: 0.43 * SC.tony - 0.07 },
-    { t: 4.0, tl: 14, ry: -74, hx: 28, hy: 38, llx: 22, lrx: 22, llk: 40, lrk: 40, y: 0.43 * SC.tony - 0.11 },
-    { t: 5.467, tl: 16, ry: -70, hx: 30, hy: 42 },
+    { t: 0, ry: -62, tl: 0, hy: 28, hx: 2, alx: 30, ale: 40, arx: 30, are: 40, alz: 30, arz: 30, brow: 1, eyeL: 2, eyeR: 2 },
+    { t: 0.667, ry: -40, tl: 4, hy: 30, hx: 8, alx: 52, arx: 60, ale: 20, are: 20, alz: 70, arz: 70, brow: 1 },
+    { t: 1.667, tl: 6, ry: -38, hx: 4, hy: 38, eyeL: 3, eyeR: 3, llx: 8, lrx: 8, llk: 16, lrk: 16, y: 0.43 * SC.tony - 0.04 },
+    { t: 4.0, tl: 8, ry: -36, hx: 6, hy: 40, llx: 12, lrx: 12, llk: 24, lrk: 24, y: 0.43 * SC.tony - 0.07 },
+    { t: 5.467, tl: 10, ry: -34, hx: 8, hy: 42 },
   ];
   const tpp = seg(tk, T);
   const hug = T >= 1.667;
-  const sob = T >= 0.667 ? alt(T, 0.4) : 0; // рыдания рваными толчками: корпус и голова меняются сразу на 10-14°
+  const sob = T >= 0.667 ? Math.floor(T / 0.533) % 2 : 0; // рыдания: жёсткие смены позы раз в 0.53 с
   let tp = mixP({ scale: SC.tony, x: T08.x, z: T08.z, y: 0.43 * SC.tony, llz: 6, lrz: 6, acc: 1, hl: 0, hr: 0, mouth: 0, ...tpp });
-  tp = { ...tp, tear: 1 + cyc(T, 0.267, 3), tl: tp.tl + (sob ? 8 : 0), hx: tp.hx + (sob ? 12 : 0) };
+  tp = { ...tp, tear: 1 + (Math.floor(T / 0.8) % 3), tl: tp.tl + (sob ? 4 : 0), hx: tp.hx + (sob ? 5 : 0) };
 
-  // ----- Маркус: 0-0.4 бег рваными позами, 0.4-0.67 прыжок, 0.67+ виснет на шее на носочках -----
+  // ----- Маркус: 0-0.4 бег рваными позами, 0.4-0.67 прыжок, 0.67+ виснет на плече Тони; лицо повёрнуто в камеру -----
   const run = T < 0.4;
   const leap = T >= 0.4 && T < 0.667;
   let mp: PP;
   if (run) {
-    const ph = alt(T, 0.1333);
-    const step = Math.floor(T / 0.1333);
+    const ph = alt(T, 0.2);
+    const step = Math.floor(T / 0.2);
     mp = mixP({
-      scale: SC.marcus, x: M08.x - 2.55 + step * 0.34, z: 0.62, ry: 80, y: 0.58 + (ph ? 0.07 : 0), tl: 14, hy: -28, hx: 6, mouth: 4, brow: 1, eyeL: 0, eyeR: 0,
+      scale: SC.marcus, x: M08.x - 2.55 + step * 0.34, z: 0.62, ry: 80, y: 0.58 + (ph ? 0.07 : 0), tl: 14, hy: -28, hx: 6, mouth: 0, brow: 1, eyeL: 0, eyeR: 0,
       llx: ph ? 52 : -48, lrx: ph ? -48 : 52, llk: ph ? 6 : 64, lrk: ph ? 64 : 6, alx: ph ? -50 : 50, arx: ph ? 50 : -50, ale: 64, are: 64, alz: 14, arz: 14,
     });
   } else if (leap) {
     mp = mixP({
-      scale: SC.marcus, x: M08.x - 1.1 + (T >= 0.5 ? 0.6 : 0), z: 0.62, ry: 82, y: 1.0 + (T >= 0.5 ? 0.08 : 0), tl: 6, hy: -36, mouth: 4, brow: 1, eyeL: 0, eyeR: 0,
+      scale: SC.marcus, x: M08.x - 1.1 + (T >= 0.5 ? 0.6 : 0), z: 0.62, ry: 70, y: 1.0 + (T >= 0.5 ? 0.08 : 0), tl: 6, hy: -36, mouth: 0, brow: 1, eyeL: 0, eyeR: 0,
       llx: 40, lrx: 14, llk: 80, lrk: 50, alx: 150, arx: 150, ale: 20, are: 20, alz: 50, arz: 50,
     });
   } else {
-    // жёсткие позы объятия: A (0.67-1.67) на носочках; B (1.67-4.0) нога подогнута, рывком ближе; C (4.0-5.4) повис; D (5.4+) приподнят, голова на плече
+    // жёсткие позы объятия: A (0.67-1.67) на носочках; B (1.67-4.0) нога подогнута; C (4.0-5.4) повис; D (5.4+) приподнят, голова на плече
     const poseA = T < 1.667;
     const poseB = T >= 1.667 && T < 4.0;
     const poseD = T >= 5.467;
-    const push = poseA ? 0 : poseB ? 0.05 : poseD ? 0.1 : 0.07; // рывки к Тони
+    const push = poseA ? 0 : poseB ? 0.04 : poseD ? 0.08 : 0.06;
     mp = mixP({
-      scale: SC.marcus, x: M08.x + push, z: poseA ? 0.74 : poseB ? 0.8 : 0.86, ry: poseD ? 74 : 84, y: poseA ? 0.7 : 0.5, tl: poseA ? 6 : 16, hy: poseD ? -22 : -4, hx: poseA ? 4 : 10, mouth: 0, brow: 1, eyeL: 0, eyeR: 0,
+      scale: SC.marcus, x: M08.x + push, z: M08.z + 0.04, ry: poseD ? 34 : 40, y: poseA ? 0.7 : 0.5, tl: poseA ? 6 : 10, hy: poseD ? -38 : -32, hx: poseA ? 2 : 4, mouth: 0, brow: 1, eyeL: 0, eyeR: 0,
       llx: poseA ? 0 : 26, lrx: poseA ? 0 : 14, llk: poseA ? 0 : 56, lrk: poseA ? 0 : 36, llz: 7, lrz: 7, toe: poseA ? 58 : 0,
       ...(poseB ? { lrx: 4, lrk: 20, llx: 34, llk: 64 } : {}),
       ...(T >= 4.0 ? { llx: 30, lrx: 18, llk: 58, lrk: 44, y: 0.47 } : {}),
-      ...(poseD ? { llx: 36, lrx: 10, llk: 70, lrk: 26, y: 0.52, tl: 20 } : {}),
+      ...(poseD ? { llx: 36, lrx: 10, llk: 70, lrk: 26, y: 0.52, tl: 16 } : {}),
     });
-    mp = { ...mp, hx: mp.hx + (sob ? 10 : 0), tl: mp.tl + (sob ? -6 : 0), tear: 1 + cyc(T, 0.267, 3), y: mp.y + (sob ? 0.04 : 0) };
+    mp = { ...mp, hx: mp.hx + (sob ? 6 : 0), tl: mp.tl + (sob ? -4 : 0), tear: 1 + (Math.floor(T / 0.8) % 3), y: mp.y + (sob ? 0.03 : 0) };
   }
   mp = speak({ ...mp, mouth: 0 }, sh, v.env[1]);
-  if (!isSpeaking(sh) || mp.mouth === 0) mp = { ...mp, mouth: T < 0.667 ? 4 : 0 };
+  if (!isSpeaking(sh)) mp = { ...mp, mouth: 0 };
 
-  // ----- руки обхватывают: IK по положению партнёра. Ближняя к камере рука Маркуса (side -1) ложится спереди на шею и плечо Тони, дальняя - за шею -----
+  // ----- руки обхватывают: IK по положению партнёра. Лицо Маркуса и Тони - в камеру, руки - вокруг плеч и спины -----
   if (!run && !leap) {
     const neck = fromTorso(tp, [0, 0.62, 0]);
-    mp = arm(mp, "marcus", -1, qv(toTorso(mp, [neck[0] + 0.1, neck[1] - 0.08, neck[2] + 0.34])), 40);
-    mp = arm(mp, "marcus", 1, qv(toTorso(mp, [neck[0] + 0.26, neck[1] - 0.22, neck[2] - 0.3])), 40);
+    mp = arm(mp, "marcus", 1, qv(toTorso(mp, [neck[0] - 0.55, neck[1] - 0.12, neck[2] - 0.3])), 40); // внутренняя рука: за шею Тони
+    mp = arm(mp, "marcus", -1, qv(toTorso(mp, [neck[0] - 0.35, neck[1] - 0.5, neck[2] + 0.45])), 40); // внешняя: на плечо спереди
     mp = { ...mp, hl: 0, hr: 0 };
   } else if (leap) {
     mp = { ...mp, hl: 0, hr: 0 };
   }
   if (hug) {
-    // Тони обнимает в ответ: ближняя к камере рука (side +1) на спине Маркуса сверху, дальняя - пониже; хлопает по спине рывками
-    const patting = (T >= 2.267 && T < 3.9) || (T >= 4.4 && T < 6.4);
-    const pat = patting ? alt(T, 0.267) * 0.18 : 0;
-    const back = (dy: number, dz: number): V3 => qv(toTorso(tp, [mp.x - 0.12, mp.y + 0.62 * SC.marcus + dy, mp.z + dz]));
-    tp = arm(tp, "tony", 1, back(pat, 0.2), 30);
-    tp = arm(tp, "tony", -1, back(-0.22 - pat * 0.5, -0.14), 30);
+    // Тони обнимает в ответ: ближняя к Маркусу рука (side -1) на его спине сверху, дальняя - пониже; хлопает по спине рывками раз в 0.53 с
+    const patting = (T >= 2.133 && T < 3.7) || (T >= 4.267 && T < 6.4);
+    const pat = patting ? (Math.floor(T / 0.533) % 2) * 0.16 : 0;
+    const back = (dx: number, dy: number, dz: number): V3 => qv(toTorso(tp, [mp.x + dx, mp.y + 0.62 * SC.marcus + dy, mp.z + dz]));
+    tp = arm(tp, "tony", -1, back(0.25, pat, 0.2), 30);
+    tp = arm(tp, "tony", 1, back(0.3, -0.3 - pat * 0.5, -0.3), 30);
     tp = { ...tp, hl: 0, hr: 0 };
   }
   return [
@@ -231,52 +233,67 @@ const shot08 = (f: number, sh: ShotT, v: Voices): Actor[] => {
 //         -> приземление 0.4 с (3 позы). В руках плакат и мегафон всегда. Дальше сирена и речь рваными битами.
 // =====================================================================================
 const CH_LAND = { x: 7.15, z: 0.9 };
-type Mega = "up" | "down" | "fwd" | "air" | "side";
+type Mega = "up" | "down" | "fwd" | "air" | "side" | "out";
 const MEGA: Record<Mega, { t: V3; hp: number; my: number }> = {
   up: { t: [-0.14, 0.48, 0.5], hp: -4, my: 6 },
   side: { t: [-0.62, 0.52, 0.34], hp: -8, my: -22 }, // у рта сбоку, не закрывая лица
   down: { t: [-0.6, 0.24, 0.12], hp: 48, my: 0 },
   fwd: { t: [-0.5, 0.5, 0.62], hp: 0, my: 0 },
   air: { t: [-0.36, 0.74, 0.6], hp: -6, my: 0 },
+  out: { t: [-1.12, 0.46, 0.14], hp: 10, my: 0 }, // отведён в сторону (разводит руками)
 };
+/** Плакат в левой руке: только поднятым над головой (лицо и худи никогда не закрыты), остальные позы - плакат воткнут в землю рядом */
 const PLAC = {
-  mid: { t: [0.84, 0.55, 0.3] as V3, cup: -8 },
-  cow: { t: [0.86, -0.2, 0.16] as V3, cup: -14 },
-  std: { t: [0.86, 0.3, 0.3] as V3, cup: -10 },
-  hi: { t: [0.84, 0.74, 0.3] as V3, cup: -10 },
-  low: { t: [0.78, 0.18, 0.3] as V3, cup: -14 },
+  up: { t: [0.66, 1.04, 0.16] as V3, cup: -6 },
+  hi: { t: [0.66, 1.04, 0.16] as V3, cup: -6 },
 };
-/** Хлоя: мегафон всегда в правой руке (ручка в кулаке), плакат всегда в левой */
-const chloeHands = (p: PP, mega: Mega, plac: keyof typeof PLAC, megaT?: V3): PP => {
+type Plac = keyof typeof PLAC | "plant" | "mid" | "cow" | "std" | "low";
+/** Свободная левая рука (плакат воткнут): вдоль тела, рука на боку, палец вперёд, руки врозь */
+const LT = {
+  down: { t: [0.6, 0.02, 0.12] as V3, hl: 0, ab: 16 },
+  hip: { t: [0.38, 0.1, 0.18] as V3, hl: 2, ab: 80 },
+  point: { t: [1.0, 0.74, 0.5] as V3, hl: 1, ab: 40 },
+  spread: { t: [1.14, 0.5, 0.1] as V3, hl: 0, ab: 90 },
+};
+/** Хлоя: мегафон всегда в правой руке (ручка в кулаке); плакат - в левой только в позе «над головой», иначе воткнут в землю (pl: 1 слева, 2 справа) */
+const chloeHands = (p: PP, mega: Mega, plac: Plac, megaT?: V3, lt: keyof typeof LT = "down", side: 1 | 2 = 1): PP => {
   const m = MEGA[mega];
-  const pl = PLAC[plac];
   let r = arm(p, "chloe", -1, qv(megaT ?? m.t), 30);
-  r = arm(r, "chloe", 1, pl.t, 40);
-  return { ...r, hr: 2, hl: 2, hp: m.hp, my: m.my, cup: pl.cup, py: Math.max(-75, Math.min(75, -p.ry * 0.85)) };
+  if (plac === "up" || plac === "hi") {
+    const pl = PLAC.up;
+    r = arm(r, "chloe", 1, pl.t, 40);
+    return { ...r, hr: 2, hl: 2, hp: m.hp, my: m.my, cup: pl.cup, pl: 0, py: Math.max(-75, Math.min(75, -p.ry * 0.85)) };
+  }
+  const l = LT[lt];
+  r = arm(r, "chloe", 1, l.t, l.ab);
+  return { ...r, hr: 2, hl: l.hl, hp: m.hp, my: m.my, cup: 0, pl: side, py: 0 };
 };
 /** речь Хлои в мегафон: каждые 0.4-0.67 с другая поза и поворот корпуса */
 const CH_SPEAK: Beat[] = [
-  [0.533, { ry: -30, hy: 22, hx: -2, tl: -3, mega: "side", plac: "std" }], // мегафон у рта
-  [0.4, { ry: -74, hy: 30, hx: -4, tl: -6, mega: "fwd", plac: "std" }], // корпус в профиль: тычет мегафоном влево
-  [0.533, { ry: -4, hy: 6, hx: -4, tl: -8, mega: "down", plac: "hi" }], // анфас: плакат вверх
-  [0.4, { ry: -52, hy: 16, hx: 2, tl: 4, mega: "up", plac: "mid" }],
-  [0.667, { ry: -22, hy: 26, hx: -4, tl: -4, mega: "side", plac: "low" }],
+  [0.6, { ry: -30, hy: 22, hx: -2, tl: -3, mega: "side", plac: "up" }], // поднимает плакат над головой, мегафон сбоку у рта
+  [0.5, { ry: -66, hy: 26, hx: -2, tl: -4, mega: "down", plac: "plant", lt: "point" }], // указывает пальцем (на Грега)
+  [0.7, { ry: -4, hy: 4, hx: -6, tl: -4, mega: "out", plac: "plant", lt: "spread" }], // разводит руками: «вы серьёзно?»
+  [0.5, { ry: -48, hy: 16, hx: 0, tl: 2, mega: "up", plac: "plant", lt: "hip" }], // рука на боку, мегафон ко рту
+  [0.6, { ry: -20, hy: 18, hx: -12, tl: -8, mega: "fwd", plac: "plant", lt: "down" }], // крик в мегафон, подбородок вверх
+  [0.7, { ry: -56, hy: 24, hx: -2, tl: -2, mega: "side", plac: "up" }], // плакат снова вверх
+  [0.5, { ry: -10, hy: 6, hx: -4, tl: -3, mega: "out", plac: "plant", lt: "hip" }], // мегафон в сторону, рука на боку
+  [0.6, { ry: -62, hy: 28, hx: -2, tl: -4, mega: "down", plac: "plant", lt: "point" }], // палец
 ];
-type AirP = PPatch & { t: number; mega: Mega; plac: keyof typeof PLAC };
+type AirP = PPatch & { t: number; mega: Mega; plac: Plac };
 const AIR: AirP[] = [
   // выглядывает над кустом (лицом вправо-вперёд), затем смотрит в другую сторону
-  { t: 0.133, x: 8.62, z: 0.45, y: 0.52, ry: -50, tl: 14, llx: -34, lrx: -52, llk: 84, lrk: 66, hy: 22, hx: -4, mouth: 4, mega: "side", plac: "hi" },
-  { t: 0.267, x: 8.62, z: 0.45, y: 0.5, ry: -70, tl: 10, llx: -34, lrx: -52, llk: 84, lrk: 66, hy: -14, hx: 2, mouth: 4, mega: "side", plac: "hi" },
+  { t: 0.133, x: 8.62, z: 0.45, y: 0.52, ry: -50, tl: 14, llx: -34, lrx: -52, llk: 84, lrk: 66, hy: 22, hx: -4, mouth: 4, mega: "side", plac: "up" },
+  { t: 0.267, x: 8.62, z: 0.45, y: 0.5, ry: -70, tl: 10, llx: -34, lrx: -52, llk: 84, lrk: 66, hy: -14, hx: 2, mouth: 4, mega: "side", plac: "up" },
   // ПРИСЕД 0.4 с (0.4-0.8): сжимается в три жёстких приёма
-  { t: 0.4, x: 8.62, z: 0.5, y: 0.44, ry: -46, tl: 24, llx: -34, lrx: -50, llk: 90, lrk: 76, hy: 8, hx: 4, mega: "down", plac: "hi" },
-  { t: 0.533, x: 8.62, z: 0.5, y: 0.38, ry: -42, tl: 32, llx: -40, lrx: -56, llk: 102, lrk: 92, hy: 0, hx: 10, eyeL: 2, eyeR: 2, mega: "down", plac: "low" },
-  { t: 0.667, x: 8.62, z: 0.5, y: 0.33, ry: -38, tl: 38, llx: -44, lrx: -58, llk: 110, lrk: 100, hy: -4, hx: 14, eyeL: 2, eyeR: 2, mega: "down", plac: "low" },
+  { t: 0.4, x: 8.62, z: 0.5, y: 0.44, ry: -46, tl: 24, llx: -34, lrx: -50, llk: 90, lrk: 76, hy: 8, hx: 4, mega: "down", plac: "up" },
+  { t: 0.533, x: 8.62, z: 0.5, y: 0.38, ry: -42, tl: 32, llx: -40, lrx: -56, llk: 102, lrk: 92, hy: 0, hx: 10, eyeL: 2, eyeR: 2, mega: "down", plac: "up" },
+  { t: 0.667, x: 8.62, z: 0.5, y: 0.33, ry: -38, tl: 38, llx: -44, lrx: -58, llk: 110, lrk: 100, hy: -4, hx: 14, eyeL: 2, eyeR: 2, mega: "down", plac: "up" },
   // ВЫЛЕТ с разворотом на 360° (0.8-1.47): взлёт - полёт спиной - переворот - поза-акцент «герой» с холдом
-  { t: 0.8, x: 8.55, z: 0.55, y: 1.0, ry: -25, tl: 4, rz: 0, llx: 6, lrx: -4, llk: 8, lrk: 6, llz: 14, lrz: 14, hy: 0, hx: -6, mouth: 2, mega: "air", plac: "hi" },
-  { t: 0.933, x: 8.25, z: 0.62, y: 1.75, ry: 65, tl: 12, rz: -14, llx: 44, lrx: 26, llk: 96, lrk: 82, hy: -10, hx: 4, mouth: 2, mega: "fwd", plac: "mid" },
-  { t: 1.067, x: 7.9, z: 0.7, y: 2.3, ry: 160, tl: 20, rz: 14, llx: 56, lrx: 36, llk: 110, lrk: 100, hy: 12, hx: 6, mouth: 2, mega: "air", plac: "low" },
-  { t: 1.2, x: 7.6, z: 0.8, y: 2.15, ry: -42, tl: -8, rz: 8, llx: 30, lrx: -30, llk: 14, lrk: 14, llz: 46, lrz: 46, hy: 16, hx: -8, mouth: 2, mega: "fwd", plac: "hi" }, // АКЦЕНТ: растопырена, плакат вверх
-  { t: 1.333, x: 7.4, z: 0.85, y: 1.5, ry: -42, tl: -8, rz: 8, llx: 30, lrx: -30, llk: 14, lrk: 14, llz: 46, lrz: 46, hy: 16, hx: -8, mouth: 2, mega: "fwd", plac: "hi" }, // холд: падает той же позой
+  { t: 0.8, x: 8.55, z: 0.55, y: 1.0, ry: -25, tl: 4, rz: 0, llx: 6, lrx: -4, llk: 8, lrk: 6, llz: 14, lrz: 14, hy: 0, hx: -6, mouth: 2, mega: "air", plac: "up" },
+  { t: 0.933, x: 8.25, z: 0.62, y: 1.75, ry: 65, tl: 12, rz: -14, llx: 44, lrx: 26, llk: 96, lrk: 82, hy: -10, hx: 4, mouth: 2, mega: "fwd", plac: "up" },
+  { t: 1.067, x: 7.9, z: 0.7, y: 2.3, ry: 160, tl: 20, rz: 14, llx: 56, lrx: 36, llk: 110, lrk: 100, hy: 12, hx: 6, mouth: 2, mega: "air", plac: "up" },
+  { t: 1.2, x: 7.6, z: 0.8, y: 2.15, ry: -42, tl: -8, rz: 8, llx: 30, lrx: -30, llk: 14, lrk: 14, llz: 46, lrz: 46, hy: 16, hx: -8, mouth: 2, mega: "fwd", plac: "up" }, // АКЦЕНТ: растопырена, плакат вверх
+  { t: 1.333, x: 7.4, z: 0.85, y: 1.5, ry: -42, tl: -8, rz: 8, llx: 30, lrx: -30, llk: 14, lrk: 14, llz: 46, lrz: 46, hy: 16, hx: -8, mouth: 2, mega: "fwd", plac: "up" }, // холд: падает той же позой
 ];
 const shot09 = (f: number, sh: ShotT, v: Voices): { actors: Actor[]; leaves: number } => {
   const T = f / FPS;
@@ -297,20 +314,20 @@ const shot09 = (f: number, sh: ShotT, v: Voices): { actors: Actor[]; leaves: num
       x: CH_LAND.x, z: CH_LAND.z, ry, y: [0.45, 0.5, 0.56][st], tl: [16, 6, -3][st], hx: [10, 2, -3][st], hy: [18, 20, 22][st], llz: [28, 18, 14][st], lrz: [28, 18, 14][st],
       llk: [72, 30, 0][st], lrk: [62, 24, 0][st], llx: [28, 12, 4][st], lrx: [20, 8, -2][st], mouth: 0, eyeL: st === 0 ? 2 : 0, eyeR: st === 0 ? 2 : 0, brow: 0.6,
     });
-    pose = chloeHands(pose, (["air", "down", "side"] as Mega[])[st], (["hi", "std", "std"] as Array<keyof typeof PLAC>)[st]);
+    pose = chloeHands(pose, (["air", "down", "side"] as Mega[])[st], (["up", "up", "plant"] as Plac[])[st], undefined, "down", 1);
   } else {
     // сирена (до реплики) и речь: биты 0.4-0.67 с, корпус вертится из профиля в анфас
     const speakingNow = isSpeaking(sh);
     const loud = f < sh.vFrom;
     const { p, i } = beatAt(T - S09.siren, CH_SPEAK, 0);
-    const { mega = "side", plac = "std", ...patch } = p;
+    const { mega = "side", plac = "plant", lt, ...patch } = p;
     pose = CB("chloe", { x: CH_LAND.x, z: CH_LAND.z, y: 0.56, brow: 0.8, llz: 14, lrz: 14, ...patch, mouth: 0 });
-    pose = chloeHands(pose, mega, plac);
+    pose = chloeHands(pose, mega, plac, undefined, lt, 1);
     const env = v.env[2];
-    if (loud) pose = { ...pose, sir: 1 + cyc(T, 0.1333, 3), eyeL: 1, eyeR: 1, mouth: i % 2 ? 2 : 1 };
+    if (loud) pose = { ...pose, sir: 1 + cyc(T, 0.3, 3), eyeL: 1, eyeR: 1, mouth: i % 2 ? 2 : 1 };
     if (speakingNow) {
       pose = speak({ ...pose, eyeL: 0, eyeR: 0, brow: 1 }, sh, env);
-      if (pose.mouth === 2 && mega !== "down") pose = { ...pose, sir: 1 + cyc(T, 0.1333, 3) };
+      if (pose.mouth === 2 && mega !== "down") pose = { ...pose, sir: 1 + cyc(T, 0.3, 3) };
     } else if (RAW >= sh.vFrom + sh.vLen) pose = { ...pose, sir: 0, mouth: 0, eyeL: 0, eyeR: 0 };
   }
   return { actors: [{ kind: "chloe", pose }], leaves: Math.round((T - S09.jump) * 24) };
@@ -352,11 +369,16 @@ const gregBeat = (T: number, talking: boolean): GBeat => {
 const gregPose = (T: number, base: PPatch, sh: ShotT, env: number[] | undefined, talkWindow: boolean): PP => {
   const talkingWin = talkWindow && isSpeaking(sh);
   const { talk: _tk, dy = 0, ...patch } = gregBeat(T, talkingWin);
-  let gp = mixP({ scale: SC.greg, y: 0.43 * SC.greg, llz: 4, lrz: 4, arx: 30, are: 80, arz: 16, mouth: 0, ...base, ...patch });
-  gp = { ...gp, y: gp.y + dy };
+  const sc = base.scale ?? SC.greg;
+  let gp = mixP({ scale: sc, y: 0.43 * sc, llz: 4, lrz: 4, arx: 30, are: 80, arz: 16, mouth: 0, ...base, ...patch });
+  gp = { ...gp, y: gp.y + dy * (sc / SC.greg) };
   if (talkingWin) {
+    // говорит с отвращением: рот открывается только на слоги своей реплики (по огибающей wav), форма - скривлённая
     gp = speak(gp, sh, env);
-    if (!voiced(sh, env)) gp = { ...gp, mouth: 0 };
+    gp = { ...gp, mouth: !voiced(sh, env) ? 0 : gp.mouth === 2 ? 6 : 3, brow: -1 };
+  } else {
+    // молчит: рот закрыт или дугой вниз (отвращение), без открытого рта
+    gp = { ...gp, mouth: gp.mouth === 1 || gp.mouth === 6 ? 4 : gp.mouth, brow: gp.brow > 0 ? -0.4 : gp.brow };
   }
   return gp;
 };
@@ -391,13 +413,13 @@ const marcusReact = (T: number, x: number, z: number, ry0: number, towards: numb
   const { p, i } = beatAt(T, MARCUS_REACT, off);
   const { ryd = 0, ...patch } = p;
   const hy = (patch.hy ?? 0) + (i % 2 ? towards : towards * 0.3);
-  return { ...mixP({ scale: MS, x, z, y: 0.43 * MS, ry: ry0 + ryd, brow: 1, llz: 4, lrz: 4, ...patch, hy }), tear: 1 + cyc(T, 0.267, 3) };
+  return { ...mixP({ scale: MS, x, z, y: 0.43 * MS, ry: ry0 + ryd, brow: 1, llz: 4, lrz: 4, ...patch, hy }), tear: 1 + cyc(T, 0.8, 3) };
 };
 const shot10 = (f: number, sh: ShotT, v: Voices): Actor[] => {
   const T = f / FPS;
-  const gp = gregPose(T, { x: GREG_X, z: 0.4, lx: 1.2, ly: 0, eyeL: 2, eyeR: 2, brow: -1 }, sh, v.env[3], true);
-  const tp = tonyReact(T, 0.7, 1.0, -34);
-  const mp = marcusReact(T, 2.85, 0.9, -26, 10, 0.4);
+  const gp = gregPose(T, { scale: 1.7, x: -1.6, z: 1.0, lx: 1.2, ly: 0, eyeL: 2, eyeR: 2, brow: -1 }, sh, v.env[3], true);
+  const tp = tonyReact(T, 1.45, 0.2, -34);
+  const mp = marcusReact(T, 3.35, 0.2, -26, 10, 0.4);
   return [
     { kind: "greg", pose: gp },
     { kind: "marcus", pose: mp },
@@ -408,20 +430,20 @@ const shot10 = (f: number, sh: ShotT, v: Voices): Actor[] => {
 // =====================================================================================
 // ПЛАН 11: Хлоя (справа) тычет в Грега и жестом на Тони и Маркуса: корпус на 90° (профиль) - анфас - снова профиль; Грег поворачивается к Хлое
 // =====================================================================================
-type CSec = { t: number; ry: number; hy: number; mega: Mega; plac: keyof typeof PLAC; tl?: number; aim?: V3; my?: number; mp?: number; brow?: number };
+type CSec = { t: number; ry: number; hy: number; mega: Mega; lt: keyof typeof LT; tl?: number; aim?: V3; my?: number; brow?: number };
 const C11: CSec[] = [
-  { t: -9, ry: -34, hy: 12, mega: "down", plac: "std", brow: -0.8 }, // обиженно опустила мегафон
-  { t: 0.0, ry: -88, hy: 16, mega: "fwd", plac: "std", my: -18, tl: -4, brow: -1 }, // 90°: тычет мегафоном в Грега
-  { t: 0.9, ry: 8, hy: -4, mega: "down", plac: "hi", tl: -6, brow: -1 }, // анфас: возмущённо, плакат вверх
-  { t: 1.8, ry: -86, hy: 14, mega: "fwd", plac: "std", my: -18, tl: -6, brow: -1 }, // опять на Грега
-  { t: 2.7, ry: 22, hy: -8, mega: "down", plac: "mid", tl: -4, brow: 0 },
-  { t: 3.6, ry: -84, hy: 18, mega: "fwd", plac: "low", my: -18, tl: -8, brow: -1 }, // Грег в третий раз
-  { t: 4.5, ry: 2, hy: -2, mega: "up", plac: "hi", tl: -4, brow: -0.6 },
-  { t: 5.4, ry: -90, hy: 26, mega: "fwd", plac: "std", aim: [-0.9, 0.58, 0.45], my: -35, tl: -6, brow: -1 }, // 90°: мегафон на Маркуса
-  { t: 6.3, ry: -86, hy: 30, mega: "fwd", plac: "hi", aim: [-0.95, 0.3, 0.42], my: -35, tl: -2, brow: -1 }, // на Тони, плакат вверх
-  { t: 7.2, ry: 12, hy: -6, mega: "down", plac: "mid", tl: -4, brow: 0.4 },
-  { t: 8.1, ry: -90, hy: 30, mega: "fwd", plac: "low", aim: [-0.9, 0.5, 0.45], my: -35, tl: -8, brow: -1 }, // снова на них
-  { t: 9.0, ry: -4, hy: 8, mega: "down", plac: "std", tl: 0, brow: 0.6 },
+  { t: -9, ry: -34, hy: 12, mega: "down", lt: "hip", brow: -0.8 }, // обиженно опустила мегафон, рука на боку
+  { t: 0.0, ry: -88, hy: 16, mega: "fwd", lt: "point", my: -18, tl: -4, brow: -1 }, // 90°: тычет мегафоном в Грега, другая рука тоже указывает
+  { t: 0.9, ry: 8, hy: -4, mega: "out", lt: "spread", tl: -6, brow: -1 }, // анфас: возмущённо, руки врозь
+  { t: 1.8, ry: -86, hy: 14, mega: "fwd", lt: "hip", my: -18, tl: -6, brow: -1 }, // опять на Грега
+  { t: 2.7, ry: 22, hy: -8, mega: "down", lt: "spread", tl: -4, brow: 0 },
+  { t: 3.6, ry: -84, hy: 18, mega: "fwd", lt: "point", my: -18, tl: -8, brow: -1 }, // Грег в третий раз
+  { t: 4.5, ry: 2, hy: -2, mega: "up", lt: "hip", tl: -4, brow: -0.6 },
+  { t: 5.4, ry: -90, hy: 26, mega: "fwd", lt: "point", aim: [-0.9, 0.58, 0.45], my: -35, tl: -6, brow: -1 }, // 90°: мегафон на Маркуса
+  { t: 6.3, ry: -86, hy: 30, mega: "fwd", lt: "hip", aim: [-0.95, 0.3, 0.42], my: -35, tl: -2, brow: -1 }, // на Тони
+  { t: 7.2, ry: 12, hy: -6, mega: "out", lt: "spread", tl: -4, brow: 0.4 },
+  { t: 8.1, ry: -90, hy: 30, mega: "fwd", lt: "point", aim: [-0.9, 0.5, 0.45], my: -35, tl: -8, brow: -1 }, // снова на них
+  { t: 9.0, ry: -4, hy: 8, mega: "down", lt: "hip", tl: 0, brow: 0.6 },
 ];
 const shot11 = (f: number, sh: ShotT, v: Voices): Actor[] => {
   const T = f / FPS;
@@ -432,18 +454,18 @@ const shot11 = (f: number, sh: ShotT, v: Voices): Actor[] => {
   // ----- Хлоя: секция по времени реплики -----
   let sec = C11[0];
   for (const c of C11) if (vs >= c.t - 1e-6) sec = c;
-  if (after) sec = { t: 0, ry: -30, hy: 14, mega: "down", plac: "std", brow: 0.2 };
-  if (T < 0.4) sec = { t: 0, ry: -36, hy: 10, mega: T < 0.133 ? "up" : T < 0.267 ? "fwd" : "down", plac: "std", brow: -0.8 };
-  let cp = CB("chloe", { x: 7.5, z: 1.15, ry: sec.ry, tl: sec.tl ?? -3, hx: -4, hy: sec.hy, llz: 12, lrz: 12, mouth: 0, eyeL: 0, eyeR: 0, brow: sec.brow ?? -0.8 });
-  cp = chloeHands(cp, sec.mega, sec.plac, sec.aim);
+  if (after) sec = { t: 0, ry: -30, hy: 14, mega: "down", lt: "down", brow: 0.2 };
+  if (T < 0.4) sec = { t: 0, ry: -36, hy: 10, mega: T < 0.133 ? "up" : T < 0.267 ? "fwd" : "down", lt: "hip", brow: -0.8 };
+  let cp = CB("chloe", { x: 7.7, z: 1.0, ry: sec.ry, tl: sec.tl ?? -3, hx: -4, hy: sec.hy, llz: 12, lrz: 12, mouth: 0, eyeL: 0, eyeR: 0, brow: sec.brow ?? -0.8 });
+  cp = chloeHands(cp, sec.mega, "plant", sec.aim, sec.lt, 2);
   if (sec.my !== undefined) cp = { ...cp, my: sec.my };
   if (sp) cp = speak({ ...cp, eyeL: 0, eyeR: 0 }, sh, env);
   else cp = { ...cp, mouth: 0 };
 
   // ----- Грег: живая реакция, поворачивается корпусом к Хлое (справа) и обратно -----
-  const gp = gregPose(T, { x: 5.0, z: 0.8, lx: 1.0, ly: 0, eyeL: 2, eyeR: 2, brow: -1 }, sh, undefined, false);
-  const tp = tonyReact(T + 0.3, 2.2, 1.0, 38, 1.2);
-  const mk = marcusReact(T + 0.1, 3.4, 0.75, 30, -16, 0.8);
+  const gp = gregPose(T, { scale: 1.65, x: 5.25, z: 1.0, lx: 1.2, ly: 0, eyeL: 2, eyeR: 2, brow: -1 }, sh, undefined, false);
+  const tp = tonyReact(T + 0.3, 1.6, 0.3, 38, 1.2);
+  const mk = marcusReact(T + 0.1, 3.2, 0.2, 30, -16, 0.8);
   return [
     { kind: "marcus", pose: mk },
     { kind: "tony", pose: tp },
@@ -477,15 +499,15 @@ const shot12 = (f: number, sh: ShotT, v: Voices): Actor[] => {
   const mkChloe = (o: PPatch, cow: boolean): PP => {
     let cp = CB("chloe", {
       ry: -62, rz: cow ? -5 : 0, tl: cow ? -1 : 0, hx: cow ? -2 : -4, hy: cow ? 16 : 8, hdy: cow ? -0.1 : 0, y: 0.43 * SC.chloe - (cow ? 0.05 : 0), llz: 12, lrz: 12, brow: 1,
-      eyeL: cow ? (blink ? 3 : 1) : 0, eyeR: cow ? (blink ? 3 : 1) : 0, mouth: cow ? (alt(T, 0.267) ? 6 : 4) : 0, ...o,
+      eyeL: cow ? (blink ? 3 : 1) : 0, eyeR: cow ? (blink ? 3 : 1) : 0, mouth: cow ? (cyc(T, 0.8, 2) ? 6 : 4) : 0, ...o,
     });
-    if (cow) cp = { ...cp, tear: 1 + cyc(T, 0.4, 3), sw: 0 };
-    return chloeHands(cp, cow ? "side" : "down", "cow");
+    if (cow) cp = { ...cp, tear: 1 + cyc(T, 0.8, 3), sw: 0 };
+    return chloeHands(cp, cow ? "side" : "down", "plant", undefined, cow ? "hip" : "down", 2);
   };
   const mkMarcus = (o: PPatch, off = 0): PP => {
     const { p, i } = beatAt(T, MARCUS_CRY, off);
     const { ryd = 0, ...patch } = p;
-    const base = { ...mixP({ scale: SC.marcus, z: 0.45, y: 0.43 * SC.marcus, brow: 1, llz: 4, lrz: 4, ...o, ...patch, ry: (o.ry ?? 0) + ryd }), tear: T > 1.5 ? 1 + cyc(T, 0.267, 3) : 0 };
+    const base = { ...mixP({ scale: SC.marcus, z: 0.45, y: 0.43 * SC.marcus, brow: 1, llz: 4, lrz: 4, ...o, ...patch, ry: (o.ry ?? 0) + ryd }), tear: T > 1.5 ? 1 + cyc(T, 0.8, 3) : 0 };
     return i % 2 ? { ...base, hy: (o.hy ?? 0) + 14 } : base;
   };
 
@@ -497,7 +519,7 @@ const shot12 = (f: number, sh: ShotT, v: Voices): Actor[] => {
       x += 0.5 * (T >= s + 0.08 ? 1 : 0);
       if (T >= s && T < s + 0.5) stepPh = i;
     });
-    const ph = stepPh >= 0 ? Math.floor((T - STEP_AT[stepPh]) / 0.1333) % 2 : 0;
+    const ph = stepPh >= 0 ? (stepPh + 1) % 2 : 0; // одна жёсткая поза на шаг, ноги чередуются от шага к шагу
     const poses: K[] = [{ t: 0, ry: 84, hr: 2, hl: 2, alx: 40, ale: 100, alz: 12, arx: 34, are: 104, arz: 12, hy: -12 }, { t: 1.667, ry: 80, hy: -10, hx: -10, tl: 6 }, { t: 2.9, ry: 72, hy: -16, tl: 8, alx: 70, arx: 60, ale: 90, are: 96 }];
     let tp = mkTony({ x, ...seg(poses, T) });
     if (stepPh >= 0) tp = { ...tp, llx: ph ? 34 : -22, lrx: ph ? -22 : 34, llk: ph ? 0 : 30, lrk: ph ? 30 : 0, y: tp.y + (ph ? 0.05 : 0), tl: tp.tl + 4 };
@@ -511,12 +533,12 @@ const shot12 = (f: number, sh: ShotT, v: Voices): Actor[] => {
     // КРУПНЫЙ ПЛАН ХЛОИ: 3 акцентные позы с паузами: (1) отступает назад, (2) вжимает голову в плечи, (3) осторожно выглядывает
     const k = T - S12.b;
     const ps: K[] = [
-      { t: 0, ry: -30, hy: 8 },
-      { t: 0.4, ry: -62, hy: 24, hx: -10, rz: -10, tl: -6, hdy: 0, x: 8.05, y: 0.43 * SC.chloe + 0.03 }, // отступила: корпус отвёрнут, подбородок вверх
-      { t: 0.933, ry: -24, hy: 4, hx: 12, rz: 0, tl: 6, hdy: -0.18, x: 7.8 }, // голова втянута в плечи
-      { t: 1.733, ry: -80, hy: 10, hx: 14, tl: 8, hdy: -0.2 }, // пауза: сжалась ещё, повернулась боком
-      { t: 2.4, ry: -34, hy: 26, hx: -6, tl: -2, hdy: -0.06, rz: -3, x: 7.88 }, // выглядывает
-      { t: 2.933, ry: -66, hy: 12, hx: 4, tl: 2, hdy: -0.1, x: 7.7 },
+      { t: 0, ry: -24, hy: 8 },
+      { t: 0.4, ry: -44, hy: 20, hx: -8, rz: -8, tl: -6, hdy: 0, x: 8.05, y: 0.43 * SC.chloe + 0.03 }, // отступила: подбородок вверх
+      { t: 0.933, ry: -18, hy: 4, hx: 8, rz: 0, tl: 6, hdy: -0.18, x: 7.8 }, // голова втянута в плечи
+      { t: 1.733, ry: -46, hy: 10, hx: 10, tl: 8, hdy: -0.2 }, // пауза: сжалась ещё
+      { t: 2.4, ry: -26, hy: 24, hx: -4, tl: -2, hdy: -0.06, rz: -3, x: 7.88 }, // выглядывает
+      { t: 2.933, ry: -42, hy: 12, hx: 4, tl: 2, hdy: -0.1, x: 7.7 },
     ];
     const cp = mkChloe({ x: 7.7, z: 1.8, ...seg(ps, k) }, true);
     const shut = k >= 0.933 && k < 1.2; // зажмуривается, остальное время глаза - шары с зрачками
@@ -547,21 +569,21 @@ const shot12 = (f: number, sh: ShotT, v: Voices): Actor[] => {
     { t: stepK[0] + 0.12, ry: 46, hy: -14 }, // шаг 1: корпус довернул
     { t: stepK[1] + 0.12, ry: 50, arx: 6, arz: 48, are: 66, alx: 6, alz: 48, ale: 66, atl: 0, atr: 0, hl: 2, hr: 2, rz: -2, tl: -4, hy: -12, hx: -8 }, // шаг 2: кулаки в боки
     { t: stepK[2] + 0.12, ry: 52, hy: -10, hx: -6, tl: 2 }, // шаг 3: нависает, взгляд сверху вниз на Хлою
-    { t: stepK[2] + 0.55, ry: 34, ...SIDE_L, rz: -2, tl: -6, hy: 22, hx: -10 }, // БОКОВОЙ БИЦЕПС в 3/4: рука согнута в локте, бугор виден сбоку (пауза)
-    { t: stepK[2] + 1.75, ry: 34, ...SIDE_L, ale: 108, hy: 26, hx: -16, tl: -8 }, // сжал сильнее
+    { t: stepK[2] + 0.55, ry: 62, ...DBL, rz: -2, tl: -6, hy: 22, hx: -10 }, // ДВОЙНОЙ БИЦЕПС СБОКУ (пик): оба бугра видны, холд 1.2 с
+    { t: stepK[2] + 1.75, ry: 62, ...DBL, ale: 112, are: 112, hy: 26, hx: -16, tl: -8 }, // сжал сильнее: холд до конца
   ];
   let tp = mkTony({ x: 5.4 + steps * 0.35, z: 1.4, ...seg(ps, k) });
   const stepNow = stepK.findIndex((s) => k >= s && k < s + 0.42);
   if (stepNow >= 0) {
-    const ph = Math.floor((k - stepK[stepNow]) / 0.1333) % 2;
+    const ph = (stepNow + 1) % 2;
     tp = { ...tp, llx: ph ? -22 : 34, lrx: ph ? 34 : -22, llk: ph ? 30 : 0, lrk: ph ? 0 : 30, y: tp.y + 0.04, tl: tp.tl + 4 };
   }
   const stepAt = [0.4, 1.2, 2.0];
   const back = stepAt.filter((s) => k >= s + 0.08).length * 0.2;
-  const cwalk = stepAt.some((s) => k >= s && k < s + 0.13);
-  const cp0 = mkChloe({ x: 8.45 + back, z: 1.5, ry: -52, hy: 12 }, true);
+  const cwalk = stepAt.some((s) => k >= s && k < s + 0.3);
+  const cp0 = mkChloe({ x: 8.45 + back, z: 1.5, ry: -44, hy: 10, tl: 8, hdy: -0.15, hx: 10, llk: 22, lrk: 22 }, true);
   const cp = { ...cp0, llx: cwalk ? 22 : 0, lrx: cwalk ? -14 : 0, llk: cwalk ? 24 : 0, y: cp0.y + (cwalk ? 0.04 : 0) };
-  const mp = mkMarcus({ x: 4.85, z: 1.9, ry: 55, hy: -10 });
+  const mp = mkMarcus({ x: 3.7, z: 1.9, ry: 55, hy: -10 });
   return [{ kind: "marcus", pose: mp }, { kind: "chloe", pose: cp }, { kind: "tony", pose: tp }];
 };
 
@@ -575,30 +597,31 @@ const camTo = (x: number, y: number, z: number, tx: number, ty: number, tz = 0.6
 const CAMS = {
   c07: camAt(5.1, 7.0),
   c09: camAt(7.9, 7.9, 1.6),
-  c10: camAt(-0.1, 6.6),
-  c11: camAt(5.7, 8.6),
-  c12a: camAt(6.1, 8.2),
+  c10: camAt(0.5, 6.8),
+  c11: camAt(5.4, 8.4),
+  c12a: camAt(6.5, 8.2),
   c12a2: camTo(6.9, 1.3, 8.4, 6.1, 1.8, 1.0),
   c12b: { ...camAt(7.85, 6.6, 1.4), ty: 1.95, tz: 0 },
   c12c: camAt(6.3, 6.3, 0.6, 0.22),
-  c12d: camTo(7.6, 1.1, 8.0, 7.4, 1.95, 1.2),
+  c12d: camTo(7.2, 1.1, 8.0, 7.0, 1.95, 1.2),
 };
-/** Объятие (план 08): шесть фиксированных ракурсов, переключение жёсткой склейкой (без облёта и интерполяции) */
+/** Объятие (план 08): пять фиксированных ракурсов (жёсткие склейки, без облёта и интерполяции); пара в 3/4, лица видны с каждого */
 const CAMS08 = [
-  camTo(3.0, 1.45, 7.4, 3.0, 1.9),
-  camTo(1.5, 1.35, 5.6, 3.5, 1.75),
-  camTo(5.5, 1.35, 5.6, 3.4, 1.75),
-  camTo(3.5, 1.05, 4.5, 3.4, 1.75),
-  camTo(3.4, 1.6, 6.8, 3.4, 1.9),
-  camTo(2.1, 1.5, 6.0, 3.5, 1.85),
+  camTo(3.1, 1.5, 7.6, 3.1, 1.95), // общий: Маркус вбегает
+  camTo(3.3, 1.55, 6.4, 3.3, 2.0), // средний, спереди
+  camTo(2.0, 1.5, 6.6, 3.5, 2.0), // слева
+  camTo(4.7, 1.5, 6.6, 3.2, 2.0), // справа
+  camTo(3.3, 1.0, 7.4, 3.3, 2.05), // общий, снизу
 ];
 const cam08 = (T: number): Cam => {
   let i = 0;
   CUTS08.forEach((c, j) => {
     if (T >= c - 1e-6) i = j + 1;
   });
-  return { ...CAMS08[i], shake: 0 };
+  return { ...CAMS08[Math.min(i, CAMS08.length - 1)], shake: 0 };
 };
+/** Высота вывески так, чтобы она целиком попадала в верх кадра (над головами) для данной камеры */
+const signFor = (c: { y: number; z: number; ty: number }) => c.ty + 0.74 * 0.364 * (c.z + 2.04);
 /** x кофейни (VEGAN COFFEE) в мире = 0.2; фон сдвигаем так, чтобы она была в центре кадра */
 const bgFor = (camX: number) => camX - 0.2;
 const jit = (f: number, seed: number) => {
@@ -621,6 +644,8 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
   let sx = 0;
   let sy = 0;
   let bgx = bgFor(CAMS.c07.x);
+  let signY: number | undefined;
+  let bushX: number | undefined;
   let bin: number | null = null;
   switch (sh.n) {
     case 7: {
@@ -633,13 +658,9 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
     case 8: {
       actors = shot08(f, sh, v);
       cam = cam08(T);
-      bgx = bgFor(cam.x);
-      bin = 6.9; // урна сдвинута вправо: не закрывает пару ни с одного ракурса
-      if (T >= 0.667 && T < 0.933) {
-        const s = camShake(f, 0.05, 4);
-        sx = s.x;
-        sy = s.y;
-      }
+      bgx = bgFor(cam.tx);
+      signY = signFor(cam);
+      bin = 8.2; // урна сдвинута вправо: не закрывает пару ни с одного ракурса
       break;
     }
     case 9: {
@@ -650,18 +671,11 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
       bin = 3.4;
       // жёсткая склейка на кусты (камера выше и дальше - всё тело в прыжке видно); на приземлении - жёсткая склейка поближе
       const land = T >= S09.land;
-      cam = land ? { ...camAt(7.7, 7.8, 1.4), shake: 0, ty: 1.85 } : { ...CAMS.c09, shake: 0, ty: 2.2 };
+      if (T >= S09.land) bushX = 10.3;
+      const talk = T >= S09.siren; // крупнее: лицо Хлои, жёсткая склейка
+      cam = talk ? { ...camTo(7.5, 1.35, 5.4, 7.5, 1.3), shake: 0 } : land ? { ...camAt(7.7, 7.8, 1.4), shake: 0, ty: 1.85 } : { ...CAMS.c09, shake: 0, ty: 2.2 };
+      if (talk) signY = signFor(cam);
       bushShake = T >= S09.rustle && T < S09.jump + 0.133 ? 0.07 : 0;
-      if (T >= S09.land && T < S09.land + 0.4) {
-        const s = camShake(f, 0.07 * (1 - (T - S09.land) / 0.4), 5);
-        sx = s.x;
-        sy = s.y;
-      }
-      if (T >= S09.siren && f < sh.vFrom) {
-        const s = camShake(f, 0.035, 9);
-        sx = s.x;
-        sy = s.y;
-      }
       if (T >= S09.land && T < S09.land + 0.58) dust.push({ x: CH_LAND.x, z: CH_LAND.z + 0.1, k: Math.round((T - S09.land) * 24) });
       if (T >= S09.jump && T < S09.jump + 0.58) dust.push({ x: BUSH.x - 0.5, z: BUSH.z + 0.55, k: Math.round((T - S09.jump) * 24) });
       break;
@@ -673,26 +687,21 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
       break;
     case 11:
       actors = shot11(f, sh, v);
+      bushX = 11.0;
       cam = { ...CAMS.c11, shake: 0 };
       bgx = bgFor(CAMS.c11.x);
       break;
     default: {
       actors = shot12(f, sh, v);
+      bushX = 12.6;
       const sub = sub12(T);
       const c = sub === "a" ? CAMS.c12a : sub === "a2" ? CAMS.c12a2 : sub === "b" ? CAMS.c12b : sub === "c" ? CAMS.c12c : CAMS.c12d;
       cam = { ...c, shake: 0 };
       bgx = bgFor(c.x);
-      STEP_AT.forEach((s) => {
-        if (T >= s + 0.25 && T < s + 0.65) {
-          const k = camShake(f, 0.06 * (1 - (T - s - 0.25) / 0.4), 12);
-          sx = k.x;
-          sy = k.y;
-        }
-      });
     }
   }
   cam = { ...cam, x: cam.x + sx, y: cam.y + sy, tx: cam.tx + sx * 0.5, ty: cam.ty + sy * 0.5 };
   dust = dust.slice();
-  return { actors, cam, bgx, bin, bushShake, leaves, dust, tl: tlCount };
+  return { actors, cam, bgx, bin, bushShake, leaves, dust, tl: tlCount, signY, bushX };
 };
 void clamp;

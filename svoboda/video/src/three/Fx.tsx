@@ -67,8 +67,8 @@ export const Flame: React.FC<{ position: [number, number, number]; scale?: numbe
   const i = extrude(alt ? "flBi" : "flAi", (alt ? flameB() : flameA()).map(([x, y]) => [x * 0.55, y * 0.6] as [number, number]), 0.12, 0.02);
   return (
     <group position={position} scale={scale}>
-      <Part geo={o.geo} hull={o.hull} color="#ff8a1c" px={3.4} />
-      <Part geo={i.geo} hull={i.hull} color="#ffe04a" px={0} position={[0, 0.02, 0.08]} />
+      <Part flat geo={o.geo} hull={o.hull} color="#ff8a1c" px={3.4} />
+      <Part flat geo={i.geo} hull={i.hull} color="#ffe04a" px={0} position={[0, 0.02, 0.08]} />
     </group>
   );
 };

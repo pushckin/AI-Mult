@@ -44,13 +44,22 @@ const fitText = (g: CanvasRenderingContext2D, text: string, cx: number, cy: numb
   g.fillText(text, cx, cy);
 };
 const hoodTex = () =>
-  textTex("hood_npc3", 512, 250, (g) => {
-    g.clearRect(0, 0, 512, 250);
+  textTex("hood_npc4", 512, 320, (g) => {
+    g.clearRect(0, 0, 512, 320);
     g.fillStyle = COL.chloe.text;
     g.textAlign = "center";
     g.textBaseline = "middle";
-    fitText(g, "NPC LIVES", 256, 66, 500, 130);
-    fitText(g, "MATTER", 256, 184, 500, 150);
+    // две строки, обе на всю ширину, вытянуты по вертикали (буквы крупные и высокие)
+    g.save();
+    g.translate(0, 80);
+    g.scale(1, 1.6);
+    fitText(g, "NPC LIVES", 256, 0, 506, 150);
+    g.restore();
+    g.save();
+    g.translate(0, 235);
+    g.scale(1, 1.6);
+    fitText(g, "MATTER", 256, 0, 506, 150);
+    g.restore();
   });
 const placardTex = () =>
   textTex("placard_npc", 512, 384, (g) => {
@@ -114,7 +123,7 @@ interface ArmSpec {
 }
 /** Кисть: коробка со скруглением + большой палец; 1 - с указательным, 2 - кулак (костяшки) */
 const Hand: React.FC<{ s: ArmSpec; kind: number; side: 1 | -1 }> = ({ s, kind, side }) => {
-  const k = s.hand * (kind === 2 ? 1.12 : 1);
+  const k = s.hand * (kind === 2 ? 1.06 : 1);
   return (
     <group position={[0, -0.27 * (s.len ?? 1), 0]}>
       <Part geo={rbox(0.19 * k, 0.2 * k, 0.15 * k, 0.07 * k)} color={s.skin} px={3} position={[0, -0.03, 0]} />
@@ -129,7 +138,7 @@ const D = Math.PI / 180;
 const Arm2: React.FC<{ side: 1 | -1; swing: number; abd: number; elbow: number; twist?: number; spec: ArmSpec; hand: number; held?: React.ReactNode; heldRot?: number; heldOri?: [number, number, number]; heldY?: number; shrug?: number }> = ({ side, swing, abd, elbow, twist = 0, spec: s, hand, held, heldRot = 0, heldOri, heldY = 0, shrug = 0 }) => {
   const len = s.len ?? 1;
   const flex = hand === 2 && elbow > 50 && s.bicep ? 1 : 0;
-  const bk = (s.bicep ?? 0) * (flex ? 2.0 : 1);
+  const bk = (s.bicep ?? 0) * (flex ? 1.4 : 1);
   let heldQ: THREE.Quaternion | undefined;
   if (held && heldOri) {
     const rArm = new THREE.Quaternion().setFromEuler(new THREE.Euler(-swing * D, 0, side * abd * D, "XYZ")).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-elbow * D, 0, 0)));
@@ -439,7 +448,7 @@ const TonyBuild: Build = (() => {
     pelvisCol: c.shorts,
     torso: [1.12, 0.6, 0.58],
     torsoCol: c.tank,
-    arm: { sx: 0.5, up: 2.15, fo: 1.8, hand: 1.55, upCol: c.skin, foCol: c.skin, bicep: 1.5, delt: c.skin, skin: c.skin, len: 1.4 },
+    arm: { sx: 0.5, up: 1.85, fo: 1.45, hand: 1.0, upCol: c.skin, foCol: c.skin, bicep: 1.0, delt: c.skin, skin: c.skin, len: 1.4 },
     leg: {
       hipX: 0.21, th: 1.55, ca: 1.35, thCol: c.shorts, caCol: c.skin, sock: c.sock,
       shoe: (
@@ -565,7 +574,7 @@ const ChloeTorso: React.FC<{ p: PP }> = () => {
   return (
     <>
       <Part geo={rbox(w + 0.04, 0.1, d + 0.04, 0.04)} color={c.hoodDark} px={2.8} position={[0, 0.04, 0]} />
-      <TexPlane tex={hoodTex()} w={0.8} h={0.39} position={[0, 0.25, front + 0.012]} cutout />
+      <TexPlane tex={hoodTex()} w={0.82} h={0.5} position={[0, 0.215, front + 0.012]} cutout />
       {badges.map(([x, y, r, col], i) => (
         <Dot key={i} w={w} d={d} x={x} y={y} r={r} color={col} ink lift={0.01} />
       ))}
@@ -583,12 +592,18 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
   // предметы в руках: Хлоя всегда держит мегафон правой (ручка в кулаке) и плакат левой; ориентацию задают hp (тангаж, вниз +), my (рыскание), cup (крен плаката)
   const heldR = kind === "tony" ? (p.hp === 1 ? <Shades /> : null) : kind === "chloe" ? <Megaphone sir={sir} /> : null;
   const heldOriR: [number, number, number] | undefined = kind === "chloe" ? [p.hp, p.my, 0] : undefined;
-  const heldL = kind === "chloe" ? <Placard /> : null;
+  const heldL = kind === "chloe" && p.pl === 0 ? <Placard /> : null;
   const heldOriL: [number, number, number] | undefined = kind === "chloe" ? [0, p.py, p.cup] : undefined;
   const shrug = kind === "chloe" && p.hdy < -0.1 ? -p.hdy * 0.5 : 0;
   return (
     <>
       {shadow && <Shadow position={[p.x, groundY + 0.02, p.z]} w={(kind === "tony" ? 0.8 : kind === "chloe" ? 0.6 : 0.46) * p.scale} d={0.34 * p.scale} />}
+      {kind === "chloe" && p.pl > 0 && (
+        // плакат воткнут в землю рядом (не закрывает ни лицо, ни худи)
+        <group position={[p.x + (p.pl === 1 ? -1.0 : 1.0) * p.scale, groundY + 0.3 * p.scale, p.z - 0.25]} rotation={[0, p.pl === 1 ? 0.25 : -0.25, p.pl === 1 ? 0.06 : -0.06]} scale={p.scale}>
+          <Placard />
+        </group>
+      )}
       <group position={[p.x, p.y, p.z]} scale={p.scale}>
         <group rotation={[0, 0, p.rz * D2R]}>
           <group rotation={[0, p.ry * D2R, 0]}>

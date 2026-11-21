@@ -15,6 +15,23 @@ import { Flame, SmokeColumn, GroundDust, Chunk } from "./three/Fx";
 import { frameAt, BIN, BUSH, Frame } from "./three/anim2";
 import { hash } from "./three/util";
 
+/** Постеризация кадра: каждый канал схлопывается в N плоских ступеней (никаких плавных градиентов, бликов, мягких переходов) */
+const POSTER_LEVELS = 6;
+const posterTable = Array.from({ length: POSTER_LEVELS }, (_, i) => (i / (POSTER_LEVELS - 1)).toFixed(4)).join(" ");
+const Poster: React.FC = () => (
+  <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
+    <defs>
+      <filter id="poster" colorInterpolationFilters="sRGB" x="0" y="0" width="100%" height="100%">
+        <feComponentTransfer>
+          <feFuncR type="discrete" tableValues={posterTable} />
+          <feFuncG type="discrete" tableValues={posterTable} />
+          <feFuncB type="discrete" tableValues={posterTable} />
+        </feComponentTransfer>
+      </filter>
+    </defs>
+  </svg>
+);
+
 export type Scene2Props = { audio: AudioAvail; voices: Array<VoiceInfo | null> };
 
 const CameraRig: React.FC<{ f: Frame }> = ({ f }) => {
@@ -49,12 +66,12 @@ const BurnBin: React.FC<{ frame: number; x: number }> = ({ frame, x }) => (
 const BUSH_BALLS: Array<[number, number, number, number, string]> = [
   [-0.6, 0.85, 0.46, 0.35, "#2fbf4e"], [0.0, 0.95, 0.5, 0.4, "#2fbf4e"], [0.6, 0.85, 0.46, 0.3, "#2fbf4e"], [-0.25, 0.72, 0.42, 0.75, "#2fbf4e"], [0.3, 0.7, 0.42, 0.7, "#2fbf4e"],
 ];
-const Bush: React.FC<{ shake: number; frame: number }> = ({ shake, frame }) => {
-  const n = Math.floor(frame / 2);
+const Bush: React.FC<{ shake: number; frame: number; x: number }> = ({ shake, frame, x }) => {
+  const n = Math.floor(frame / 6); // дрожит рывками раз в 0.2 с
   const ox = shake ? (hash(n, 3) * 2 - 1) * shake : 0;
   const oy = shake ? (hash(n, 8) * 2 - 1) * shake * 0.8 : 0;
   return (
-    <group position={[BUSH.x, 0, BUSH.z]}>
+    <group position={[x, 0, BUSH.z]}>
       <Part geo={rbox(1.9, 0.5, 0.8, 0.06)} color="#7a5a8a" px={3.4} position={[0, 0.25, 0]} />
       <Part geo={rbox(2.0, 0.08, 0.86, 0.03)} color="#5e426e" px={3} position={[0, 0.52, 0]} />
       <Part geo={rbox(1.98, 0.08, 0.84, 0.03)} color="#4d3560" px={2.6} position={[0, 0.04, 0]} />
@@ -95,10 +112,10 @@ const World: React.FC<{ tl: S.Timeline; voices: Array<VoiceInfo | null> }> = ({ 
       <color attach="background" args={[PAL_COLD.sky]} />
       <CameraRig f={f} />
       <group position={[f.bgx, 0, 0]}>
-        <Street pal={PAL_COLD} lampOn time={frame} calm simple flat signs={[3]} signLift={1.35} />
+        <Street pal={PAL_COLD} lampOn time={frame} calm simple flat signs={[3]} signLift={1.35} signY={f.signY} />
       </group>
       {f.bin !== null && <BurnBin frame={tick} x={f.bin} />}
-      <Bush shake={f.bushShake} frame={frame} />
+      <Bush shake={f.bushShake} frame={frame} x={f.bushX ?? BUSH.x} />
       <Leaves k={f.leaves} />
       {f.dust.map((d, i) => (
         <GroundDust key={i} at={[d.x, 0, d.z]} k={d.k} r={1.1} />
@@ -118,9 +135,12 @@ export const Scene2: React.FC<Scene2Props> = ({ audio, voices }) => {
   const cues = useMemo(() => S.buildCues(tl), [tl]);
   return (
     <AbsoluteFill style={{ backgroundColor: "#0e2a66" }}>
-      <ThreeCanvas width={S.WIDTH} height={S.HEIGHT} flat camera={{ fov: FOV, position: [5.4, 1.9, 4.9], near: 0.5, far: 400 }}>
-        <World tl={tl} voices={voices} />
-      </ThreeCanvas>
+      <Poster />
+      <AbsoluteFill style={{ filter: "url(#poster)" }}>
+        <ThreeCanvas width={S.WIDTH} height={S.HEIGHT} flat camera={{ fov: FOV, position: [5.4, 1.9, 4.9], near: 0.5, far: 400 }}>
+          <World tl={tl} voices={voices} />
+        </ThreeCanvas>
+      </AbsoluteFill>
       <AudioLayers cues={cues} avail={audio} total={tl.total} />
     </AbsoluteFill>
   );

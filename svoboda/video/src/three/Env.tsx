@@ -60,7 +60,7 @@ export const BUILDINGS: BDef[] = [
 ];
 const FACE_Z = -2.2;
 
-const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; showSign?: boolean; signLift?: number; flat?: boolean }> = ({ b, pal, idx, simple = false, showSign = true, signLift = 0, flat = false }) => {
+const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; showSign?: boolean; signLift?: number; signY?: number; flat?: boolean }> = ({ b, pal, idx, simple = false, showSign = true, signLift = 0, signY, flat = false }) => {
   const depth = 6;
   const bh = signLift > 0 ? b.h + 1.5 : b.h; // кофейня выше: вывеска над головами
   const zc = FACE_Z - depth / 2;
@@ -77,8 +77,8 @@ const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; 
         {[0, 1, 2, 3].map((i) => (
           <Part key={i} geo={rbox(b.w / 4, 0.1, 0.8, 0.02)} color={b.aw[i % 2]} px={0} position={[-b.w / 2 + (i + 0.5) * (b.w / 4), 2.45, FACE_Z + 0.4]} rotation={[0.38, 0, 0]} />
         ))}
-        {showSign && <Part geo={rbox(3.0, 0.78, 0.14, 0.05)} color="#15141c" px={3.4} position={[0, 3.2 + signLift, FACE_Z + 0.16]} />}
-        {showSign && <TexPlane tex={signTex(b.sign, pal.neon ? b.fg : "#3a4068", pal.neon ? b.bg : "#101428")} w={2.88} h={0.69} position={[0, 3.2 + signLift, FACE_Z + 0.235]} />}
+        {showSign && <Part geo={rbox(3.0, 0.78, 0.14, 0.05)} color="#15141c" px={3.4} position={[0, signY ?? 3.2 + signLift, FACE_Z + 0.16]} />}
+        {showSign && <TexPlane tex={signTex(b.sign, pal.neon ? b.fg : "#3a4068", pal.neon ? b.bg : "#101428")} w={2.88} h={0.69} position={[0, signY ?? 3.2 + signLift, FACE_Z + 0.235]} />}
       </group>
     );
   }
@@ -336,7 +336,7 @@ export const Billboard: React.FC<{ state: "a" | "g1" | "g2" | "b" }> = ({ state 
 );
 
 // ---------- улица целиком ----------
-export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm?: boolean; simple?: boolean; signs?: number[]; signLift?: number; flat?: boolean }> = ({ pal, lampOn, calm = false, simple = false, signs, signLift = 0, flat = false }) => {
+export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm?: boolean; simple?: boolean; signs?: number[]; signLift?: number; signY?: number; flat?: boolean }> = ({ pal, lampOn, calm = false, simple = false, signs, signLift = 0, signY, flat = false }) => {
   const seams = useMemo(() => Array.from({ length: 41 }).map((_, i) => -24 + i * 1.2), []);
   return (
     <group>
@@ -359,7 +359,7 @@ export const Street: React.FC<{ pal: EnvPal; lampOn: boolean; time: number; calm
         <Flat key={i} geo={planeGeo} color="#f0d24a" position={[-26 + i * (flat ? 8 : 4), -0.295, 7.2]} rotation={[-Math.PI / 2, 0, 0]} scale={[flat ? 4 : 2, 0.14, 1]} />
       ))}
       {BUILDINGS.map((b, i) => (
-        <Building key={i} b={b} pal={pal} idx={i} simple={simple} flat={flat} showSign={!signs || signs.includes(i)} signLift={i === 3 ? signLift : 0} />
+        <Building key={i} b={b} pal={pal} idx={i} simple={simple} flat={flat} showSign={!signs || signs.includes(i)} signLift={i === 3 ? signLift : 0} signY={i === 3 ? signY : undefined} />
       ))}
       {!simple && (
         <>

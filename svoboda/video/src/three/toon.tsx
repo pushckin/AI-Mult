@@ -150,12 +150,13 @@ export interface PartProps {
   quaternion?: THREE.Quaternion;
   scale?: number | [number, number, number];
   visible?: boolean;
+  flat?: boolean; // без освещения: одна плоская заливка (огонь, предметы без 3D-объёма)
   children?: React.ReactNode;
 }
-export const Part: React.FC<PartProps> = ({ geo, hull, color, px = 3.6, position, rotation, quaternion, scale, visible, children }) => {
+export const Part: React.FC<PartProps> = ({ geo, hull, color, px = 3.6, position, rotation, quaternion, scale, visible, flat, children }) => {
   const w = STYLE.v5 ? (px > 0 ? OUTLINE_PX : 0) : px; // v5: у всех деталей одна толщина контура
   return (
-    <mesh geometry={geo} material={toonMat(color)} position={position} rotation={rotation} quaternion={quaternion} scale={scale as any} visible={visible}>
+    <mesh geometry={geo} material={flat ? flatMat(color) : toonMat(color)} position={position} rotation={rotation} quaternion={quaternion} scale={scale as any} visible={visible}>
       {w > 0 && <mesh geometry={hull ?? geo} material={outlineMat(w)} />}
       {children}
     </mesh>
