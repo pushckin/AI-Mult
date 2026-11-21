@@ -61,8 +61,10 @@ const hoodTex = () =>
     fitText(g, "MATTER", 256, 0, 506, 150);
     g.restore();
   });
+/** сцена 3: прожжённая окурком дыра в плакате (0 нет, 1 тлеет - оранжевый ободок, 2 прожжена) */
+export const PLACARD3 = { hole: 0 };
 const placardTex = () =>
-  textTex("placard_npc", 512, 384, (g) => {
+  textTex("placard_npc" + (PLACARD3.hole ? `_h${PLACARD3.hole}` : ""), 512, 384, (g) => {
     g.fillStyle = "#d1a468";
     g.fillRect(0, 0, 512, 384);
     g.strokeStyle = "#a9793c";
@@ -74,6 +76,22 @@ const placardTex = () =>
     fitText(g, "NPC LIVES", 256, 130, 440, 130);
     fitText(g, "MATTER", 256, 270, 440, 150);
     g.fillRect(70, 345, 372, 12);
+    if (PLACARD3.hole) {
+      const poly = (r: number, col: string) => {
+        g.fillStyle = col;
+        g.beginPath();
+        for (let i = 0; i < 22; i++) {
+          const a = (i / 22) * Math.PI * 2;
+          const rr = r * (0.86 + 0.14 * Math.sin(i * 2.7 + 1) + (i % 3 === 0 ? 0.08 : 0));
+          g.lineTo(256 + Math.cos(a) * rr * 1.1, 200 + Math.sin(a) * rr);
+        }
+        g.closePath();
+        g.fill();
+      };
+      poly(78, PLACARD3.hole === 1 ? "#ff8a1c" : "#6a3a14");
+      poly(64, PLACARD3.hole === 1 ? "#3a1a0c" : "#2a1608");
+      poly(46, "#0e0c16");
+    }
   });
 const TexPlane: React.FC<{ tex: THREE.Texture; w: number; h: number; position: [number, number, number]; rotation?: [number, number, number]; cutout?: boolean }> = ({ tex, w, h, position, rotation, cutout }) => (
   <mesh geometry={planeGeo} position={position} rotation={rotation} scale={[w, h, 1]}>
@@ -644,14 +662,14 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
                   )}
                   {kind === "chloe" && HAIR_SKIRT(COL.chloe.hair, COL.chloe.hairDark)}
                   {/* выпуклые глаза-шары (у Маркуса закрыты тёмными линзами) */}
-                  {kind !== "marcus" && (
+                  {(kind !== "marcus" || p.acc === 1) && (
                     <>
                       <Eye3 h={b.head} side={1} lon={kind === "chloe" ? 23 : 21} lat={kind === "chloe" ? 6 : 8} re={kind === "chloe" ? 0.14 : 0.145} st={p.eyeL} lx={p.lx} ly={p.ly} lid={b.skin} />
                       <Eye3 h={b.head} side={-1} lon={kind === "chloe" ? 23 : 21} lat={kind === "chloe" ? 6 : 8} re={kind === "chloe" ? 0.14 : 0.145} st={p.eyeR} lx={p.lx} ly={p.ly} lid={b.skin} />
                     </>
                   )}
                   {kind === "tony" && p.acc === 0 && <RoundSpecs h={b.head} lon={25} lat={8} rw={0.19} rh={0.16} lens="#3a2f6e" frame="#15121f" />}
-                  {kind === "marcus" && <Aviators h={b.head} lon={26} lat={4} rw={0.17} rh={0.19} lens="#2a2350" frame="#e8b820" crackSide={-1} />}
+                  {kind === "marcus" && p.acc !== 1 && <Aviators h={b.head} lon={26} lat={4} rw={0.17} rh={0.19} lens="#2a2350" frame="#e8b820" crackSide={-1} />}
                   <group scale={[b.head.rx, b.head.ry, b.head.rz]}>
                     {kind === "tony" ? <TonyFace p={p} /> : kind === "marcus" ? <MarcusFace p={p} /> : <ChloeFace p={p} />}
                   </group>
@@ -664,3 +682,7 @@ export const Cast: React.FC<{ pose: PP; kind: CastKind; shadow?: boolean; ground
     </>
   );
 };
+
+// сцена 3 (Cast3.tsx) использует эти детали
+export { Hand, Arm2, Leg2, Brows, Mouth, Tears, Sweat, polyGeo, TexPlane, Dot, textTex };
+export type { ArmSpec, LegSpec };

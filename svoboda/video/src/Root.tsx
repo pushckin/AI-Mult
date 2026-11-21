@@ -2,6 +2,8 @@ import React from "react";
 import { Composition } from "remotion";
 import { Scene1, Scene1Props } from "./Scene1";
 import { Scene2, Scene2Props } from "./Scene2";
+import { Scene3Entry } from "./Scene3";
+import { Scene4Comp } from "./Scene4";
 import { Turntable } from "./three/Turntable";
 import { probeWav } from "./engine/wav";
 import * as S2 from "./data/scene2";
@@ -36,6 +38,8 @@ export const RemotionRoot: React.FC = () => (
         return { durationInFrames: tl.total, props: { audio, voices } };
       }}
     />
+    <Scene3Entry />
+    <Scene4Comp />
     <Composition id="Turn" component={Turntable} durationInFrames={16} fps={FPS} width={WIDTH} height={HEIGHT} />
   </>
 );
