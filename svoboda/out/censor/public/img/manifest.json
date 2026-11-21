@@ -1,0 +1,509 @@
+{
+  "note": "Сцена 1 «Свобода». pivot = доли 0..1 от width/height PNG. left/right у Грега - как на экране. bg-слои: 1080 высотой, шире кадра 1920 (параллакс), центр слоя = центр кадра; parallax = коэфф. сдвига камеры. source=svg-fallback: сгенерировано программно (make_svg_assets.mjs), т.к. у GEMINI_API_KEY нет квоты на image-модели (429, free tier limit 0); gen_assets.mjs заменит на gemini-версии.",
+  "assets": {
+    "bg_sky": {
+      "file": "bg_sky.png",
+      "width": 2000,
+      "height": 1080,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "bg",
+      "note": "Небо: плоская заливка и луна. Непрозрачный.",
+      "source": "svg-fallback",
+      "z": 0,
+      "parallax": 0.05
+    },
+    "bg_far": {
+      "file": "bg_far.png",
+      "width": 2100,
+      "height": 1080,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "bg",
+      "note": "Дальние здания, силуэт города; прозрачно выше линии крыш.",
+      "source": "svg-fallback",
+      "z": 1,
+      "parallax": 0.15
+    },
+    "bg_mid": {
+      "file": "bg_mid.png",
+      "width": 2400,
+      "height": 1080,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "bg",
+      "note": "Средний план: витрины, пальмы, неон, кофейня (центр ~x=1250), фонари. База зданий y=770.",
+      "source": "svg-fallback",
+      "z": 2,
+      "parallax": 0.4
+    },
+    "bg_fore": {
+      "file": "bg_fore.png",
+      "width": 2500,
+      "height": 1080,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "bg",
+      "note": "Земля: тротуар y 770-930, бордюр, асфальт 965-1080. Прозрачно выше y=770.",
+      "source": "svg-fallback",
+      "z": 3,
+      "parallax": 1
+    },
+    "greg_head_closed": {
+      "file": "greg_head_closed.png",
+      "width": 360,
+      "height": 340,
+      "pivot": [
+        0.5,
+        0.97
+      ],
+      "group": "greg",
+      "note": "Голова, рот закрыт. Pivot = шея.",
+      "source": "svg-fallback"
+    },
+    "greg_head_open": {
+      "file": "greg_head_open.png",
+      "width": 360,
+      "height": 340,
+      "pivot": [
+        0.5,
+        0.97
+      ],
+      "group": "greg",
+      "note": "Голова, рот открыт. Pivot = шея.",
+      "source": "svg-fallback"
+    },
+    "greg_torso": {
+      "file": "greg_torso.png",
+      "width": 240,
+      "height": 320,
+      "pivot": [
+        0.5,
+        0.94
+      ],
+      "group": "greg",
+      "note": "Торс. Pivot = таз. joints: см. поле joints (px).",
+      "source": "svg-fallback",
+      "joints": {
+        "neck": [
+          120,
+          28
+        ],
+        "shoulder_left": [
+          30,
+          62
+        ],
+        "shoulder_right": [
+          210,
+          62
+        ],
+        "hip_left": [
+          80,
+          296
+        ],
+        "hip_right": [
+          160,
+          296
+        ]
+      }
+    },
+    "greg_arm_left": {
+      "file": "greg_arm_left.png",
+      "width": 100,
+      "height": 260,
+      "pivot": [
+        0.5,
+        0.11
+      ],
+      "group": "greg",
+      "note": "Левая рука (слева на экране). Pivot = плечо.",
+      "source": "svg-fallback"
+    },
+    "greg_arm_right_coffee": {
+      "file": "greg_arm_right_coffee.png",
+      "width": 140,
+      "height": 290,
+      "pivot": [
+        0.5,
+        0.1
+      ],
+      "group": "greg",
+      "note": "Правая рука (справа на экране) со стаканчиком. Pivot = плечо.",
+      "source": "svg-fallback"
+    },
+    "greg_leg_left": {
+      "file": "greg_leg_left.png",
+      "width": 110,
+      "height": 252,
+      "pivot": [
+        0.5,
+        0.04
+      ],
+      "group": "greg",
+      "note": "Левая нога. Pivot = бедро.",
+      "source": "svg-fallback"
+    },
+    "greg_leg_right": {
+      "file": "greg_leg_right.png",
+      "width": 110,
+      "height": 252,
+      "pivot": [
+        0.5,
+        0.04
+      ],
+      "group": "greg",
+      "note": "Правая нога. Pivot = бедро.",
+      "source": "svg-fallback"
+    },
+    "prop_supercar": {
+      "file": "prop_supercar.png",
+      "width": 840,
+      "height": 300,
+      "pivot": [
+        0.5,
+        0.9
+      ],
+      "group": "prop",
+      "note": "Хромированный суперкар сбоку, едет вправо. Pivot = точка контакта с землёй (центр).",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "prop_alien_driver": {
+      "file": "prop_alien_driver.png",
+      "width": 220,
+      "height": 190,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "group": "prop",
+      "note": "Водитель в маске пришельца: торс+голова+руки на руле, окно кабины с передней частью кузова (стыкуется с prop_supercar при ALIEN_H=170, смещение (+20, 80 над землёй)).",
+      "source": "svg-fallback"
+    },
+    "prop_oppressor": {
+      "file": "prop_oppressor.png",
+      "width": 660,
+      "height": 380,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "prop",
+      "note": "Oppressor Mk II сбоку, летит вправо.",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "prop_rocket": {
+      "file": "prop_rocket.png",
+      "width": 240,
+      "height": 72,
+      "pivot": [
+        0.75,
+        0.5
+      ],
+      "group": "prop",
+      "note": "Ракета, летит вправо; pivot около центра массы.",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "prop_billboard": {
+      "file": "prop_billboard.png",
+      "width": 1000,
+      "height": 640,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "group": "prop",
+      "note": "Билборд-табло, пустой экран. screen = область экрана для цифр (px и доли).",
+      "source": "svg-fallback",
+      "screen": {
+        "x": 52,
+        "y": 52,
+        "w": 896,
+        "h": 386,
+        "fx": 0.052,
+        "fy": 0.081,
+        "fw": 0.896,
+        "fh": 0.603
+      }
+    },
+    "prop_dust": {
+      "file": "prop_dust.png",
+      "width": 320,
+      "height": 260,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "prop",
+      "note": "Облачко пыли (для исчезновения типа в маске).",
+      "source": "svg-fallback"
+    },
+    "greg_ref": {
+      "file": "greg_ref.png",
+      "width": 400,
+      "height": 920,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "group": "ref",
+      "note": "Цельный образ-референс Грега.",
+      "source": "svg-fallback"
+    },
+    "fx_boom": {
+      "file": "fx_boom.png",
+      "width": 260,
+      "height": 260,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Взрыв-вспышка, плоская звезда, оранж/жёлтый.",
+      "source": "svg-fallback"
+    },
+    "fx_flash": {
+      "file": "fx_flash.png",
+      "width": 512,
+      "height": 512,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Белая вспышка-звезда (12 лучей), без контура; для исчезновения.",
+      "source": "svg-fallback"
+    },
+    "fx_smoke": {
+      "file": "fx_smoke.png",
+      "width": 340,
+      "height": 260,
+      "pivot": [
+        0.5,
+        0.8
+      ],
+      "group": "fx",
+      "note": "Клуб тёмного дыма, плоский.",
+      "source": "svg-fallback"
+    },
+    "fx_trashfire": {
+      "file": "fx_trashfire.png",
+      "width": 200,
+      "height": 300,
+      "pivot": [
+        0.5,
+        0.95
+      ],
+      "group": "fx",
+      "note": "Горящая урна; pivot = низ урны.",
+      "source": "svg-fallback"
+    },
+    "fx_debris": {
+      "file": "fx_debris.png",
+      "width": 420,
+      "height": 240,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Россыпь обломков (бетон, кирпич, металл, стекло, покрышка).",
+      "source": "svg-fallback"
+    },
+    "fx_trail": {
+      "file": "fx_trail.png",
+      "width": 540,
+      "height": 130,
+      "pivot": [
+        1,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Дымовой след ракеты; правый конец крепится к хвосту ракеты (летит вправо).",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "fx_tooth": {
+      "file": "fx_tooth.png",
+      "width": 120,
+      "height": 150,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Летящий зуб.",
+      "source": "svg-fallback"
+    },
+    "prop_billboard_0000": {
+      "file": "prop_billboard_0000.png",
+      "width": 1000,
+      "height": 640,
+      "pivot": [
+        0.5,
+        1
+      ],
+      "group": "prop",
+      "note": "Билборд после 00:00: чёрный экран с красным контуром, красные прожекторы; цифры рисует код. screen как у prop_billboard.",
+      "source": "svg-fallback",
+      "screen": {
+        "x": 52,
+        "y": 52,
+        "w": 896,
+        "h": 386,
+        "fx": 0.052,
+        "fy": 0.081,
+        "fw": 0.896,
+        "fh": 0.603
+      }
+    },
+    "greg_head_o": {
+      "file": "greg_head_o.png",
+      "width": 360,
+      "height": 340,
+      "pivot": [
+        0.5,
+        0.97
+      ],
+      "group": "greg",
+      "note": "Голова, рот - круглое «о». Pivot = шея.",
+      "source": "svg-fallback"
+    },
+    "prop_rocket_b": {
+      "file": "prop_rocket_b.png",
+      "width": 240,
+      "height": 72,
+      "pivot": [
+        0.75,
+        0.5
+      ],
+      "group": "prop",
+      "note": "Ракета, вторая поза пламени.",
+      "source": "svg-fallback",
+      "facing": "right"
+    },
+    "fx_impact1": {
+      "file": "fx_impact1.png",
+      "width": 600,
+      "height": 600,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Плоская зубчатая звезда удара, кадр 1 (жёлтая/белая, с контуром).",
+      "source": "svg-fallback"
+    },
+    "fx_impact2": {
+      "file": "fx_impact2.png",
+      "width": 600,
+      "height": 600,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Звезда удара, кадр 2 (оранжевая).",
+      "source": "svg-fallback"
+    },
+    "fx_impact3": {
+      "file": "fx_impact3.png",
+      "width": 600,
+      "height": 600,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Звезда удара, кадр 3 (красная, меньше).",
+      "source": "svg-fallback"
+    },
+    "fx_puff": {
+      "file": "fx_puff.png",
+      "width": 220,
+      "height": 220,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Плоский непрозрачный круг пыли.",
+      "source": "svg-fallback"
+    },
+    "fx_puff_dark": {
+      "file": "fx_puff_dark.png",
+      "width": 220,
+      "height": 220,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Плоский непрозрачный круг дыма.",
+      "source": "svg-fallback"
+    },
+    "fx_puff_white": {
+      "file": "fx_puff_white.png",
+      "width": 220,
+      "height": 220,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Плоский круг следа ракеты.",
+      "source": "svg-fallback"
+    },
+    "fx_paper1": {
+      "file": "fx_paper1.png",
+      "width": 150,
+      "height": 120,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Летящий лист бумаги.",
+      "source": "svg-fallback"
+    },
+    "fx_paper2": {
+      "file": "fx_paper2.png",
+      "width": 130,
+      "height": 110,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "group": "fx",
+      "note": "Летящий комок мусора.",
+      "source": "svg-fallback"
+    },
+    "fx_trashfire_b": {
+      "file": "fx_trashfire_b.png",
+      "width": 200,
+      "height": 300,
+      "pivot": [
+        0.5,
+        0.95
+      ],
+      "group": "fx",
+      "note": "Горящая урна, вторая фаза пламени.",
+      "source": "svg-fallback"
+    }
+  },
+  "frame": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 24
+  }
+}
