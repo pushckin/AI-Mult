@@ -34,6 +34,8 @@ export interface Palette {
   skin: string; shirt: string; collar: string; tie: string; pants: string; belt: string; shoes: string; hair: string; head: string; cuff: string;
 }
 export const GREG_COL: Palette = { skin: "#f4cfa4", shirt: "#e7d3a2", collar: "#f3e6c0", tie: "#d3293a", pants: "#6f5a43", belt: "#17151a", shoes: "#1a181d", hair: "#6a4322", head: "#f4cfa4", cuff: "#e7d3a2" };
+// сцена 2: Грег ярче и контрастнее на тёмно-синем фоне (почти белая рубашка, тёмные штаны, яркий галстук)
+export const GREG_S2: Palette = { ...GREG_COL, shirt: "#fff6d6", collar: "#ffffff", cuff: "#fff6d6", tie: "#ff2a3c", pants: "#43301f", skin: "#ffd9ae", head: "#ffd9ae" };
 export const ALIEN_COL: Palette = { skin: "#f2c49b", shirt: "#f2c49b", collar: "#f2c49b", tie: "#f2c49b", pants: "#f2c49b", belt: "#f2c49b", shoes: "#f2c49b", hair: "#9ba7ae", head: "#a8b8c0", cuff: "#f2c49b" };
 
 // ---- лицо Грега ----
@@ -77,9 +79,9 @@ const GregFace: React.FC<{ p: PP; c: Palette; big?: boolean }> = ({ p, c, big: b
       {/* шрам через щёку (+ швы) */}
       {bigScar ? (
         <>
-          <Line lon={26} lat={-14} pts={[[-0.5, 0.3], [0.0, 0.0], [0.56, -0.3]]} w={0.05} color="#cc2a3c" lift={1.012} />
+          <Line lon={30} lat={-24} pts={[[-0.6, 0.34], [0.0, 0.0], [0.66, -0.34]]} w={0.085} color="#ff1f35" lift={1.012} />
           {[-0.28, -0.08, 0.14, 0.34].map((u, i) => (
-            <Line key={i} lon={26 + u * 38} lat={-14 - u * 22} pts={[[-0.02, 0.17], [0.04, -0.17]]} w={0.02} color="#0c0a10" lift={1.02} />
+            <Line key={i} lon={30 + u * 40} lat={-24 - u * 24} pts={[[-0.03, 0.24], [0.05, -0.24]]} w={0.03} color="#0c0a10" lift={1.02} />
           ))}
         </>
       ) : (
@@ -123,7 +125,7 @@ const AlienFace: React.FC<{ p: PP }> = ({ p }) => (
 const Cup: React.FC = () => (
   <group>
     <Part geo={rcyl(0.062, 0.078, 0.2, 0.018)} color="#fbfbf6" px={3.2} position={[0, 0.0, 0]} />
-    <Part geo={rcyl(0.07, 0.074, 0.075, 0.01)} color="#c9382a" px={0} position={[0, -0.005, 0]} scale={[1.03, 1, 1.03]} />
+    <Part geo={rcyl(0.07, 0.074, 0.075, 0.01)} color="#ff3a22" px={0} position={[0, -0.005, 0]} scale={[1.03, 1, 1.03]} />
     <Part geo={rcyl(0.082, 0.084, 0.035, 0.012)} color="#2a1a14" px={3} position={[0, 0.115, 0]} />
   </group>
 );
@@ -174,7 +176,7 @@ const PlainFace: React.FC<{ p: PP; c: Palette }> = ({ p, c }) => (
 );
 
 export const Person: React.FC<{ pose: PP; kind?: "greg" | "alien" | "extra"; colors?: Palette; shadow?: boolean; groundY?: number; s2?: boolean }> = ({ pose: p, kind = "greg", colors, shadow = true, groundY = 0, s2 = false }) => {
-  const c = colors ?? (kind === "alien" ? ALIEN_COL : GREG_COL);
+  const c = colors ?? (kind === "alien" ? ALIEN_COL : s2 ? GREG_S2 : GREG_COL);
   const H = kind === "alien" ? HEAD_A : HEAD_G;
   const naked = kind === "alien";
   return (

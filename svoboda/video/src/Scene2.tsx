@@ -21,7 +21,7 @@ const CameraRig: React.FC<{ f: Frame }> = ({ f }) => {
   const { camera } = useThree();
   useLayoutEffect(() => {
     camera.position.set(f.cam.x, f.cam.y, f.cam.z);
-    camera.lookAt(f.cam.tx, f.cam.ty, 0);
+    camera.lookAt(f.cam.tx, f.cam.ty, f.cam.tz ?? 0);
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = FOV;
       camera.near = 0.5;
@@ -95,7 +95,7 @@ const World: React.FC<{ tl: S.Timeline; voices: Array<VoiceInfo | null> }> = ({ 
       <color attach="background" args={[PAL_COLD.sky]} />
       <CameraRig f={f} />
       <group position={[f.bgx, 0, 0]}>
-        <Street pal={PAL_COLD} lampOn time={frame} calm simple signs={[3]} signLift={0.32} />
+        <Street pal={PAL_COLD} lampOn time={frame} calm simple signs={[3]} signLift={1.35} />
       </group>
       {f.bin !== null && <BurnBin frame={frame} x={f.bin} />}
       <Bush shake={f.bushShake} frame={frame} />

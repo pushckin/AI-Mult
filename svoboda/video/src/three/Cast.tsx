@@ -533,7 +533,7 @@ const ChloeTorso: React.FC<{ p: PP }> = () => {
   return (
     <>
       <Part geo={rbox(w + 0.04, 0.1, d + 0.04, 0.04)} color={c.hoodDark} px={2.8} position={[0, 0.04, 0]} />
-      <TexPlane tex={hoodTex()} w={0.7} h={0.342} position={[0, 0.235, front + 0.012]} cutout />
+      <TexPlane tex={hoodTex()} w={0.8} h={0.39} position={[0, 0.25, front + 0.012]} cutout />
       {badges.map(([x, y, r, col], i) => (
         <Dot key={i} w={w} d={d} x={x} y={y} r={r} color={col} ink lift={0.01} />
       ))}

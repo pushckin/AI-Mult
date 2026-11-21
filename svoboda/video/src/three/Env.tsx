@@ -62,14 +62,15 @@ const FACE_Z = -2.2;
 
 const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; showSign?: boolean; signLift?: number }> = ({ b, pal, idx, simple = false, showSign = true, signLift = 0 }) => {
   const depth = 6;
+  const bh = signLift > 0 ? b.h + 1.5 : b.h; // кофейня выше: вывеска над головами
   const zc = FACE_Z - depth / 2;
   const fz = FACE_Z + 0.012;
   const lit = (i: number) => (hash(idx * 13 + i, 5) > 0.35 ? pal.win : pal.winOff);
   return (
     <group position={[b.x, 0, 0]}>
-      <Part geo={rbox(b.w, b.h, depth, 0.05)} color={b.wall} px={3} position={[0, b.h / 2, zc]} />
+      <Part geo={rbox(b.w, bh, depth, 0.05)} color={b.wall} px={3} position={[0, bh / 2, zc]} />
       {/* карниз */}
-      <Part geo={rbox(b.w + 0.2, 0.28, depth + 0.2, 0.04)} color={b.trim} px={3} position={[0, b.h + 0.1, zc]} />
+      <Part geo={rbox(b.w + 0.2, 0.28, depth + 0.2, 0.04)} color={b.trim} px={3} position={[0, bh + 0.1, zc]} />
       {/* витрина и дверь */}
       <Flat geo={planeGeo} color={pal.win} position={[-b.w * 0.2, 1.2, fz]} scale={[2.5, 1.5, 1]} />
       {[-1, 0, 1].map((i) => (
@@ -93,7 +94,7 @@ const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; 
       <Flat geo={planeGeo} color={lit(7)} position={[-b.w * 0.5 + 0.35, 1.2, fz]} scale={[0.0, 0.0, 1]} />
       {/* объём фасада: пилястры, подоконники с ящиками, кондиционер, выносная вывеска, ступень, парапет и крышная коробка */}
       {!simple && [-1, 1].map((s) => (
-        <Part key={`pl${s}`} geo={rbox(0.34, b.h - 0.1, 0.34, 0.05)} color={b.trim} px={2.8} position={[s * (b.w / 2 - 0.2), (b.h - 0.1) / 2, FACE_Z + 0.17]} />
+        <Part key={`pl${s}`} geo={rbox(0.34, bh - 0.1, 0.34, 0.05)} color={b.trim} px={2.8} position={[s * (b.w / 2 - 0.2), (bh - 0.1) / 2, FACE_Z + 0.17]} />
       ))}
       <Part geo={rbox(2.7, 0.14, 0.4, 0.04)} color={b.trim} px={2.6} position={[-b.w * 0.2, 0.42, FACE_Z + 0.2]} />
       {!simple && <Part geo={rbox(1.2, 0.1, 0.5, 0.03)} color="#5d5a74" px={2.6} position={[b.w * 0.27, 0.06, FACE_Z + 0.3]} />}
@@ -111,12 +112,12 @@ const Building: React.FC<{ b: BDef; pal: EnvPal; idx: number; simple?: boolean; 
         <Flat geo={planeGeo} color={pal.neon ? b.fg : "#3a4068"} position={[0.056, 0, 0]} rotation={[0, Math.PI / 2, 0]} scale={[0.5, 0.7, 1]} />
         <Flat geo={planeGeo} color={pal.neon ? b.fg : "#3a4068"} position={[-0.056, 0, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[0.5, 0.7, 1]} />
       </group>}
-      <Part geo={rbox(b.w + 0.1, 0.26, 0.2, 0.04)} color={b.trim} px={3} position={[0, b.h + 0.35, FACE_Z - 0.1]} />
-      {!simple && idx !== 3 && idx !== 4 && idx % 3 === 0 && <Part geo={rcyl(0.5, 0.5, 0.9, 0.06, 18)} color="#8a6240" px={3} position={[-1.2, b.h + 0.62, FACE_Z - 1.5]} />}
-      {!simple && idx !== 3 && idx !== 4 && idx % 3 === 1 && <Part geo={rbox(1.1, 0.7, 0.9, 0.08)} color="#a9adc4" px={3} position={[1.2, b.h + 0.55, FACE_Z - 1.6]} />}
-      {!simple && idx % 3 === 2 && <Part geo={rcyl(0.04, 0.04, 1.2, 0.01, 8)} color="#6a6e88" px={2.6} position={[1.6, b.h + 0.9, FACE_Z - 1.4]} />}
+      <Part geo={rbox(b.w + 0.1, 0.26, 0.2, 0.04)} color={b.trim} px={3} position={[0, bh + 0.35, FACE_Z - 0.1]} />
+      {!simple && idx !== 3 && idx !== 4 && idx % 3 === 0 && <Part geo={rcyl(0.5, 0.5, 0.9, 0.06, 18)} color="#8a6240" px={3} position={[-1.2, bh + 0.62, FACE_Z - 1.5]} />}
+      {!simple && idx !== 3 && idx !== 4 && idx % 3 === 1 && <Part geo={rbox(1.1, 0.7, 0.9, 0.08)} color="#a9adc4" px={3} position={[1.2, bh + 0.55, FACE_Z - 1.6]} />}
+      {!simple && idx % 3 === 2 && <Part geo={rcyl(0.04, 0.04, 1.2, 0.01, 8)} color="#6a6e88" px={2.6} position={[1.6, bh + 0.9, FACE_Z - 1.4]} />}
       {/* водосточная труба */}
-      {!simple && <Part geo={rcyl(0.06, 0.06, b.h, 0.01, 10)} color={b.trim} px={2} position={[b.w / 2 - 0.2, b.h / 2, FACE_Z + 0.08]} />}
+      {!simple && <Part geo={rcyl(0.06, 0.06, bh, 0.01, 10)} color={b.trim} px={2} position={[b.w / 2 - 0.2, bh / 2, FACE_Z + 0.08]} />}
     </group>
   );
 };

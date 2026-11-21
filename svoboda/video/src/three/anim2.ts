@@ -39,7 +39,7 @@ export interface Actor {
   pose: PP;
 }
 export interface Cam {
-  x: number; y: number; z: number; tx: number; ty: number; shake: number;
+  x: number; y: number; z: number; tx: number; ty: number; tz?: number; shake: number;
 }
 export interface Frame {
   actors: Actor[];
@@ -132,12 +132,13 @@ const shot08 = (t: number, sh: ShotT, v: Voices): Actor[] => {
     { t: 14, tl: 6, hy: 16, hx: 16, alx: 52, arx: 60, ale: 20, are: 20, alz: 70, arz: 70, brow: 1 },
     { t: 40, tl: 10, ry: -84, hx: 22, hy: 8, eyeL: 3, eyeR: 3 },
     { t: 96, tl: 12, ry: -84, hx: 26, hy: 4 },
+    { t: 130, tl: 14, ry: -78, hx: 30, hy: 14, rz: -4 },
   ];
   const tpp = seg(tk, tg);
   const hug = tg >= 40;
   let tp = mixP({ scale: SC.tony, x: T08.x, z: T08.z, y: 0.43 * SC.tony, llz: 4, lrz: 4, acc: 1, hl: 0, hr: 0, mouth: 0, ...tpp });
   const bob = tg >= 14 ? Math.floor(t / 4) % 2 : 0;
-  tp = { ...tp, tear: 1 + (Math.floor(t / 6) % 3), tz: tg > 14 ? (bob ? 2.5 : -1.5) : 0, y: tp.y + (tg > 14 && bob ? 0.03 : 0), x: tp.x + (tg >= 96 && bob ? -0.03 : 0) };
+  tp = { ...tp, tear: 1 + (Math.floor(t / 6) % 3), tz: tg > 14 ? (bob ? 2.5 : -1.5) : 0, y: tp.y + (tg > 14 && bob ? 0.03 : 0), x: tp.x + (tg >= 96 && bob ? -0.03 : 0) + (tg >= 40 ? 0.04 : 0) };
 
   // ----- Маркус: 0-10 бег рваными позами, 10-14 прыжок, 14+ виснет на шее на носочках -----
   const run = t < 10;
@@ -156,15 +157,18 @@ const shot08 = (t: number, sh: ShotT, v: Voices): Actor[] => {
       llx: 40, lrx: 14, llk: 80, lrk: 50, alx: 150, arx: 150, ale: 20, are: 20, alz: 50, arz: 50,
     });
   } else {
-    // три жёсткие позы объятия: A (14-40) на носочках, обе ноги; B (40-96) одна нога подогнута назад; C (96+) обе подогнуты, повис
+    // четыре жёсткие позы объятия: A (14-40) на носочках; B (40-96) нога подогнута, Маркус рывком ближе и вперёд; C (96-130) обе подогнуты, повис; D (130+) приподнят, голова на плече
     const poseA = tg < 40;
     const poseB = tg >= 40 && tg < 96;
+    const poseD = tg >= 130;
     const bb = Math.floor(t / 4) % 2;
+    const push = poseA ? 0 : poseB ? 0.1 : poseD ? 0.24 : 0.17; // рывки к Тони
     mp = mixP({
-      scale: SC.marcus, x: M08.x + (tg >= 40 ? 0.06 : 0), z: M08.z, ry: 84, y: 0.58 + 0.12, tl: poseA ? 6 : 9, hy: -6, hx: poseA ? 4 : 10, mouth: 0, brow: 1, eyeL: 0, eyeR: 0,
+      scale: SC.marcus, x: M08.x + push, z: poseA ? 0.58 : poseB ? 0.68 : 0.78, ry: poseD ? 70 : 84, y: 0.58 + 0.12, tl: poseA ? 6 : 9, hy: poseD ? -26 : -6, hx: poseA ? 4 : 10, mouth: 0, brow: 1, eyeL: 0, eyeR: 0,
       llx: 0, lrx: 0, llk: 0, lrk: 0, llz: 5, lrz: 5, toe: 58,
       ...(poseB ? { lrx: -34, lrk: 74, toe: 58 } : {}),
       ...(tg >= 96 ? { llx: -22, lrx: -30, llk: 54, lrk: 68, y: 0.58 + 0.16, toe: 30 } : {}),
+      ...(poseD ? { llx: -40, lrx: -10, llk: 90, lrk: 30, y: 0.58 + 0.26, toe: 20, tl: 12 } : {}),
     });
     mp = { ...mp, tz: jitter(t, 4, 4) * 3, hz: jitter(t, 8, 4) * 4, hx: mp.hx + (bb ? 4 : 0), tear: 1 + (Math.floor(t / 6) % 3), y: mp.y + (bb ? 0.025 : 0) };
   }
@@ -183,8 +187,11 @@ const shot08 = (t: number, sh: ShotT, v: Voices): Actor[] => {
   }
   if (hug) {
     // Тони обнимает в ответ: руки на спине Маркуса
+    // Тони хлопает по спине рывками (две серии)
+    const patting = (tg >= 54 && tg < 94) || (tg >= 106 && tg < 154);
+    const pat = patting ? (Math.floor(t / 4) % 2) * 0.16 : 0;
     const back = (dy: number, dz: number): V3 => qv(toTorso(tp, [mp.x - 0.16, mp.y + 0.55 * SC.marcus + dy, mp.z + dz]));
-    tp = arm(tp, "tony", 1, back(0.0, 0.16), 30);
+    tp = arm(tp, "tony", 1, back(pat, 0.16), 30);
     tp = arm(tp, "tony", -1, back(-0.2, -0.12), 30);
     tp = { ...tp, hl: 0, hr: 0 };
   }
@@ -215,23 +222,24 @@ const chloeHands = (p: PP, mega: Mega, plac: keyof typeof PLAC, megaT?: V3): PP 
   return { ...r, hr: 2, hl: 2, hp: m.hp, my: m.my, cup: pl.cup, py: Math.max(-75, Math.min(75, -p.ry * 0.85)) };
 };
 const shot09 = (t: number, sh: ShotT, v: Voices): { actors: Actor[]; leaves: number } => {
-  if (t < S09.jump) return { actors: [], leaves: -1 };
+  if (t < S09.crouch) return { actors: [], leaves: -1 };
   const k = t - S09.jump;
   const tg = hold(t, 2);
   let pose: PP;
   if (t < S09.land) {
-    // полёт боком влево: 6 жёстких поз по 2 кадра
-    const air: PPatch[] = [
-      { x: 8.6, y: 0.5, ry: -86, tl: 26, rz: 0, llx: -30, lrx: -50, llk: 80, lrk: 60, hy: 6 }, // присед-толчок
-      { x: 8.25, y: 1.05, ry: -90, tl: 34, rz: -10, llx: -55, lrx: -40, llk: 20, lrk: 30, hy: 4 }, // растяжка вверх
-      { x: 7.95, y: 1.6, ry: -90, tl: 22, rz: -16, llx: -45, lrx: -28, llk: 90, lrk: 40, hy: 2 }, // апекс боком
-      { x: 7.65, y: 1.7, ry: -86, tl: 14, rz: -12, llx: -20, lrx: 10, llk: 70, lrk: 30, hy: 0 },
-      { x: 7.4, y: 1.2, ry: -78, tl: 8, rz: -6, llx: 14, lrx: 28, llk: 40, lrk: 14, hy: -2 }, // снижение
-      { x: 7.2, y: 0.78, ry: -68, tl: 4, rz: -2, llx: 30, lrx: 36, llk: 10, lrk: 4, hy: -4 }, // ноги вперёд к земле
+    // 4 жёсткие позы-акцента: присед в кустах -> (2 кадра смаз) вылет с разворотом тела на 180° -> «герой» в воздухе -> приземление
+    type AirP = PPatch & { t: number; mega: Mega; plac: keyof typeof PLAC };
+    const air: AirP[] = [
+      { t: S09.crouch, x: 8.62, y: 0.44, ry: -88, tl: 28, rz: 0, llx: -34, lrx: -52, llk: 84, lrk: 66, hy: 8, mega: "down", plac: "low", z: 0.5 }, // присед в кустах, профиль влево
+      { t: S09.jump, x: 8.42, y: 0.98, ry: -6, tl: 8, rz: 2, llx: 22, lrx: 2, llk: 60, lrk: 22, hy: 0, mega: "air", plac: "mid", z: 0.58 }, // смаз: на полпути разворота, лицом к камере
+      { t: S09.jump + 2, x: 8.02, y: 1.5, ry: 98, tl: 22, rz: -14, llx: 36, lrx: -20, llk: 104, lrk: 74, hy: -12, mega: "air", plac: "mid", z: 0.62 }, // вылет: развёрнута на 180° (профиль вправо), ноги поджаты
+      { t: S09.jump + 6, x: 7.55, y: 1.86, ry: 28, tl: -8, rz: 9, llx: 30, lrx: -30, llk: 18, lrk: 18, llz: 46, lrz: 46, hy: 16, mega: "fwd", plac: "hi", z: 0.7 }, // «герой»: растопырена, плакат вверх, мегафон вперёд
     ];
-    const i = Math.min(5, Math.floor((tg - S09.jump) / 2));
-    pose = CB("chloe", { z: 0.62 + 0.03 * i, eyeL: 1, eyeR: 1, brow: 1, mouth: 0, llz: 22, lrz: 22, ...air[i] });
-    pose = chloeHands(pose, "air", "mid");
+    let cur = air[0];
+    for (const a of air) if (tg >= a.t) cur = a;
+    const { t: _t, mega, plac, ...patch } = cur;
+    pose = CB("chloe", { eyeL: 1, eyeR: 1, brow: 1, mouth: 0, llz: 22, lrz: 22, ...patch });
+    pose = chloeHands(pose, mega, plac);
   } else {
     const tt = tg - S09.land;
     // посадка: 0-4 сжатие, 4-6 разворот лицом к камере, затем стойка 3/4
@@ -300,7 +308,7 @@ const shot10 = (t: number, sh: ShotT, v: Voices): Actor[] => {
   if (t >= 44) tp = { ...tp, hx: -10 + (Math.floor(t / 10) % 2 ? 2 : 0), tl: -5 };
   if (t > 40 && Math.floor(t / 2) % 9 === 3) tp = { ...tp, eyeL: 3, eyeR: 3 };
   const MS = 1.5;
-  let mp = mixP({ scale: MS, x: 2.2, z: 0.9, y: 0.43 * MS, ry: -26, tl: 6, hy: 10, hx: 4, alx: 55, ale: 105, arx: 55, are: 105, alz: 14, arz: 14, brow: 1, mouth: 4, llz: 4, lrz: 4 });
+  let mp = mixP({ scale: MS, x: 2.85, z: 0.9, y: 0.43 * MS, ry: -26, tl: 6, hy: 10, hx: 4, alx: 55, ale: 105, arx: 55, are: 105, alz: 14, arz: 14, brow: 1, mouth: 4, llz: 4, lrz: 4 });
   mp = { ...mp, tz: jitter(t, 6, 4) * 4, hz: jitter(t, 2, 4) * 4, tear: 1 + (Math.floor(t / 7) % 3) };
   return [
     { kind: "greg", pose: gp },
@@ -419,59 +427,93 @@ const shot12 = (t: number, sh: ShotT, v: Voices): Actor[] => {
     return [{ kind: "marcus", pose: mp }, { kind: "chloe", pose: cp }, { kind: "tony", pose: tp }];
   }
   if (sub === "b") {
-    // СРЕДНИЙ/КРУПНЫЙ: Хлоя вжимает голову, 3/4 к камере, страх (слёзы, пот-капли плоскими формами)
+    // СРЕДНИЙ/КРУПНЫЙ: Хлоя - 3 акцентные позы с паузами: (1) отступает назад, (2) вжимает голову в плечи, зажмурилась, (3) осторожно выглядывает
     const k = t - S12.b;
-    const ps: K[] = [{ t: 0, ry: -30, hy: 8 }, { t: 24, ry: -24, hy: 14, hx: -6 }, { t: 48, ry: -34, hy: 6, hx: 2 }, { t: 66, ry: -26, hy: 12, hx: -4 }];
-    const cp = mkChloe({ x: 7.7, z: 1.8, ...seg(ps, hold(k, 4)) }, true);
-    return [{ kind: "chloe", pose: { ...cp, eyeL: blink ? 3 : 1, eyeR: blink ? 3 : 1 } }];
+    const ps: K[] = [
+      { t: 0, ry: -30, hy: 8 },
+      { t: 10, ry: -64, hy: 26, hx: -10, rz: -12, tl: -8, hdy: 0, x: 8.05, y: 0.43 * SC.chloe + 0.03 }, // отступила: корпус отвёрнут, подбородок вверх (пауза 14)
+      { t: 24, ry: -30, hy: 6, hx: 10, rz: 0, tl: 5, hdy: -0.2, x: 7.8 }, // голова втянута в плечи
+      { t: 44, ry: -24, hy: 4, hx: 14, tl: 8, hdy: -0.24 }, // пауза: сжалась ещё
+      { t: 58, ry: -44, hy: 20, hx: -6, tl: -2, hdy: -0.06, rz: -3, x: 7.88 }, // выглядывает
+      { t: 70, ry: -28, hy: 12, hx: 2, tl: 2, hdy: -0.1, x: 7.7 },
+    ];
+    const pk = seg(ps, hold(k, 2));
+    const cp = mkChloe({ x: 7.7, z: 1.8, ...pk }, true);
+    const shut = k >= 24 && k < 58;
+    return [{ kind: "chloe", pose: { ...cp, eyeL: shut ? 3 : blink ? 3 : 1, eyeR: shut ? 3 : blink ? 3 : 1, brow: shut ? 1 : cp.brow } }];
   }
   if (sub === "c") {
-    // НИЖНИЙ РАКУРС: Тони с бицепсами (двойной бицепс, развороты тела влево/вправо рывками)
+    // НИЖНИЙ РАКУРС: Тони - позы-бицепсы с паузами по 6-8 кадров: двойной бицепс (3/4), поворот и боковой бицепс, финальный двойной
     const k = t - S12.c;
+    const FLEX = { hl: 2, hr: 2 };
     const ps: K[] = [
-      { t: 0, ry: 22, ...DBL, rz: -3, tl: -4, hy: -18, hx: -14 }, // двойной бицепс, грудью к камере (3/4)
-      { t: 26, ry: -34, ...DBL, rz: 2, tl: -8, hy: 40, hx: -12 }, // корпус влево, лицом к камере через плечо
-      { t: 52, ry: 48, arx: 90, arz: 84, are: 112, hr: 2, alx: 6, alz: 40, ale: 70, hl: 2, rz: -4, tl: -6, hy: -34, hx: -16 }, // правая рука на бицепс, левая в бок
-      { t: 76, ry: 8, ...DBL, rz: -2, tl: -10, hy: -6, hx: -22, y: 0.43 * SC.tony + 0.02 }, // финальная грудью вперёд, подбородок вверх
+      { t: 0, ry: 54, arx: 8, arz: 18, are: 20, alx: 8, alz: 18, ale: 20, ...FLEX, rz: 0, tl: 2, hy: -26, hx: -4 }, // замах: кулаки вдоль тела
+      { t: 8, ry: 26, ...DBL, rz: -3, tl: -5, hy: -20, hx: -14 }, // ДВОЙНОЙ БИЦЕПС (пауза 8)
+      { t: 18, ry: 2, ...DBL, rz: 3, tl: -6, hy: 18, hx: -12, y: 0.43 * SC.tony + 0.03 }, // грудью в камеру, голова через плечо
+      { t: 28, ry: -40, ...DBL, rz: 4, tl: -8, hy: 46, hx: -12 }, // корпус влево (развёрнут на ~80° от начала)
+      { t: 40, ry: 62, arx: 90, arz: 84, are: 118, hr: 2, alx: 6, alz: 40, ale: 70, hl: 2, rz: -4, tl: -6, hy: -40, hx: -16 }, // БОКОВОЙ БИЦЕПС: правая рука согнута
+      { t: 52, ry: 62, arx: 90, arz: 84, are: 128, hy: -34, hx: -18 }, // пауза: рука сжата сильнее
+      { t: 62, ry: 14, ...DBL, rz: -2, tl: -10, hy: -8, hx: -22, y: 0.43 * SC.tony + 0.04 }, // финальный двойной, подбородок вверх
+      { t: 76, ry: 20, hy: -14 },
     ];
-    const tp = mkTony({ x: 6.2, z: 1.3, ...seg(ps, hold(k, 4)), y: 0.43 * SC.tony + (Math.floor(t / 2) % 2 ? 0.015 : 0) });
+    const tp = mkTony({ x: 6.2, z: 0.4, ...seg(ps, hold(k, 2)), y: 0.43 * SC.tony + (Math.floor(t / 2) % 2 ? 0.012 : 0) });
     return [{ kind: "tony", pose: tp }];
   }
-  // d: ОБЩИЙ: Хлоя отступает, Тони в профиль -> 3/4
+  // d: ОБЩИЙ: Тони тремя тяжёлыми шагами идёт к Хлое и на каждом шаге разворачивается: профиль -> 3/4 к камере; Хлоя отступает
   const k = t - S12.d;
-  const stepAt = [10, 30, 50];
-  const back = stepAt.filter((s) => k >= s + 2).length * 0.4;
+  const stepK = STEP_AT.slice(3).map((s) => s - S12.d);
+  const steps = stepK.filter((s) => k >= s + 2).length;
   const ps: K[] = [
-    { t: 0, ry: 86, ...DBL, rz: -3, tl: -6, hy: -26, hx: -10 }, // профиль вправо, двойной бицепс
-    { t: 40, ry: 66, ...DBL, rz: -2, tl: -8, hy: -30, hx: -12 },
-    { t: 62, ry: 46, arx: 6, arz: 48, are: 66, alx: 6, alz: 48, ale: 66, hl: 2, hr: 2, rz: -2, tl: -4, hy: -26, hx: -8 }, // 3/4, кулаки в боки
-    { t: 84, ry: 28, hy: -14, hx: -6 },
+    { t: 0, ry: 88, ...DBL, rz: -3, tl: -6, hy: -26, hx: -10 }, // профиль вправо, двойной бицепс
+    { t: stepK[0] + 2, ry: 66, hy: -30 }, // шаг 1: корпус довернул
+    { t: stepK[1] + 2, ry: 44, arx: 6, arz: 48, are: 66, alx: 6, alz: 48, ale: 66, hl: 2, hr: 2, rz: -2, tl: -4, hy: -26, hx: -8 }, // шаг 2: кулаки в боки
+    { t: stepK[2] + 2, ry: 22, hy: -12, hx: -6 }, // шаг 3: почти 3/4 к камере, взгляд на Хлою
+    { t: stepK[2] + 14, ry: 22, ...DBL, rz: -2, tl: -8, hy: -10, hx: -14 }, // двойной бицепс в 3/4 (пауза)
   ];
-  const stepNow = t >= STEP_AT[3] && t < STEP_AT[3] + 10;
-  let tp = mkTony({ x: 5.4 + (tg >= STEP_AT[3] + 2 ? 0.4 : 0), z: 1.0, ...seg(ps, hold(k, 4)) });
-  if (stepNow) tp = { ...tp, llx: Math.floor((t - STEP_AT[3]) / 4) % 2 ? -22 : 34, lrx: Math.floor((t - STEP_AT[3]) / 4) % 2 ? 34 : -22, y: tp.y + 0.04 };
+  let tp = mkTony({ x: 5.4 + steps * 0.4, z: 1.0, ...seg(ps, hold(k, 2)) });
+  const stepNow = stepK.findIndex((s) => k >= s && k < s + 10);
+  if (stepNow >= 0) {
+    const ph = Math.floor((k - stepK[stepNow]) / 4) % 2;
+    tp = { ...tp, llx: ph ? -22 : 34, lrx: ph ? 34 : -22, llk: ph ? 30 : 0, lrk: ph ? 0 : 30, y: tp.y + 0.04, tl: tp.tl + 4 };
+  }
+  const stepAt = [16, 38, 60];
+  const back = stepAt.filter((s) => k >= s + 2).length * 0.4;
   const cwalk = stepAt.some((s) => k >= s && k < s + 4);
-  const cp = mkChloe({ x: 8.2 + back, z: 1.8, ry: -68, hy: 12 }, true);
-  const cq = { ...cp, llx: cwalk ? 22 : 0, lrx: cwalk ? -14 : 0, llk: cwalk ? 24 : 0, y: cp.y + (cwalk ? 0.04 : 0) };
-  const mp = mkMarcus({ x: 3.3, z: 0.45, ry: 50, hy: -14 });
-  return [{ kind: "marcus", pose: mp }, { kind: "chloe", pose: cq }, { kind: "tony", pose: tp }];
+  const cp0 = mkChloe({ x: 8.2 + back, z: 1.8, ry: -68, hy: 12 }, true);
+  const cp = { ...cp0, llx: cwalk ? 22 : 0, lrx: cwalk ? -14 : 0, llk: cwalk ? 24 : 0, y: cp0.y + (cwalk ? 0.04 : 0) };
+  const mp = mkMarcus({ x: 3.7, z: 0.45, ry: 50, hy: -14 });
+  return [{ kind: "marcus", pose: mp }, { kind: "chloe", pose: cp }, { kind: "tony", pose: tp }];
 };
 
 // =====================================================================================
 // Камеры. Верх кадра выше крыш (небо), вывеска «VEGAN COFFEE» по центру фона и выше голов.
 // =====================================================================================
-const camAt = (x: number, z: number, ty: number, drop = 0.9) => ({ x, y: ty - drop, z, tx: x, ty });
+// Единая посадка камеры для всех планов: одна высота и один наклон => одинаковый вертикальный кроп неба/здания/тротуара
+// (низ кадра всегда на тротуаре, без полосы дороги), вывеска на одной высоте. Отличается только расстояние (наезд) и ракурс «снизу».
+const CAM_Y = 1.5;
+const CAM_PITCH = 0.1;
+const camAt = (x: number, z: number, y = CAM_Y, pitch = CAM_PITCH) => ({ x, y, z, tx: x, ty: y + z * pitch, tz: 0 });
 const CAMS = {
-  c07: camAt(5.1, 6.7, 1.95),
-  c08: camAt(3.2, 6.3, 1.95),
-  c09a: camAt(7.4, 7.9, 2.1),
-  c09b: camAt(7.4, 7.5, 2.1),
-  c10: camAt(-0.1, 6.3, 2.0),
-  c11: camAt(6.25, 6.2, 2.0),
-  c12a: camAt(6.1, 8.4, 1.85, 0.8),
-  c12b: camAt(7.85, 4.6, 1.6, 0.15),
-  c12c: camAt(6.3, 6.2, 2.25, 2.0),
-  c12d: camAt(6.9, 8.6, 1.85, 0.8),
+  c07: camAt(5.1, 7.0),
+  c09: camAt(7.9, 7.6),
+  c10: camAt(-0.1, 6.6),
+  c11: camAt(6.25, 6.8),
+  c12a: camAt(6.1, 8.2),
+  c12b: { ...camAt(7.85, 6.6, 1.4), ty: 1.95, tz: 0 },
+  c12c: camAt(6.3, 6.3, 0.6, 0.22),
+  c12d: camAt(7.0, 8.4),
+};
+/** Облёт объятия (план 08): камера обходит пару по дуге постоянного радиуса, высота чуть плывёт; свет справа-сверху меняет терминатор */
+export const ORBIT = { cx: 3.0, cz: 0.55, ty: 2.1, r: 7.2, a0: 40, a1: -40, t0: 14, t1: 152 };
+const orbitCam = (t: number): Cam & { az: number } => {
+  const u = clamp((hold(t, 2) - ORBIT.t0) / (ORBIT.t1 - ORBIT.t0));
+  const e = u * u * (3 - 2 * u); // сглаженная ступень, квантуется на двойки
+  const az = ORBIT.a0 + (ORBIT.a1 - ORBIT.a0) * e;
+  const a = (az * Math.PI) / 180;
+  return {
+    x: q2(ORBIT.cx + ORBIT.r * Math.sin(a)), z: q2(ORBIT.cz + ORBIT.r * Math.cos(a)), y: q2(1.4 + 0.45 * Math.sin(Math.PI * e)),
+    tx: ORBIT.cx, ty: ORBIT.ty, tz: ORBIT.cz, shake: 0, az,
+  };
 };
 /** x кофейни (VEGAN COFFEE) в мире = 0.2; фон сдвигаем так, чтобы она была в центре кадра */
 const bgFor = (camX: number) => camX - 0.2;
@@ -500,8 +542,8 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
     }
     case 8:
       actors = shot08(t, sh, v);
-      cam = { ...CAMS.c08, shake: 0 };
-      bgx = bgFor(CAMS.c08.x);
+      cam = orbitCam(t);
+      bgx = bgFor(ORBIT.cx); // фон закреплён в мире: при облёте настоящий параллакс
       bin = BIN.x;
       if (t >= 14 && t < 22) {
         const s = camShake(t, 0.05 * (1 - (t - 14) / 8), 4);
@@ -513,12 +555,12 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
       const r = shot09(t, sh, v);
       actors = r.actors;
       leaves = r.leaves;
-      bgx = bgFor(CAMS.c09a.x);
+      bgx = bgFor(CAMS.c09.x);
       bin = BIN.x;
-      const wx = t < 2 ? 5.0 : t < 4 ? 5.9 : t < 6 ? 6.8 : 7.4;
-      cam = t < S09.jump ? { ...CAMS.c09a, x: wx, tx: wx, shake: 0 } : { ...CAMS.c09b, shake: 0 };
-      if (t >= S09.jump && t < S09.jump + 4) cam = { ...CAMS.c09a, z: t < S09.jump + 2 ? 7.5 : 7.3, shake: 0 };
-      bushShake = t >= S09.rustle && t < S09.jump ? 0.07 : 0;
+      // жёсткая склейка на кусты (без whip-pan и пустых кадров); небольшой наезд камеры на приземлении
+      const zc = t < S09.land ? 7.6 : 7.1;
+      cam = { ...CAMS.c09, z: zc, ty: CAM_Y + zc * CAM_PITCH, shake: 0 };
+      bushShake = t >= S09.rustle && t < S09.jump + 2 ? 0.07 : 0;
       if (t >= S09.land && t < S09.land + 8) {
         const s = camShake(t, 0.07 * (1 - (t - S09.land) / 8), 5);
         sx = s.x;
@@ -530,6 +572,7 @@ export const frameAt = (frame: number, sh: ShotT, tlCount: number, v: Voices): F
         sy = s.y;
       }
       if (t >= S09.land && t < S09.land + 14) dust.push({ x: CH_LAND.x, z: CH_LAND.z + 0.1, k: t - S09.land });
+      if (t >= S09.jump && t < S09.jump + 14) dust.push({ x: BUSH.x - 0.5, z: BUSH.z + 0.55, k: t - S09.jump });
       break;
     }
     case 10:

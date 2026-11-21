@@ -23,7 +23,7 @@ interface ShotDef {
 export const SHOT_DEFS: ShotDef[] = [
   { n: 7, name: "Тони и Маркус выглядывают из-за горящей урны, принюхивается, снимает очки, слёзы", lead: 44, tail: 10, defSec: 12 },
   { n: 8, name: "Крупно: Маркус бросается Тони на шею, всхлипы", lead: 12, tail: 10, defSec: 7 },
-  { n: 9, name: "Whip pan + наезд: Хлоя выпрыгивает из кустов, сирена мегафона", lead: 78, tail: 10, defSec: 8 },
+  { n: 9, name: "Жёсткая склейка на кусты, шорох, Хлоя выпрыгивает с разворотом, сирена мегафона", lead: 72, tail: 10, defSec: 8 },
   { n: 10, name: "Реакция: Грег с отвращением, Тони закатывает глаза", lead: 10, tail: 16, defSec: 7 },
   { n: 11, name: "Хлоя обиженно опускает мегафон, тычет в Грега, жест на Тони и Маркуса", lead: 10, tail: 12, defSec: 5 },
   { n: 12, name: "Низкий ракурс: Тони делает шаг к Хлое, бицепсы; Хлоя вжимает голову", lead: 10, tail: 20, defSec: 6 },
@@ -92,7 +92,7 @@ export const voicedAt = (env: number[] | undefined, k: number, vLen: number): bo
 export const envAt = (env: number[] | undefined, k: number): number => (env ? env[Math.floor(k / 2) * 2] ?? 0 : 0.4);
 
 // ---------- ключевые моменты внутри планов (кадры от начала плана) ----------
-export const S09 = { rustle: 6, jump: 24, land: 36, siren: 40 };
+export const S09 = { rustle: 2, crouch: 8, jump: 14, land: 28, siren: 32 };
 export const S08 = { run: 0, leap: 12 };
 
 // ---------- аудио ----------
@@ -110,7 +110,8 @@ export const buildCues = (tl: Timeline): AudioCue[] => {
   cues.push({ base: "sfx_s2_sobs", from: b.from + 6, to: b.from + 6 + 72, volume: 0.45 });
   cues.push({ base: VOICE_FILES[1], from: b.from + b.vFrom, volume: 0.95 });
   // 09: кусты, фидбэк, сирена
-  cues.push({ base: "sfx_s2_bush_rustle", from: c.from + S09.rustle - 2, to: c.from + S09.rustle + 34, volume: 0.7 });
+  cues.push({ base: "sfx_s2_megaphone_click", from: c.from + 3, to: c.from + 14, volume: 0.6, note: "09: щелчок мегафона в кустах" });
+  cues.push({ base: "sfx_s2_bush_rustle", from: c.from + S09.rustle, to: c.from + S09.rustle + 34, volume: 0.7 });
   cues.push({ base: "sfx_s2_megaphone_feedback", from: c.from + S09.land + 2, to: c.from + S09.land + 38, volume: 0.45 });
   cues.push({ base: "sfx_s2_megaphone_siren", from: c.from + S09.siren, to: c.from + S09.siren + 49, volume: 0.5 });
   cues.push({ base: VOICE_FILES[2], from: c.from + c.vFrom, volume: 0.95 });
@@ -125,4 +126,4 @@ export const buildCues = (tl: Timeline): AudioCue[] => {
   return cues;
 };
 /** Шаги Тони в плане 12 (кадры от начала плана): 3 шага в общем плане, один в финале */
-export const STEP_AT = [14, 40, 66, 300];
+export const STEP_AT = [14, 40, 66, 300, 322, 344];
