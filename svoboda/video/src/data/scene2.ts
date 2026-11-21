@@ -7,8 +7,10 @@ export const WIDTH = 1920;
 export const HEIGHT = 1080;
 /** секунды -> кадры (30 fps) */
 export const sec = (s: number) => Math.round(s * FPS);
-/** кадров на «двойку»: позы обновляются раз в 2 кадра = 15 поз/с (в холдах/слоу-мо - раз в 4) */
-export const STEP = 2;
+/** кадров на смену позы: рваная кукольная анимация - поза обновляется раз в 4 кадра = 7.5 поз/с (между позами крупная разница, холды перед акцентами) */
+export const STEP = 4;
+/** рот (створка) обновляется чаще позы - раз в 2 кадра, чтобы попадать в слоги */
+export const MSTEP = 2;
 const even = (n: number) => Math.round(n / 2) * 2;
 
 /** Реплики по порядку (voice_s2_NN_<имя>.wav) */
@@ -73,20 +75,22 @@ export const MOUTH_CLOSED = 0.2;
 export const MOUTH_WIDE = 0.52;
 export const mouthFromEnv = (env: number[] | undefined, k: number, vLen: number): number => {
   if (k < 0 || k >= vLen) return 0;
-  const f = Math.floor(k / STEP) * STEP;
+  const f = Math.floor(k / MSTEP) * MSTEP;
   if (!env) return (f >> 2) % 3 === 0 ? 1 : 2;
   const e = Math.max(env[f] ?? 0, env[f + 1] ?? 0);
   return e < MOUTH_CLOSED ? 0 : e < MOUTH_WIDE ? 1 : 2;
 };
 /** Идёт ли звук (не пауза) в кадре k реплики */
 export const voicedAt = (env: number[] | undefined, k: number, vLen: number): boolean => mouthFromEnv(env, k, vLen) > 0;
-export const envAt = (env: number[] | undefined, k: number): number => (env ? env[Math.floor(k / STEP) * STEP] ?? 0 : 0.4);
+export const envAt = (env: number[] | undefined, k: number): number => (env ? env[Math.floor(k / MSTEP) * MSTEP] ?? 0 : 0.4);
 
 // ---------- ключевые моменты внутри планов (СЕКУНДЫ от начала плана) ----------
-export const S09 = { rustle: 0.08, crouch: 0.33, jump: 0.58, land: 1.17, siren: 1.33 };
-export const S08 = { run: 0, leap: 0.5 };
-/** Финал (план 12), секунды от начала плана: границы под-планов (жёсткие склейки) */
-export const S12 = { a: 0, b: 4.2, c: 7.6, d: 11.6 };
+/** Прыжок Хлои: присед в кусте 0.4 с (0.4-0.8), вылет по дуге с разворотом 0.67 с (0.8-1.47), приземление 0.4 с (1.47-1.87), затем сирена */
+export const S09 = { rustle: 0.08, crouch: 0.4, jump: 0.8, land: 1.4667, siren: 1.8667 };
+/** Объятие (план 08): моменты жёстких склеек камеры, секунды от начала плана */
+export const CUTS08 = [0.6, 2.0, 3.4, 4.8, 5.8];
+/** Финал (план 12), секунды от начала плана: границы под-планов (жёсткие склейки); a2 - склейка внутри общего плана */
+export const S12 = { a: 0, a2: 2.0, b: 4.2, c: 7.6, d: 11.6 };
 /** Шаги Тони в плане 12 (секунды): три в общем плане «a», три в финале «d» */
 export const STEP_AT = [0.55, 1.65, 2.75, 12.2, 13.0, 13.8];
 
@@ -108,7 +112,7 @@ export const buildCues = (tl: Timeline): AudioCue[] => {
   cues.push({ base: "sfx_s2_megaphone_click", from: at(c, 0.125), to: at(c, 0.58), volume: 0.6, note: "09: щелчок мегафона в кустах" });
   cues.push({ base: "sfx_s2_bush_rustle", from: at(c, S09.rustle), to: at(c, S09.rustle + 1.42), volume: 0.7 });
   cues.push({ base: "sfx_s2_megaphone_feedback", from: at(c, S09.land + 0.08), to: at(c, S09.land + 1.6), volume: 0.45 });
-  cues.push({ base: "sfx_s2_megaphone_siren", from: at(c, S09.siren), to: at(c, S09.siren + 2.04), volume: 0.5 });
+  cues.push({ base: "sfx_s2_megaphone_siren", from: at(c, S09.siren), to: at(c, 3.0), volume: 0.5 });
   cues.push({ base: VOICE_FILES[2], from: c.from + c.vFrom, volume: 0.95 });
   // 10: Грег
   cues.push({ base: VOICE_FILES[3], from: d.from + d.vFrom, volume: 0.95 });

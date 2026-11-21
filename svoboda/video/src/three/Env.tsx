@@ -180,16 +180,14 @@ const Skyline: React.FC<{ pal: EnvPal; simple?: boolean }> = ({ pal, simple = fa
   );
 };
 
-const SKY_STARS = Array.from({ length: 12 }).map((_, i) => [(hash(i, 1) - 0.5) * 150, 11 + hash(i, 2) * 38, -80, 0.3 + hash(i, 3) * 0.2] as const);
+const SKY_STARS = Array.from({ length: 24 }).map((_, i) => [(hash(i, 1) - 0.5) * 118, 20 + hash(i, 2) * 38, -80, 0.6 + hash(i, 3) * 0.3] as const);
+/** Небо: один плоский ночной тон и крупные плоские звёзды-кружки (без градиентов и луны с ореолом) */
 const Sky: React.FC<{ pal: EnvPal }> = ({ pal }) => (
   <group>
     <mesh geometry={planeGeo} position={[0, 20, -90]} scale={[420, 170, 1]} material={flatMat(pal.sky)} />
     {SKY_STARS.map(([x, y, z, r], i) => (
       <Flat key={i} geo={circleGeo} color="#f4f0ff" position={[x, y, z]} scale={r} />
     ))}
-    {/* луна */}
-    <Flat geo={circleGeo} color="#161840" position={[-22, 20.5, -84]} scale={5.3} />
-    <Flat geo={circleGeo} color="#f6efb4" position={[-22, 20.5, -83.9]} scale={4.8} />
   </group>
 );
 
@@ -251,18 +249,17 @@ export const Bin: React.FC<{ x: number; z: number; color?: string; detail?: bool
   <group position={[x, 0, z]}>
     {detail && (
       <>
-        {/* объём: утолщённый обод-«бублик», рёбра-пояса, боковые ручки, ножки */}
-        <Part geo={rcyl(0.47, 0.47, 0.1, 0.045, 22)} color="#243327" px={3} position={[0, 0.99, 0]} />
-        <Part geo={rcyl(0.4, 0.4, 0.06, 0.02, 22)} color="#2f3f33" px={2.6} position={[0, 0.7, 0]} scale={[1.05, 1, 1.05]} />
-        <Part geo={rcyl(0.375, 0.375, 0.06, 0.02, 22)} color="#2f3f33" px={2.6} position={[0, 0.42, 0]} scale={[1.05, 1, 1.05]} />
+        {/* плоские пояса и боковые ручки: тёмные ободки одного тона */}
+        <Part geo={rcyl(0.47, 0.47, 0.1, 0.045, 22)} color="#2f3f33" px={3} position={[0, 0.99, 0]} />
+        <Part geo={rcyl(0.4, 0.4, 0.06, 0.02, 22)} color="#2f3f33" px={2.6} position={[0, 0.66, 0]} scale={[1.05, 1, 1.05]} />
         {[1, -1].map((s) => (
-          <Part key={s} geo={rbox(0.12, 0.08, 0.2, 0.03)} color="#243327" px={2.6} position={[s * 0.5, 0.82, 0]} />
+          <Part key={s} geo={rbox(0.12, 0.08, 0.2, 0.03)} color="#2f3f33" px={2.6} position={[s * 0.5, 0.82, 0]} />
         ))}
       </>
     )}
     <Part geo={rcyl(0.36, 0.42, 0.95, 0.05, 20)} color={color} px={3.4} position={[0, 0.475, 0]} />
     <Part geo={rcyl(0.45, 0.45, 0.07, 0.025, 20)} color="#2f3f33" px={3} position={[0, 0.97, 0]} />
-    <Part geo={rcyl(0.38, 0.4, 0.05, 0.015, 20)} color="#2f3f33" px={0} position={[0, 0.3, 0]} scale={[1.03, 1, 1.03]} />
+    {!detail && <Part geo={rcyl(0.38, 0.4, 0.05, 0.015, 20)} color="#2f3f33" px={0} position={[0, 0.3, 0]} scale={[1.03, 1, 1.03]} />}
     <Shadow position={[0, 0.02, 0.05]} w={0.55} d={0.4} />
   </group>
 );

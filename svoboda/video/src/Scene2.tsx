@@ -47,7 +47,7 @@ const BurnBin: React.FC<{ frame: number; x: number }> = ({ frame, x }) => (
 
 /** Декоративные кусты в кадке */
 const BUSH_BALLS: Array<[number, number, number, number, string]> = [
-  [-0.6, 0.85, 0.46, 0.35, "#2fbf4e"], [0.0, 0.95, 0.5, 0.4, "#3fd05f"], [0.6, 0.85, 0.46, 0.3, "#2fbf4e"], [-0.25, 0.72, 0.42, 0.75, "#3fd05f"], [0.3, 0.7, 0.42, 0.7, "#2fbf4e"],
+  [-0.6, 0.85, 0.46, 0.35, "#2fbf4e"], [0.0, 0.95, 0.5, 0.4, "#2fbf4e"], [0.6, 0.85, 0.46, 0.3, "#2fbf4e"], [-0.25, 0.72, 0.42, 0.75, "#2fbf4e"], [0.3, 0.7, 0.42, 0.7, "#2fbf4e"],
 ];
 const Bush: React.FC<{ shake: number; frame: number }> = ({ shake, frame }) => {
   const n = Math.floor(frame / 2);
@@ -89,7 +89,7 @@ const World: React.FC<{ tl: S.Timeline; voices: Array<VoiceInfo | null> }> = ({ 
   const sh = S.shotAt(tl, frame);
   const env = useMemo(() => voices.map((v) => v?.env), [voices]);
   const f = frameAt(frame, sh, tl.shots.length, { env });
-  const tick = Math.round((Math.floor(frame / S.STEP) * S.STEP * 24) / S.FPS); // эффекты рассчитаны на 24 к/с: переводим время
+  const tick = Math.floor(frame / 3) * 2; // огонь: смена формы пламени каждые 3 кадра
   return (
     <>
       <color attach="background" args={[PAL_COLD.sky]} />

@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { Part, Flat, rbox, rcyl, sphereGeo, Shadow } from "./toon";
 import { Decal, Line } from "./decal";
 import { D2R } from "./util";
+import { Eye3 } from "./Eyes3d";
 
 export interface PP {
   x: number; y: number; z: number; // таз (мир)
@@ -21,11 +22,12 @@ export interface PP {
   // сцена 2 (Cast.tsx): аксессуар (0 - как есть, 1 - снят/убран), слёзы (0..3 фаза капли), руки: 0 варежка, 1 палец, 2 кулак; наклон предмета в руке; сирена мегафона (0 выкл, 1..4 фаза)
   acc: number; tear: number; hl: number; hr: number; hp: number; sir: number;
   sw: number; toe: number; my: number; py: number; // пот-капли (0 нет, 1..3 фаза), наклон стоп (носки вниз +), поворот мегафона (рыскание)
+  atl: number; atr: number; // скрутка плеча вокруг своей оси (град): локоть сгибает предплечье вверх при отведённой руке (бицепс)
 }
 export const P0: PP = {
   x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, tl: 0, ty: 0, tz: 0, hx: 0, hy: 0, hz: 0, hdx: 0, hdy: 0,
   alx: 0, alz: 8, ale: 0, arx: 0, arz: 8, are: 0, llx: 0, llz: 4, llk: 0, lrx: 0, lrz: 4, lrk: 0,
-  mouth: 0, eyeL: 0, eyeR: 2, lx: 0, ly: 0, brow: 0, cup: 0, scale: 1, acc: 0, tear: 0, hl: 0, hr: 0, hp: 0, sir: 0, sw: 0, toe: 0, my: 0, py: 0,
+  mouth: 0, eyeL: 0, eyeR: 2, lx: 0, ly: 0, brow: 0, cup: 0, scale: 1, acc: 0, tear: 0, hl: 0, hr: 0, hp: 0, sir: 0, sw: 0, toe: 0, my: 0, py: 0, atl: 0, atr: 0,
 };
 export type PPatch = Partial<PP>;
 export const mixP = (...parts: Array<PPatch | undefined>): PP => Object.assign({}, P0, ...parts.filter(Boolean)) as PP;
@@ -38,59 +40,39 @@ export const GREG_COL: Palette = { skin: "#f4cfa4", shirt: "#e7d3a2", collar: "#
 export const GREG_S2: Palette = { ...GREG_COL, shirt: "#fff6d6", collar: "#ffffff", cuff: "#fff6d6", tie: "#ff2a3c", pants: "#43301f", skin: "#ffd9ae", head: "#ffd9ae" };
 export const ALIEN_COL: Palette = { skin: "#f2c49b", shirt: "#f2c49b", collar: "#f2c49b", tie: "#f2c49b", pants: "#f2c49b", belt: "#f2c49b", shoes: "#f2c49b", hair: "#9ba7ae", head: "#a8b8c0", cuff: "#f2c49b" };
 
-// ---- лицо Грега ----
+// ---- лицо Грега (глаза-шары рисуются отдельно, см. Person) ----
+const SCAR_PTS: Array<[number, number]> = [[-0.26, 0.49], [-0.1, 0.2], [0.04, -0.08], [0.17, -0.35], [0.26, -0.49]];
 const GregFace: React.FC<{ p: PP; c: Palette; big?: boolean }> = ({ p, c, big: bigScar }) => {
   const eyeY = 8;
-  const eye = (side: 1 | -1, st: number) => {
-    const lon = side * 20;
-    const big = st === 1;
-    const rad = big ? 0.36 : 0.33;
-    const lx = p.lx * 0.1;
-    const ly = p.ly * 0.1;
-    return (
-      <group key={side}>
-        <Decal lon={lon} lat={eyeY} rx={rad} color="#fbfbf6" ring={0.04} lift={1.004} />
-        {/* зрачок на сфере головы, со смещением взгляда */}
-        <Decal lon={lon + (lx * 180) / Math.PI} lat={eyeY + (ly * 180) / Math.PI} rx={big ? 0.075 : 0.1} color="#0c0a10" lift={1.011} visible={st !== 3} />
-        {/* веко: кожа закрывает верх (прищур) или весь глаз (закрыт) */}
-        <Decal lon={lon} lat={eyeY + 9} rx={rad + 0.01} ry={rad * 0.62} color={c.skin} lift={1.014} ring={0.0} visible={st === 2 || st === 3} />
-        <Line lon={lon} lat={eyeY + (st === 3 ? 0 : 2)} pts={[[-0.3, 0], [0.3, 0]]} w={0.02} color="#0c0a10" lift={1.019} visible={st === 2 || st === 3} />
-      </group>
-    );
-  };
   const brow = (side: 1 | -1) => (
-    <Line key={`b${side}`} lon={side * 20} lat={eyeY + 20} pts={[[-0.26, side * 0.0 - 0.02 * p.brow * side], [0.0, 0.03 + 0.03 * p.brow], [0.26, 0.0 + 0.06 * p.brow * -side * 0]]}
-      w={0.038} color={c.hair} rot={side * (-12 + p.brow * -14)} lift={1.01} />
+    <Line key={`b${side}`} lon={side * 20} lat={eyeY + 30 + p.brow * 3} pts={[[-0.28, side * 0.0 - 0.03 * p.brow * side], [0.0, 0.03 + 0.03 * p.brow], [0.28, 0.0]]}
+      w={0.05} color={c.hair} rot={side * (-12 + p.brow * -18)} lift={1.01} />
   );
+  // шрам: длинная красная линия через щёку (правая щека Грега - ближняя к камере) + плоские тёмные стежки поперёк
+  const stitches = [0.12, 0.31, 0.5, 0.69, 0.88].map((t) => {
+    const f = t * (SCAR_PTS.length - 1);
+    const i = Math.min(SCAR_PTS.length - 2, Math.floor(f));
+    const k = f - i;
+    return [SCAR_PTS[i][0] + (SCAR_PTS[i + 1][0] - SCAR_PTS[i][0]) * k, SCAR_PTS[i][1] + (SCAR_PTS[i + 1][1] - SCAR_PTS[i][1]) * k] as [number, number];
+  });
   return (
     <>
       {/* волосы по бокам, зачёс */}
       <Decal lon={-84} lat={22} rx={0.5} ry={0.62} color={c.hair} ring={0.035} lift={1.012} />
       <Decal lon={84} lat={22} rx={0.5} ry={0.62} color={c.hair} ring={0.035} lift={1.012} />
-      <Line lon={0} lat={62} pts={[[-0.5, -0.04], [-0.2, 0.06], [0.1, 0.07], [0.45, -0.02]]} w={0.022} color={c.hair} lift={1.008} />
-      <Line lon={0} lat={70} pts={[[-0.4, 0.0], [-0.05, 0.08], [0.35, 0.02]]} w={0.02} color={c.hair} lift={1.008} />
-      {eye(1, p.eyeL)}
-      {eye(-1, p.eyeR)}
+      <Line lon={0} lat={62} pts={[[-0.5, -0.04], [-0.2, 0.06], [0.1, 0.07], [0.45, -0.02]]} w={0.03} color={c.hair} lift={1.008} />
+      <Line lon={0} lat={70} pts={[[-0.4, 0.0], [-0.05, 0.08], [0.35, 0.02]]} w={0.028} color={c.hair} lift={1.008} />
       {brow(1)}
       {brow(-1)}
-      {/* морщины у глаза */}
-      <Line lon={-45} lat={4} pts={[[-0.12, 0.05], [0.12, -0.04]]} w={0.014} color="#0c0a10" lift={1.008} />
-      <Line lon={-44} lat={-6} pts={[[-0.1, 0.03], [0.1, -0.05]]} w={0.014} color="#0c0a10" lift={1.008} />
-      {/* шрам через щёку (+ швы) */}
       {bigScar ? (
         <>
-          <Line lon={30} lat={-24} pts={[[-0.6, 0.34], [0.0, 0.0], [0.66, -0.34]]} w={0.085} color="#ff1f35" lift={1.012} />
-          {[-0.28, -0.08, 0.14, 0.34].map((u, i) => (
-            <Line key={i} lon={30 + u * 40} lat={-24 - u * 24} pts={[[-0.03, 0.24], [0.05, -0.24]]} w={0.03} color="#0c0a10" lift={1.02} />
+          <Line lon={-25} lat={-12} pts={SCAR_PTS} w={0.034} color="#e0182c" lift={1.012} />
+          {stitches.map(([u, v], i) => (
+            <Line key={i} lon={-25} lat={-12} pts={[[u - 0.1, v - 0.055], [u + 0.1, v + 0.055]]} w={0.016} color="#0c0a10" lift={1.02} />
           ))}
         </>
       ) : (
-        <>
-          <Line lon={30} lat={-18} pts={[[-0.34, 0.2], [0.0, 0.0], [0.4, -0.2]]} w={0.026} color="#cc2a3c" lift={1.012} />
-          <Line lon={25} lat={-12} pts={[[-0.05, 0.12], [0.03, -0.1]]} w={0.012} color="#0c0a10" lift={1.017} />
-          <Line lon={32} lat={-18} pts={[[0.0, 0.1], [0.08, -0.1]]} w={0.012} color="#0c0a10" lift={1.017} />
-          <Line lon={39} lat={-23} pts={[[0.04, 0.1], [0.12, -0.1]]} w={0.012} color="#0c0a10" lift={1.017} />
-        </>
+        <Line lon={-25} lat={-12} pts={SCAR_PTS} w={0.026} color="#cc2a3c" lift={1.012} />
       )}
       {/* рот-створка */}
       <Line lon={0} lat={-37} pts={[[-0.26, -0.02], [0, 0.03], [0.26, -0.02]]} w={0.026} color="#0c0a10" lift={1.008} visible={p.mouth === 0} />
@@ -156,7 +138,7 @@ const Leg: React.FC<{ side: 1 | -1; swing: number; spread: number; knee: number;
   </group>
 );
 
-const HEAD_G = { rx: 0.56, ry: 0.45, rz: 0.37 };
+const HEAD_G = { rx: 0.56, ry: 0.47, rz: 0.46 };
 const HEAD_A = { rx: 0.4, ry: 0.52, rz: 0.36 };
 
 // ---- лицо статиста ----
@@ -216,6 +198,12 @@ export const Person: React.FC<{ pose: PP; kind?: "greg" | "alien" | "extra"; col
                   <Part geo={sphereGeo(32)} color={c.head} px={3.6} scale={[H.rx, H.ry, H.rz]} />
                   {/* уши */}
                   {!naked && [1, -1].map((s) => <Part key={s} geo={sphereGeo(14)} color={c.skin} px={2.8} position={[s * (H.rx + 0.005), -0.04, -0.02]} scale={[0.05, 0.1, 0.075]} />)}
+                  {kind === "greg" && (
+                    <>
+                      <Eye3 h={H} side={1} lon={20} lat={8} re={0.16} st={p.eyeL} lx={p.lx} ly={p.ly} lid={c.skin} />
+                      <Eye3 h={H} side={-1} lon={20} lat={8} re={0.16} st={p.eyeR} lx={p.lx} ly={p.ly} lid={c.skin} />
+                    </>
+                  )}
                   <group scale={[H.rx, H.ry, H.rz]}>{kind === "greg" ? <GregFace p={p} c={c} big={s2} /> : kind === "alien" ? <AlienFace p={p} /> : <PlainFace p={p} c={c} />}</group>
                 </group>
               </group>

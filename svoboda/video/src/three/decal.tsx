@@ -1,7 +1,10 @@
 // Накладки, лежащие на поверхности (единичной) сферы: «глаза», рот, шрам, брови. Родитель масштабируется в эллипсоид головы.
 import React, { useMemo } from "react";
 import * as THREE from "three";
-import { flatMat, STYLE } from "./toon";
+import { decalMat, STYLE } from "./toon";
+
+/** общий подъём накладок над сферой: хорды сферы не должны пробивать накладку */
+const LIFT = 0.012;
 
 /** Касательная плоскость в точке (lon,lat): u - восток, v - север. Возвращает базис (x=east, y=dir, z=-north). */
 export const basisAt = (lonDeg: number, latDeg: number) => {
@@ -26,8 +29,8 @@ export const capGeo = (rx: number, ry: number) => {
   const key = `${rx.toFixed(3)}_${ry.toFixed(3)}`;
   let g = capCache.get(key);
   if (g) return g;
-  const R = 4;
-  const S = 28;
+  const R = 6;
+  const S = 40;
   const pos: number[] = [0, 1, 0];
   for (let i = 1; i <= R; i++) {
     const rho = i / R;
@@ -76,8 +79,8 @@ export const Decal: React.FC<DecalProps> = ({ lon, lat, rx, ry = rx, rot = 0, co
   return (
     <group quaternion={q} visible={visible}>
       <group rotation={[0, (rot * Math.PI) / 180, 0]}>
-        {gr && <mesh geometry={gr} material={flatMat(ringColor, { double: true })} scale={lift - 0.0025} />}
-        <mesh geometry={g} material={flatMat(color, { double: true })} scale={lift} />
+        {gr && <mesh geometry={gr} material={decalMat(ringColor)} scale={lift + LIFT - 0.0025} />}
+        <mesh geometry={g} material={decalMat(color)} scale={lift + LIFT} />
         {children}
       </group>
     </group>
@@ -104,7 +107,7 @@ export const Line: React.FC<LineProps> = ({ lon, lat, pts, w = 0.03, color, rot 
   return (
     <group quaternion={q} visible={visible}>
       <group rotation={[0, (rot * Math.PI) / 180, 0]}>
-        <mesh geometry={geo} material={flatMat(color)} scale={lift} />
+        <mesh geometry={geo} material={decalMat(color)} scale={lift + LIFT} />
       </group>
     </group>
   );

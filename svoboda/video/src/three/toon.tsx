@@ -93,6 +93,18 @@ export const flatMat = (hex: string, opts: { double?: boolean } = {}): THREE.Mes
   return m;
 };
 
+/** Материал накладок на сферах: плоский цвет + polygonOffset (чтобы хорды сферы не просвечивали «штриховкой» z-fighting) */
+const decalCache = new Map<string, THREE.MeshBasicMaterial>();
+export const decalMat = (hex: string): THREE.MeshBasicMaterial => {
+  const key = hex + (STYLE.v5 ? "#5" : "");
+  let m = decalCache.get(key);
+  if (!m) {
+    m = new THREE.MeshBasicMaterial({ color: pop(hex), toneMapped: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+    decalCache.set(key, m);
+  }
+  return m;
+};
+
 // ---------- геометрии (кэш) ----------
 const geoCache = new Map<string, THREE.BufferGeometry>();
 const cached = (key: string, make: () => THREE.BufferGeometry) => {
@@ -135,14 +147,15 @@ export interface PartProps {
   px?: number; // толщина контура в пикселях кадра; 0 = без контура
   position?: [number, number, number];
   rotation?: [number, number, number];
+  quaternion?: THREE.Quaternion;
   scale?: number | [number, number, number];
   visible?: boolean;
   children?: React.ReactNode;
 }
-export const Part: React.FC<PartProps> = ({ geo, hull, color, px = 3.6, position, rotation, scale, visible, children }) => {
+export const Part: React.FC<PartProps> = ({ geo, hull, color, px = 3.6, position, rotation, quaternion, scale, visible, children }) => {
   const w = STYLE.v5 ? (px > 0 ? OUTLINE_PX : 0) : px; // v5: у всех деталей одна толщина контура
   return (
-    <mesh geometry={geo} material={toonMat(color)} position={position} rotation={rotation} scale={scale as any} visible={visible}>
+    <mesh geometry={geo} material={toonMat(color)} position={position} rotation={rotation} quaternion={quaternion} scale={scale as any} visible={visible}>
       {w > 0 && <mesh geometry={hull ?? geo} material={outlineMat(w)} />}
       {children}
     </mesh>
