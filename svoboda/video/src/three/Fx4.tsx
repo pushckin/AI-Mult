@@ -143,16 +143,16 @@ export const Spit: React.FC<{ from: [number, number, number]; groundY: number; k
           const py = Math.max(groundY + 0.02, from[1] - t * t * 0.0125 + 0.1 * Math.sin(t * 0.3));
           return (
             <group key={i} position={[px, py, from[2] + 0.1 + i * 0.01]}>
-              <mesh geometry={sphereGeo(8)} material={flatMat(INK)} scale={0.075} />
-              <mesh geometry={sphereGeo(8)} material={flatMat(i % 2 ? "#6b4326" : "#8a5a34")} position={[0, 0, 0.02]} scale={0.055} />
+              <mesh geometry={sphereGeo(8)} material={flatMat(INK)} scale={0.17} />
+              <mesh geometry={sphereGeo(8)} material={flatMat(i % 2 ? "#6b4326" : "#8a5a34")} position={[0, 0, 0.02]} scale={0.125} />
             </group>
           );
         })}
       {kh >= land && (
         <group position={[from[0], groundY + 0.025, from[2] + 0.1]} rotation={[-Math.PI / 2, 0, 0]}>
-          <mesh geometry={circleGeo} material={flatMat(INK)} scale={[0.5, 0.3, 1]} renderOrder={2} />
-          <mesh geometry={circleGeo} material={flatMat("#6b4326")} position={[0, 0, 0.002]} scale={[0.45, 0.26, 1]} renderOrder={3} />
-          <mesh geometry={circleGeo} material={flatMat("#8a5a34")} position={[0.06, 0.03, 0.004]} scale={[0.2, 0.1, 1]} renderOrder={4} />
+          <mesh geometry={circleGeo} material={flatMat(INK)} scale={[1.0, 0.55, 1]} renderOrder={2} />
+          <mesh geometry={circleGeo} material={flatMat("#6b4326")} position={[0, 0, 0.002]} scale={[0.92, 0.5, 1]} renderOrder={3} />
+          <mesh geometry={circleGeo} material={flatMat("#8a5a34")} position={[0.06, 0.03, 0.004]} scale={[0.4, 0.2, 1]} renderOrder={4} />
         </group>
       )}
     </>
