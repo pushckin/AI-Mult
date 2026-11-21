@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Рендер сцены 3 («Классовая борьба», кадры 13-18). Длина считается из длительностей реплик (public/audio/voice_s3_*.wav).
 #   tools/render_s3.sh                 -> out/scene3.mp4 (полный рендер)
-#   tools/render_s3.sh range A B       -> быстрый рендер части кадров в out/scene3_<A>-<B>.mp4
+#   tools/render_s3.sh range A B       -> быстрый рендер части кадров (60 fps: 60 кадров = 1 с) в out/scene3_<A>-<B>.mp4
+#   Сцена 60 fps (data/fps.ts). Параллелизм: CONC=<число> tools/render_s3.sh ...
 #   node tools/stills.mjs <папка> <кадры…> с COMP=Scene3 -> still'ы
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

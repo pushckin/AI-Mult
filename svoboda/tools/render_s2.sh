@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Рендер сцены 2 («Освобождение», кадры 07-12). Длина считается из длительностей реплик (public/audio/voice_s2_*.wav).
 #   tools/render_s2.sh                 -> out/scene2.mp4 (полный рендер)
-#   tools/render_s2.sh range A B       -> быстрый рендер части кадров в out/scene2_<A>-<B>.mp4
+#   tools/render_s2.sh range A B       -> быстрый рендер части кадров (60 fps: 60 кадров = 1 с) в out/scene2_<A>-<B>.mp4
+#   Сцена 60 fps (data/fps.ts). Параллелизм: CONC=<число> tools/render_s2.sh ...
 #   node tools/stills.mjs <папка> <кадры…> с COMP=Scene2 -> still'ы
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

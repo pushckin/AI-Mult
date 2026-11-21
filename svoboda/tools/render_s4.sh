@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Рендер сцены 4 («Закон и порядок», кадры 19-27). Длина считается из длительностей реплик (public/audio/voice_s4_*.wav).
 #   tools/render_s4.sh                 -> out/scene4.mp4 (полный рендер)
-#   tools/render_s4.sh range A B       -> быстрый рендер части кадров в out/scene4_<A>-<B>.mp4
+#   tools/render_s4.sh range A B       -> быстрый рендер части кадров (60 fps: 60 кадров = 1 с) в out/scene4_<A>-<B>.mp4
+#   Сцена 60 fps (data/fps.ts). Параллелизм: CONC=<число> tools/render_s4.sh ...
 #   node tools/stills.mjs <папка> <кадры…> с COMP=Scene4 -> still'ы
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

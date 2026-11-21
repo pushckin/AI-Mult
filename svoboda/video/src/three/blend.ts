@@ -5,8 +5,8 @@ import React from "react";
 import { FPS } from "../data/fps";
 import { clamp } from "./util";
 
-/** h - полуширина окна (с): переход между позами длится 2h = 0.16 с; over - доля перелёта на углах; dt - шаг выборки (с) */
-export const SMOOTH = { h: 0.08, over: 0.12, dt: 1 / 120 };
+/** h - полуширина окна (с): переход между позами длится 2h = 0.18 с; over - доля перелёта на углах; dt - шаг выборки (с) */
+export const SMOOTH = { h: 0.09, over: 0.12, dt: 1 / 120 };
 
 /** Поля, которые не смешиваем (форма рта, видимость, флаги, тики эффектов): берётся значение в текущий момент */
 const DISCRETE = new Set([
@@ -44,9 +44,25 @@ const kernel = (h: number, over: number, dt: number): Kernel => {
 };
 
 type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+// ---------- «живой холд»: едва заметное непрерывное покачивание поз (≈1°, периоды 1.6-2.9 с), чтобы в паузах между битами кадры не были одинаковыми ----------
+const IDLE: ReadonlyArray<readonly [string, number, number]> = [
+  ["tl", 0.9, 1.7], ["hx", 1.0, 2.3], ["hy", 1.2, 1.9], ["hz", 0.6, 2.9], ["alx", 1.4, 2.1], ["arx", 1.4, 2.7], ["ale", 1.6, 1.6], ["are", 1.6, 2.2],
+];
+let IDLE_T = 0;
+const strHash = (str: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+  return (h >>> 0) / 4294967296;
+};
+const idleOf = (out: Record<string, Any>, who: string) => {
+  for (const [f, amp, per] of IDLE) {
+    if (typeof out[f] === "number") out[f] += amp * Math.sin((2 * Math.PI * IDLE_T) / per + strHash(who + f) * 2 * Math.PI);
+  }
+};
 const isPlain = (v: Any): boolean => !!v && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype;
 
-const blendAny = (vals: Any[], ci: number, K: Kernel, key: string): Any => {
+const blendAny = (vals: Any[], ci: number, K: Kernel, key: string, who = ""): Any => {
   const c = vals[ci];
   if (typeof c === "number") {
     if (DISCRETE.has(key)) return c;
@@ -69,7 +85,7 @@ const blendAny = (vals: Any[], ci: number, K: Kernel, key: string): Any => {
   }
   if (Array.isArray(c)) {
     const same = vals.map((v) => (Array.isArray(v) && v.length === c.length ? v : null));
-    return c.map((_: Any, i: number) => blendAny(same.map((a) => (a ? a[i] : c[i])), ci, K, key));
+    return c.map((_: Any, i: number) => blendAny(same.map((a) => (a ? a[i] : c[i])), ci, K, key, who));
   }
   if (React.isValidElement(c)) {
     const el = c as React.ReactElement<Record<string, Any>>;
@@ -78,6 +94,7 @@ const blendAny = (vals: Any[], ci: number, K: Kernel, key: string): Any => {
       ci,
       K,
       "",
+      typeof el.props.kind === "string" ? el.props.kind : who,
     );
     const { children, ...rest } = props as Record<string, Any>;
     const cfg: Record<string, Any> = el.key !== null ? { ...rest, key: el.key } : rest;
@@ -87,7 +104,9 @@ const blendAny = (vals: Any[], ci: number, K: Kernel, key: string): Any => {
   if (isPlain(c)) {
     const objs = vals.map((v) => (isPlain(v) && (c.kind === undefined || v.kind === c.kind) ? v : null));
     const out: Record<string, Any> = {};
-    for (const k of Object.keys(c)) out[k] = blendAny(objs.map((o) => (o && k in o ? o[k] : c[k])), ci, K, k);
+    const w = typeof c.kind === "string" ? c.kind : who;
+    for (const k of Object.keys(c)) out[k] = blendAny(objs.map((o) => (o && k in o ? o[k] : c[k])), ci, K, k, w);
+    if (w && typeof out.scale === "number" && typeof out.tl === "number" && typeof out.hx === "number" && typeof out.alx === "number") idleOf(out, w);
     return out;
   }
   return c;
@@ -105,6 +124,7 @@ export const smoothFrame = <T,>(sample: (f: number) => T, frame: number, lo: num
   const vals: T[] = new Array(K.us.length);
   vals[K.ci] = center;
   const seg0 = segOf(center);
+  IDLE_T = frame / FPS;
   for (const side of [1, -1]) {
     let last = center;
     let dead = false;
