@@ -1,0 +1,52 @@
+(node:28643) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL voice_greg_01.wav 1 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+OK voice_greg_01.wav gemini-3-flash-preview 176
+FAIL voice_s2_01_tony.wav 1 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+OK voice_s2_01_tony.wav gemini-3-flash-preview 1372
+FAIL voice_s2_02_markus.wav 1 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+OK voice_s2_02_markus.wav gemini-3-flash-preview 1138
+FAIL voice_s2_03_chloe_mega.wav 1 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_03_chloe_mega.wav 2 0 {"err":"TimeoutError: The operation was aborted due to timeout"}
+FAIL voice_s2_03_chloe_mega.wav 3 0 {"err":"TimeoutError: The operation was aborted due to timeout"}
+FAIL voice_s2_03_chloe_mega.wav 4 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_03_chloe_mega.wav 5 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_03_chloe_mega.wav 6 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+OK voice_s2_03_chloe_mega.wav gemini-3-flash-preview 820
+FAIL voice_s2_04_greg.wav 1 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+OK voice_s2_04_greg.wav gemini-3-flash-preview 960
+FAIL voice_s2_05_chloe.wav 1 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_05_chloe.wav 2 0 {"err":"TimeoutError: The operation was aborted due to timeout"}
+FAIL voice_s2_05_chloe.wav 3 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_05_chloe.wav 4 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s2_05_chloe.wav 5 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s2_05_chloe.wav 6 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_05_chloe.wav 7 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_05_chloe.wav 8 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s2_05_chloe.wav 9 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_05_chloe.wav 10 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_05_chloe.wav 11 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s2_05_chloe.wav 12 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s2_06_tony.wav 1 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+OK voice_s2_06_tony.wav gemini-3-flash-preview 1511
+FAIL voice_s3_01_chloe.wav 1 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+OK voice_s3_01_chloe.wav gemini-3-flash-preview 640
+FAIL voice_s3_02_brenda.wav 1 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+OK voice_s3_02_brenda.wav gemini-3-flash-preview 1264
+FAIL voice_s3_03_stacey.wav 1 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s3_03_stacey.wav 2 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s3_03_stacey.wav 3 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s3_03_stacey.wav 4 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s3_03_stacey.wav 5 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s3_03_stacey.wav 6 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+OK voice_s3_03_stacey.wav gemini-3-flash-preview 1335
+FAIL voice_s3_04_markus.wav 1 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+OK voice_s3_04_markus.wav gemini-3-flash-preview 1202
+FAIL voice_s3_05_tony.wav 1 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s3_05_tony.wav 2 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s3_05_tony.wav 3 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s3_05_tony.wav 4 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s3_05_tony.wav 5 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s3_05_tony.wav 6 429 {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. 
+FAIL voice_s3_05_tony.wav 7 503 {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+FAIL voice_s3_05_tony.wav 8 0 {"err":"TypeError: fetch failed"}

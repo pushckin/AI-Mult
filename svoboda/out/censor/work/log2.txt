@@ -1,0 +1,7 @@
+(node:232) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+skip voice_greg_01.wav
+skip voice_s2_01_tony.wav
+skip voice_s2_02_markus.wav
+skip voice_s2_03_chloe_mega.wav
+skip voice_s2_04_greg.wav
