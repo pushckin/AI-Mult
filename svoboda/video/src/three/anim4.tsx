@@ -286,10 +286,23 @@ const shot19 = (T: number, T2: number): Out => {
 // =====================================================================================
 const shot20 = (T: number, sh: ShotT, v: Voices): Out => {
   const talk = mouthOf(sh, v.env[0]) > 0 ? 1 : 0;
-  const push = T < 0.2 ? 6.6 : T < 1.2 ? 6.2 : 5.8; // жёсткие подъезды на «щелчок» и на слове «труп»
+  // длинный шёпот: жёсткие склейки между ракурсами (оба глаза, правый глаз, усы со слюной, левый глаз, ещё ближе)
+  const CUTS: Array<[number, Cam]> = [
+    [0, { x: 0, y: 0, z: 6.6, tx: 0, ty: 0, tz: 0 }],
+    [0.2, { x: 0, y: 0, z: 6.2, tx: 0, ty: 0, tz: 0 }],
+    [1.25, { x: 1.6, y: 0.55, z: 3.8, tx: 1.6, ty: 0.55, tz: 0 }],
+    [2.3, { x: 0, y: -0.9, z: 4.6, tx: 0, ty: -0.9, tz: 0 }],
+    [3.2, { x: 0, y: 0, z: 5.6, tx: 0, ty: 0, tz: 0 }],
+    [4.1, { x: -1.6, y: 0.55, z: 3.8, tx: -1.6, ty: 0.55, tz: 0 }],
+    [5.05, { x: 0, y: -0.6, z: 5.2, tx: 0, ty: -0.6, tz: 0 }],
+    [5.6, { x: 0, y: 0.4, z: 4.2, tx: 0, ty: 0.4, tz: 0 }],
+    [6.9, { x: 0, y: 0.5, z: 3.4, tx: 0, ty: 0.5, tz: 0 }],
+  ];
+  let cam: Cam = CUTS[0][1];
+  for (const [t, c] of CUTS) if (T >= t) cam = c;
   const beat = Math.floor((T * FPS) / 18) % 2; // сердцебиение: пульс формы
   return {
-    cam: { x: 0, y: 0, z: push, tx: 0, ty: 0, tz: 0 },
+    cam,
     street: false,
     node: <Ecu pupil={0.21} lid={0} mst={Math.floor(T * FPS) % 8 < 4 ? 1 : 0} vein={9} pulse={beat} drool={clamp((T - 0.3) / 2.5)} talk={talk} />,
   };
@@ -430,7 +443,7 @@ const shot23b = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
   const px = lerp(x0, DUMP.x, u);
   const pz = lerp(C23.z, DUMP.z, u);
   const py = 0.9 + 1.5 * 4 * u * (1 - u) + (1 - u) * 0.2 + u * 0.4;
-  const tumble = -360 * 1.0 * easeOut(u) * 1.15;
+  const tumble = -360 * 2 * easeOut(u);
   const mouth = mouthOf(sh, v.env[2]);
   const inside = T >= land;
   const cp = base("chloe", {
@@ -440,7 +453,7 @@ const shot23b = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
   const slamT = dur - 0.15;
   const lid = T2 < slamT ? 100 : T2 < slamT + 0.07 ? 55 : 0;
   const sk = T2 >= slamT && T2 < slamT + 0.27 ? (Math.floor(T2 * 30) % 4 < 2 ? 0.05 : -0.05) : 0;
-  const cam: Cam = { x: 0.9, y: 3.0, z: 13.6, tx: 0.9, ty: 2.5, tz: 4.0 };
+  const cam: Cam = T >= 1.6 && T < land - 0.4 ? { x: px - 0.6, y: py + 0.5, z: 9.0, tx: px, ty: py, tz: 4.2 } : { x: 0.9, y: 3.0, z: 13.6, tx: 0.9, ty: 2.5, tz: 4.0 };
   return {
     cam,
     street: true,
@@ -711,7 +724,7 @@ const shot26 = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
   gp = { ...gp, y: gp.y };
   const spitK = Math.round((T2 - 1.2) * 30);
   const dolly = lerp(12.8, 9.8, clamp(T2 / (sh.len / FPS)));
-  const cam: Cam = { x: 1.0, y: 3.0, z: dolly, tx: 1.1, ty: 2.3, tz: 4.0 };
+  const cam: Cam = { x: 1.0, y: 3.0, z: dolly, tx: 1.1, ty: 2.0, tz: 4.0 };
   const tick = Math.floor(T2 * 10);
   const fl = Math.floor(T2 * 15);
   const jk = gunHold(base4("jackson", { x: -3.4, z: 1.4, ry: 20, tl: -14, hx: -12, hy: 10 * (Math.floor(T * 5) % 2 ? 1 : -1), eyeL: 1, eyeR: 1, ps: 1, mouth: 2, brow: -1, sp: 1, gun: 1, gx: 0.2, gy: 0.75, gz: 0.4, gp: 70, y: 0.43 * SCL.jackson + 0.05, mst: tick % 2 }));
@@ -748,7 +761,7 @@ const shot26 = (T: number, T2: number, sh: ShotT, v: Voices): Out => {
         {A("brenda", br)}
         <SmokeColumn x={3.6} y={1.0} z={0.6} frame={T2 * 30 + 3} n={5} dark={false} h={2.6} />
         {A("greg", gp)}
-        <Spit from={wp(gp, [0.0, 0.7, 0.75])} groundY={ROAD_Y} k={spitK} />
+        <Spit from={wp(gp, [0.0, 0.95, 0.6])} groundY={ROAD_Y} k={spitK} />
       </>
     ),
   };
