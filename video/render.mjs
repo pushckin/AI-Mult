@@ -15,12 +15,12 @@ page.on('pageerror', e => console.error('PAGEERR', e.message)); page.on('console
 await page.goto(url); await page.evaluate(() => window.READY);
 const args = process.argv.slice(2);
 if (args[0] === 'still') {
-  for (let i = 1; i < args.length; i += 2) { await page.evaluate(t => renderFrame(t), +args[i]); await page.screenshot({ path: args[i + 1] }); }
+  for (let i = 1; i < args.length; i += 2) { await page.evaluate(t => renderFrame(t), +args[i] - 2.8); await page.screenshot({ path: args[i + 1] }); }
 } else {
   const [a, b, out] = [+args[0], +args[1], args[2]];
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p', '-r', String(FPS), out], { stdio: ['pipe', 'inherit', 'inherit'] });
   for (let f = a; f < b; f++) {
-    await page.evaluate(t => renderFrame(t), f / FPS);
+    await page.evaluate(t => renderFrame(t), f / FPS - 2.8);
     const buf = await page.screenshot({ type: 'jpeg', quality: 95 });
     if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r));
     if ((f - a) % 100 === 0) console.log(`${out}: ${f - a}/${b - a}`);

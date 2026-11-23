@@ -214,6 +214,22 @@
     }
   }
 
+  class ImageEl { // картинка с пружинным появлением
+    constructor(sc, href, cx, cy, size, t0) {
+      this.t0 = t0; this.end = t0; this.cx = cx; this.cy = cy;
+      this.g = el('g', {}, sc.g);
+      this.im = el('image', { href, x: cx - size / 2, y: cy - size / 2, width: size, height: size }, this.g);
+    }
+    update(t) {
+      const lt = t - this.t0;
+      if (lt < 0) { this.g.style.display = 'none'; return null; }
+      this.g.style.display = '';
+      const s = Math.max(0.001, spring(lt / 0.7));
+      this.g.setAttribute('transform', `translate(${this.cx},${this.cy}) scale(${s}) rotate(${(1 - s) * -25}) translate(${-this.cx},${-this.cy})`);
+      return null;
+    }
+  }
+
   class AnimEl { // произвольная анимация: build(g) один раз, fn(lt, g, t) каждый кадр
     constructor(sc, t0, t1, build, fn) {
       this.t0 = t0; this.end = t1; this.fn = fn; this.g = el('g', {}, sc.g); build(this.g, sc);
@@ -236,6 +252,7 @@
     txt(str, at, dur, x, y, size, color, o) { const e = new TextEl(this, str, x, y, size, color || C.ink, at, dur, o); this.els.push(e); return e; }
     bub(text, at, cx, cy, tx, ty, o) { const e = new BubbleEl(this, text, at, cx, cy, tx, ty, o); this.els.push(e); return e; }
     show(shape, at, o) { const e = new ShowEl(this, shape, at, o); this.els.push(e); return e; }
+    img(href, at, cx, cy, size) { const e = new ImageEl(this, href, cx, cy, size, at); this.els.push(e); return e; }
     anim(at, end, build, fn) { const e = new AnimEl(this, at, end ?? 1e9, build, fn); this.els.push(e); return e; }
   }
 

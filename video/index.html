@@ -14,6 +14,7 @@ html,body{margin:0;background:#fff;overflow:hidden}
 window.READY = (async () => {
   await Promise.all([document.fonts.load('40px Neucha', 'Привет мир'), document.fonts.load('40px Neucha', 'Hello rs4988235-A'), document.fonts.load('40px Neucha', '→—«»…%')]);
   await document.fonts.ready;
+  await new Promise(r => { const i = new Image(); i.onload = i.onerror = r; i.src = 'assets/logo.png'; });
   const s = document.createElement('script'); s.src = 'scenes.js';
   await new Promise((res, rej) => { s.onload = res; s.onerror = rej; document.body.appendChild(s); });
   return true;

@@ -3,7 +3,7 @@
   const { R, S, C } = E, K = window.K;
   const P = (x, y, s = 1, r = 0) => `translate(${x},${y}) scale(${s})${r ? ` rotate(${r})` : ''}`;
   const T0 = [0, 15.0, 19.57, 51.83, 86.09, 116.19, 143.52, 167.18, 179.21, 214.01];
-  const END = 229.3;
+  const END = 229.3, INTRO = 2.8, OUTRO = 3.2;
 
   /* ---- СЦЕНА 1: зацепка (0–15) ---- */
   (function () {
@@ -197,4 +197,16 @@
     s.txt('НАУКА!', 10.4, 1.6, 930, 660, 120, C.red, { anchor: 'middle', rot: -4 });
     [[760, 400], [1100, 430], [800, 760], [1080, 780]].forEach(([x, y], i) => s.d(K.mark('star', x, y, 1.1), 11.0 + i * 0.3, 0.4));
   })();
+
+  /* ---- Заставка канала (до озвучки) и финальная плашка ---- */
+  const brand = (sc, t0, top) => {
+    sc.d(R.circ(960, 400, 520, { c: C.blue, w: 8, r: 1.6 }), t0 + 0.1, 0.9);
+    sc.img('assets/logo.png', t0 + 0.15, 960, 400, 470);
+    sc.txt('Pushckin AI mult', t0 + 0.9, 1.1, 960, 780, 130, C.ink, { anchor: 'middle' });
+    sc.txt('@Pushckin_Ai', t0 + 2.0, 0.7, 960, 880, 60, C.blue, { anchor: 'middle' });
+    if (top) sc.txt(top, t0 + 1.0, 1.4, 960, 1010, 54, C.red, { anchor: 'middle', rot: -2 });
+  };
+  brand(E.scene(-INTRO, 0, 'fade'), 0, null);
+  brand(E.scene(END, END + OUTRO, 'fade'), 0, 'Подписывайся и жди новые мультики!');
+  window.TOTAL_DUR = INTRO + END + OUTRO; window.INTRO = INTRO;
 })();
