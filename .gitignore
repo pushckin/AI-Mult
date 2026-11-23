@@ -17,3 +17,7 @@ node_modules/
 __pycache__/
 .step-*/
 *.raw*.wav
+chatgpt-whiteboard/build/
+chatgpt-whiteboard/render.log
+chatgpt-whiteboard/sfx.log
+chatgpt-whiteboard/still_*.png
