@@ -62,7 +62,7 @@ class Ctx {
 
 // ---------- Сцена ----------
 class Scene {
-  constructor(name, dur, sponge) { this.name = name; this.dur = dur; this.sp = sponge; this.g = el('g', {}, root); this.items = []; this.events = []; }
+  constructor(name, dur, sponge, k = 1) { this.name = name; this.dur = dur; this.sp = sponge; this.k = k; this.real = (dur - sponge) * k + sponge; this.g = el('g', {}, root); this.items = []; this.events = []; }
   sfx(name, t, vol = 1, dur) { this.events.push({ name, t, vol, dur }); }
   add(it) { this.items.push(it); return it; }
   group(parent) { return el('g', {}, parent || this.g); }
@@ -237,20 +237,21 @@ for (let i = 0; i < 70; i++) {
 }
 for (const [px, py, rx, ry, dk] of pores) el('ellipse', { cx: -SPW + px, cy: py, rx, ry, fill: dk ? '#B52A36' : '#F4727D', opacity: .85 }, spPores);
 const scenes = [];
-function defineScene(name, dur, sponge, build) { const s = new Scene(name, dur, sponge); s.g.style.display = ''; build(s); s.g.style.display = 'none'; scenes.push(s); }
+function defineScene(name, dur, sponge, build) { const s = new Scene(name, dur, sponge, (window.SCENE_K || [])[scenes.length] || 1); s.g.style.display = ''; build(s); s.g.style.display = 'none'; scenes.push(s); }
 
 let starts = [];
-function layout() { let a = 0; for (const s of scenes) { s.start = a; a += s.dur; } }
+function layout() { let a = 0; for (const s of scenes) { s.start = a; a += s.real; } }
 
 function renderFrame(T) {
-  let idx = scenes.findIndex(s => T >= s.start && T < s.start + s.dur); if (idx < 0) idx = scenes.length - 1;
+  let idx = scenes.findIndex(s => T >= s.start && T < s.start + s.real); if (idx < 0) idx = scenes.length - 1;
   scenes.forEach((s, i) => s.g.style.display = i === idx ? '' : 'none');
-  const S = scenes[idx], t = T - S.start;
+  const S = scenes[idx], tr = T - S.start;
+  const sp0r = (S.dur - S.sp) * S.k, sp0 = S.dur - S.sp;
+  const t = tr < sp0r ? tr / S.k : sp0 + (tr - sp0r);
   for (const it of S.items) it.update(t);
   // губка
-  const sp0 = S.dur - S.sp;
-  if (t >= sp0) {
-    const p = easeInOut(clamp((t - sp0) / S.sp)), R = -30 + p * (W + SPW + 80);
+  if (tr >= sp0r) {
+    const p = easeInOut(clamp((tr - sp0r) / S.sp)), R = -30 + p * (W + SPW + 80);
     const ph = 0;
     let d = `M${R + wave(-40, ph)} -40`; const pts = [];
     for (let y = -40; y <= H + 40; y += 24) pts.push([R + wave(y, ph), y]);
@@ -273,7 +274,7 @@ function renderFrame(T) {
 
 window.engine = { defs, C, Ctx, W, H, clamp, lerp, easeInOut, easeOut, spring, textW, el, defineScene, scenes };
 window.renderFrame = renderFrame;
-window.getTimeline = () => ({ total: scenes.reduce((a, s) => a + s.dur, 0), scenes: scenes.map(s => ({ name: s.name, start: s.start, dur: s.dur, sponge: s.sp, events: s.events })) });
+window.getTimeline = () => ({ total: scenes.reduce((a, s) => a + s.real, 0), scenes: scenes.map(s => ({ name: s.name, start: s.start, dur: s.real, sponge: s.sp, k: s.k, events: s.events.filter(e => e.name !== 'sponge').map(e => ({ ...e, t: e.t * s.k, dur: e.dur != null ? e.dur * s.k : e.dur })) })) });
 window.boot = async () => {
   await Promise.all([document.fonts.load('700 60px Caveat', 'Аб Привет'), document.fonts.load('700 60px Caveat', 'Ab 12%'), document.fonts.load('400 60px Caveat', 'Аб Ab')]);
   window.buildScenes(); layout(); window.READY = true;

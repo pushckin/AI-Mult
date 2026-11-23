@@ -9,7 +9,13 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.woff2': 'font/w
 const server = http.createServer((q, s) => { const f = path.join(__dir, 'public', q.url === '/' ? 'index.html' : q.url.split('?')[0]); fs.readFile(f, (e, d) => { if (e) { s.writeHead(404); s.end(); } else { s.writeHead(200, { 'Content-Type': mime[path.extname(f)] || 'application/octet-stream' }); s.end(d); } }); });
 await new Promise(r => server.listen(0, r)); const url = `http://127.0.0.1:${server.address().port}/`;
 const browsers = [];
-async function openPage() { const browser = await puppeteer.launch({ executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu', '--font-render-hinting=none'] }); browsers.push(browser); const p = await browser.newPage(); await p.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 }); p.on('pageerror', e => console.log('PAGEERR', e.message)); await p.goto(url); await p.waitForFunction('window.READY===true', { timeout: 60000 }); return p; }
+// темп анимации каждой сцены подгоняется под длину озвучки (если она есть): k = реальная длина / расчётная
+const SC = [[15, 2], [30, 2], [35, 2], [40, 2], [35, 2], [30, 2], [15, 3]];
+const K = SC.map(([dur, sp], i) => { const f = path.join(__dir, `audio/voice/s${i + 1}.wav`); if (!fs.existsSync(f) || arg('nokscale', null)) return 1;
+  const v = parseFloat(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).toString());
+  return (v + .3 + .8) / (dur - sp); });
+console.log('K:', K.map(x => x.toFixed(2)).join(' '));
+async function openPage() { const browser = await puppeteer.launch({ executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu', '--font-render-hinting=none'] }); browsers.push(browser); const p = await browser.newPage(); await p.evaluateOnNewDocument(k => { window.SCENE_K = k; }, K); await p.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 }); p.on('pageerror', e => console.log('PAGEERR', e.message)); await p.goto(url); await p.waitForFunction('window.READY===true', { timeout: 60000 }); return p; }
 const p0 = await openPage();
 const tl = await p0.evaluate(() => getTimeline());
 fs.writeFileSync(path.join(__dir, 'timeline.json'), JSON.stringify(tl, null, 1));
