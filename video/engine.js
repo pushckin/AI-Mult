@@ -95,6 +95,11 @@
           tip = { x: r.x, y: r.y, color: q.sp.color === C.white ? C.ink : q.sp.color };
         }
       }
+      if (this.dyn) {
+        const r = this.dyn(lt, t);
+        if (typeof r === 'string') this.g.setAttribute('transform', r);
+        else { if (r.tf) this.g.setAttribute('transform', r.tf); if (r.op != null) this.g.setAttribute('opacity', r.op); }
+      }
       return tip;
     }
   }
@@ -248,9 +253,10 @@
       this.clip = el('rect', { x: 0, y: 0, width: W, height: H }, el('clipPath', { id }, defs));
       this.g.setAttribute('clip-path', `url(#${id})`);
     }
+    sfx(name, at, vol) { sfxEvents.push({ name, t: this.start + at, vol: vol ?? 1 }); }
     d(shape, at, dur, tf) { const e = new DrawEl(this, shape, at, dur, tf); this.els.push(e); return e; }
     txt(str, at, dur, x, y, size, color, o) { const e = new TextEl(this, str, x, y, size, color || C.ink, at, dur, o); this.els.push(e); return e; }
-    bub(text, at, cx, cy, tx, ty, o) { const e = new BubbleEl(this, text, at, cx, cy, tx, ty, o); this.els.push(e); return e; }
+    bub(text, at, cx, cy, tx, ty, o) { const e = new BubbleEl(this, text, at, cx, cy, tx, ty, o); this.els.push(e); this.sfx('pop', at); return e; }
     show(shape, at, o) { const e = new ShowEl(this, shape, at, o); this.els.push(e); return e; }
     img(href, at, cx, cy, size) { const e = new ImageEl(this, href, cx, cy, size, at); this.els.push(e); return e; }
     anim(at, end, build, fn) { const e = new AnimEl(this, at, end ?? 1e9, build, fn); this.els.push(e); return e; }
@@ -282,7 +288,14 @@
   const penDot = el('circle', { cx: 0, cy: -4, r: 5, fill: C.ink }, penRot);
 
   const scenes = [];
-  window.E = { W, H, C, R, S, el, clamp, ease, spring, measure, wrap, scenes,
+  const sfxEvents = [];
+  window.getSfx = () => { const out = sfxEvents.slice(); for (const s of scenes) if (s.outro === 'sponge') out.push({ name: 'whoosh', t: s.end - 1.8, vol: 1 }); return out; };
+  function addShape(parent, shape) {
+    for (const sp of shape) { const p = el('path', { d: sp.d }, parent);
+      if (sp.kind === 'solid') { p.setAttribute('fill', sp.color); p.setAttribute('stroke', 'none'); }
+      else { p.setAttribute('fill', 'none'); p.setAttribute('stroke', sp.color); p.setAttribute('stroke-width', sp.w); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); } }
+  }
+  window.E = { W, H, C, R, S, addShape, el, clamp, ease, spring, measure, wrap, scenes,
     scene(start, end, outro) { const s = new Scene(start, end, outro); scenes.push(s); return s; } };
 
   window.renderFrame = function (t) {

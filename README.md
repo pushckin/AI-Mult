@@ -40,3 +40,10 @@ Whiteboard-анимация в стиле «Научпок»: SVG + Rough.js, п
 - `video/engine.js` (рисование маркером, облачка, губка-переход), `video/kit.js` (персонажи и реквизит), `video/scenes.js` (8 сцен)
 - `video/render.mjs` (рендер кадров), `video/build.sh` (сборка `final_moloko.mp4`: `cd video && npm i && ./build.sh`)
 - `final_moloko.mp4` — готовый ролик; `video/checks/` — контрольные кадры
+
+## «Как работают атомные электростанции» (whiteboard, 1920×1080, 30 fps, 3:28)
+Ролик по сценарию `Claude_Aes_Whiteboard_Prompt.txt`: 7 сцен, озвучка Gemini TTS (`voiceover_aes.mp3`, тайминги — `voiceover_aes_timings.json`), звуковые эффекты ElevenLabs (`video/sfx/`, генератор `video/gen_sfx.py`), заставка и финальная плашка канала Pushckin AI mult.
+
+- Код: `video/kit_aes.js` (реквизит), `video/scenes_aes.js` (раскадровка), общий движок `video/engine.js`
+- Сборка: `cd video && npm i && PROJ=aes ./build.sh && PROJ=aes python3 mix.py` и mux: `ffmpeg -i out/video_aes.mp4 -i out/audio_aes.m4a -c copy ../final_aes.mp4`
+- Готовый файл: `final_aes.mp4`; контрольные кадры: `video/checks_aes/`
