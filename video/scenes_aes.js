@@ -2,7 +2,7 @@
 (function () {
   const { R, S, C, clamp } = E, K = window.K, A = window.KA, el = E.el, ink = C.ink;
   const P = (x, y, s = 1, r = 0) => `translate(${x},${y}) scale(${s})${r ? ` rotate(${r})` : ''}`;
-  const ST = [0, 17.55, 44.14, 77.05, 114.12, 146.12, 176.4], END = 202.5, INTRO = 2.8, OUTRO = 3.2;
+  const ST = [0, 18.37, 45.52, 78.64, 115.46, 147.14, 175.61], END = 203.33, INTRO = 2.8, OUTRO = 3.2;
   const OLD = [16.26, 31.07, 32.23, 34.98, 33.08, 24.68, 29.7];
   const mk = (i, outro = 'sponge') => { const end = i < 6 ? ST[i + 1] : END; return E.scene(ST[i], end, outro, (end - ST[i]) / OLD[i]); };
   const lerp = (a, b, p) => a + (b - a) * p;
