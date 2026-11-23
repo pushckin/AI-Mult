@@ -32,3 +32,11 @@ cd video
 npm install
 npx remotion studio
 ```
+
+## video/ — «Почему мы пьём чужое молоко?» (whiteboard, 1920×1080, 30 fps, 3:49)
+Whiteboard-анимация в стиле «Научпок»: SVG + Rough.js, покадровый рендер Playwright → FFmpeg, озвучка Gemini TTS.
+
+- `Claude_Moloko_Whiteboard_Prompt.txt` — сценарий и ТЗ; `voiceover.mp3`, `voiceover_timings.json` — озвучка и тайминги сцен
+- `video/engine.js` (рисование маркером, облачка, губка-переход), `video/kit.js` (персонажи и реквизит), `video/scenes.js` (8 сцен)
+- `video/render.mjs` (рендер кадров), `video/build.sh` (сборка `final_moloko.mp4`: `cd video && npm i && ./build.sh`)
+- `final_moloko.mp4` — готовый ролик; `video/checks/` — контрольные кадры
