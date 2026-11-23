@@ -2,36 +2,36 @@
  {
   "scene": 1,
   "start": 0,
-  "end": 15.91
+  "end": 17.2
  },
  {
   "scene": 2,
-  "start": 16.26,
-  "end": 46.98
+  "start": 17.55,
+  "end": 43.79
  },
  {
   "scene": 3,
-  "start": 47.33,
-  "end": 79.21
+  "start": 44.14,
+  "end": 76.7
  },
  {
   "scene": 4,
-  "start": 79.56,
-  "end": 114.19
+  "start": 77.05,
+  "end": 113.77
  },
  {
   "scene": 5,
-  "start": 114.54,
-  "end": 147.27
+  "start": 114.12,
+  "end": 145.77
  },
  {
   "scene": 6,
-  "start": 147.62,
-  "end": 171.95
+  "start": 146.12,
+  "end": 176.05
  },
  {
   "scene": 7,
-  "start": 172.3,
-  "end": 199.9
+  "start": 176.4,
+  "end": 200.4
  }
 ]

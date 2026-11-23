@@ -246,20 +246,20 @@
   }
 
   class Scene {
-    constructor(start, end, outro) {
-      this.start = start; this.end = end; this.outro = outro; this.els = [];
+    constructor(start, end, outro, k = 1) {
+      this.start = start; this.end = end; this.outro = outro; this.els = []; this.k = k;
       this.g = el('g', {}, root); this.g.style.display = 'none';
       const id = 'sc' + scenes.length;
       this.clip = el('rect', { x: 0, y: 0, width: W, height: H }, el('clipPath', { id }, defs));
       this.g.setAttribute('clip-path', `url(#${id})`);
     }
-    sfx(name, at, vol) { sfxEvents.push({ name, t: this.start + at, vol: vol ?? 1 }); }
-    d(shape, at, dur, tf) { const e = new DrawEl(this, shape, at, dur, tf); this.els.push(e); return e; }
-    txt(str, at, dur, x, y, size, color, o) { const e = new TextEl(this, str, x, y, size, color || C.ink, at, dur, o); this.els.push(e); return e; }
-    bub(text, at, cx, cy, tx, ty, o) { const e = new BubbleEl(this, text, at, cx, cy, tx, ty, o); this.els.push(e); this.sfx('pop', at); return e; }
-    show(shape, at, o) { const e = new ShowEl(this, shape, at, o); this.els.push(e); return e; }
-    img(href, at, cx, cy, size) { const e = new ImageEl(this, href, cx, cy, size, at); this.els.push(e); return e; }
-    anim(at, end, build, fn) { const e = new AnimEl(this, at, end ?? 1e9, build, fn); this.els.push(e); return e; }
+    sfx(name, at, vol) { sfxEvents.push({ name, t: this.start + at * this.k, vol: vol ?? 1 }); }
+    d(shape, at, dur, tf) { const e = new DrawEl(this, shape, at * this.k, dur * this.k, tf); this.els.push(e); return e; }
+    txt(str, at, dur, x, y, size, color, o) { const e = new TextEl(this, str, x, y, size, color || C.ink, at * this.k, dur * this.k, o); this.els.push(e); return e; }
+    bub(text, at, cx, cy, tx, ty, o) { const e = new BubbleEl(this, text, at * this.k, cx, cy, tx, ty, o); this.els.push(e); this.sfx('pop', at); return e; }
+    show(shape, at, o) { const e = new ShowEl(this, shape, at * this.k, o); this.els.push(e); return e; }
+    img(href, at, cx, cy, size) { const e = new ImageEl(this, href, cx, cy, size, at * this.k); this.els.push(e); return e; }
+    anim(at, end, build, fn) { const e = new AnimEl(this, at * this.k, (end ?? 1e9) > 1e8 ? 1e9 : end * this.k, build, fn); this.els.push(e); return e; }
   }
 
   /* ---------- корень, губка, маркер ---------- */
@@ -296,7 +296,7 @@
       else { p.setAttribute('fill', 'none'); p.setAttribute('stroke', sp.color); p.setAttribute('stroke-width', sp.w); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); } }
   }
   window.E = { W, H, C, R, S, addShape, el, clamp, ease, spring, measure, wrap, scenes,
-    scene(start, end, outro) { const s = new Scene(start, end, outro); scenes.push(s); return s; } };
+    scene(start, end, outro, k) { const s = new Scene(start, end, outro, k); scenes.push(s); return s; } };
 
   window.renderFrame = function (t) {
     let sc = scenes.find(s => t >= s.start && t < s.end) || scenes[scenes.length - 1];

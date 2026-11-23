@@ -2,20 +2,22 @@
 (function () {
   const { R, S, C, clamp } = E, K = window.K, A = window.KA, el = E.el, ink = C.ink;
   const P = (x, y, s = 1, r = 0) => `translate(${x},${y}) scale(${s})${r ? ` rotate(${r})` : ''}`;
-  const ST = [0, 16.26, 47.33, 79.56, 114.54, 147.62, 172.3], END = 202.0, INTRO = 2.8, OUTRO = 3.2;
+  const ST = [0, 17.55, 44.14, 77.05, 114.12, 146.12, 176.4], END = 202.5, INTRO = 2.8, OUTRO = 3.2;
+  const OLD = [16.26, 31.07, 32.23, 34.98, 33.08, 24.68, 29.7];
+  const mk = (i, outro = 'sponge') => { const end = i < 6 ? ST[i + 1] : END; return E.scene(ST[i], end, outro, (end - ST[i]) / OLD[i]); };
   const lerp = (a, b, p) => a + (b - a) * p;
   const jit = (x, y, lt, k = 2, f = 37) => `translate(${x + Math.sin(lt * f) * k},${y + Math.cos(lt * (f + 4)) * k})`;
 
   /* летящий нейтрон */
   function fly(sc, at, end, [x0, y0], [x1, y1], r = 18) {
     let g;
-    sc.anim(at, end, gg => { g = A.neutronBuild(gg, r); }, lt => { const p = clamp(lt / (end - at)); g.setAttribute('transform', `translate(${lerp(x0, x1, p)},${lerp(y0, y1, p)}) rotate(${lt * 300})`); });
+    sc.anim(at, end, gg => { g = A.neutronBuild(gg, r); }, lt => { const p = clamp(lt / ((end - at) * sc.k)); g.setAttribute('transform', `translate(${lerp(x0, x1, p)},${lerp(y0, y1, p)}) rotate(${lt * 300})`); });
   }
   /* атом разваливается на две половинки */
   function split(sc, at, x, y, r, dx = 0) {
     let a, b;
     sc.anim(at, at + 3.2, g => { a = el('g', {}, g); b = el('g', {}, g); E.addShape(a, A.halfAtom(r, true)); E.addShape(b, A.halfAtom(r, false)); },
-      lt => { const p = E.ease(clamp(lt / 1.2)); a.setAttribute('transform', `translate(${x + dx * p},${y - p * r * 1.3}) rotate(${-p * 25})`); b.setAttribute('transform', `translate(${x + dx * p},${y + p * r * 1.3}) rotate(${p * 25})`); a.setAttribute('opacity', clamp((3.2 - lt) / 0.9)); b.setAttribute('opacity', clamp((3.2 - lt) / 0.9)); });
+      lt => { const p = E.ease(clamp(lt / 1.2)); a.setAttribute('transform', `translate(${x + dx * p},${y - p * r * 1.3}) rotate(${-p * 25})`); b.setAttribute('transform', `translate(${x + dx * p},${y + p * r * 1.3}) rotate(${p * 25})`); a.setAttribute('opacity', clamp((3.2 * sc.k - lt) / 0.9)); b.setAttribute('opacity', clamp((3.2 * sc.k - lt) / 0.9)); });
   }
 
   function burst(sc, at, x, y, k) {
@@ -24,7 +26,7 @@
 
   /* ======== СЦЕНА 1: зацепка «АЭС как чайник» ======== */
   (function () {
-    const s = E.scene(ST[0], ST[1], 'sponge');
+    const s = mk(0);
     s.txt('КАК РАБОТАЕТ АЭС?', 0.2, 1.8, 960, 110, 84, C.red, { anchor: 'middle' });
     const px = 400, py = 960;
     s.d(A.ground(60, 820), 0.4, 0.5, P(px, py));
@@ -43,7 +45,7 @@
 
   /* ======== СЦЕНА 2: «Кипятим воду» ======== */
   (function () {
-    const s = E.scene(ST[1], ST[2], 'sponge');
+    const s = mk(1);
     const y = 860;
     s.txt('ЛЮБАЯ ЭЛЕКТРОСТАНЦИЯ — ОДИН СЦЕНАРИЙ', 0.3, 3.2, 960, 110, 66, C.blue, { anchor: 'middle' });
     // 1 уголь / костёр
@@ -91,22 +93,22 @@
 
   /* ======== СЦЕНА 3: внутри реактора ======== */
   (function () {
-    const s = E.scene(ST[2], ST[3], 'sponge');
-    const bx = 800, by = 560, br = 130, tc = 12.4;
+    const s = mk(2);
+    const bx = 800, by = 560, br = 130, tc = 12.4, k = s.k;
     s.txt('ВНУТРИ РЕАКТОРА', 0.2, 1.8, 960, 100, 70, C.red, { anchor: 'middle' });
     const body = s.d(A.atom(br), 0.5, 2.4, P(bx, by));
-    body.dyn = lt => ({ tf: jit(bx, by, lt, 2.5), op: lt + 0.5 >= tc ? 0 : 1 });
+    body.dyn = lt => ({ tf: jit(bx, by, lt, 2.5), op: lt + 0.5 * k >= tc * k ? 0 : 1 });
     const face = s.d(A.atomFace(br, 'big'), 2.9, 0.7, P(bx, by));
-    face.dyn = lt => ({ tf: jit(bx, by, lt, 2.5), op: lt + 2.9 >= tc ? 0 : 1 });
+    face.dyn = lt => ({ tf: jit(bx, by, lt, 2.5), op: lt + 2.9 * k >= tc * k ? 0 : 1 });
     s.txt('U-235', 3.5, 1.0, 540, 480, 72, C.ink, { anchor: 'middle' });
     // группа атомов справа
     const pos = [[1200, 560], [1330, 420], [1330, 700], [1470, 560], [1600, 420], [1600, 700], [1740, 560]];
     const hit = [21.0, 21.0, 21.0, 23.4, 23.4, 23.4, 25.4], scared = 19.0, r = 55;
     pos.forEach(([x, y], i) => {
       const t0 = 5.6 + i * 0.5;
-      const b = s.d(A.atom(r), t0, 0.5, P(x, y)); b.dyn = lt => ({ tf: jit(x, y, lt + i, 1.8, 29 + i), op: lt + t0 >= hit[i] ? 0 : 1 });
-      const calm = s.d(A.atomFace(r, 'big'), t0 + 0.2, 0.3, P(x, y)); calm.dyn = lt => ({ tf: jit(x, y, lt + i, 1.8, 29 + i), op: (lt + t0 + 0.2 >= scared) ? 0 : 1 });
-      const sc2 = s.d(A.atomFace(r, 'scared'), scared, 0.01, P(x, y)); sc2.dyn = lt => ({ tf: jit(x, y, lt + i, 2.6, 33 + i), op: lt + scared >= hit[i] ? 0 : 1 });
+      const b = s.d(A.atom(r), t0, 0.5, P(x, y)); b.dyn = lt => ({ tf: jit(x, y, lt + i, 1.8, 29 + i), op: lt + t0 * k >= hit[i] * k ? 0 : 1 });
+      const calm = s.d(A.atomFace(r, 'big'), t0 + 0.2, 0.3, P(x, y)); calm.dyn = lt => ({ tf: jit(x, y, lt + i, 1.8, 29 + i), op: (lt + (t0 + 0.2) * k >= scared * k) ? 0 : 1 });
+      const sc2 = s.d(A.atomFace(r, 'scared'), scared, 0.01, P(x, y)); sc2.dyn = lt => ({ tf: jit(x, y, lt + i, 2.6, 33 + i), op: lt + scared * k >= hit[i] * k ? 0 : 1 });
       split(s, hit[i], x, y, r, (i % 2 ? 30 : -30));
       burst(s, hit[i], x, y, 0.55);
       s.sfx('boom', hit[i], 0.8);
@@ -130,7 +132,7 @@
 
   /* ======== СЦЕНА 4: почему не взрывается ======== */
   (function () {
-    const s = E.scene(ST[3], ST[4], 'sponge');
+    const s = mk(3);
     s.txt('ПОЧЕМУ АЭС НЕ ВЗРЫВАЕТСЯ?', 0.3, 3.4, 960, 90, 62, C.red, { anchor: 'middle' });
     s.d(A.bomb(), 3.6, 3.4, P(380, 545));
     s.txt('ПРИЧИНА №1: ТОПЛИВО', 9.6, 1.3, 960, 180, 48, C.green, { anchor: 'middle' });
@@ -154,7 +156,7 @@
     const dots = [];
     s.anim(24.6, 1e9, g => { for (let i = 0; i < N; i++) dots.push(el('circle', { r: 11, fill: C.red, stroke: '#9E1C27', 'stroke-width': 2 }, g)); },
       lt => {
-        const ta = 28.6 - 24.6, tb = 32.4 - 24.6;
+        const kk = s.k, ta = (28.6 - 24.6) * kk, tb = (32.4 - 24.6) * kk;
         const tau = lt < ta ? lt : lt < tb ? ta + (lt - ta) - 0.75 * (lt - ta) * (lt - ta) / (2 * (tb - ta)) : ta + (tb - ta) * 0.625 + (lt - tb) * 0.25;
         dots.forEach((d, i) => {
           const x0 = bx0 + 30 + rng(i, 1) * (bw - 60), y0 = by0 + 30 + rng(i, 2) * (bh - 60), vx = (rng(i, 3) - .5) * 520, vy = (rng(i, 4) - .5) * 520;
@@ -167,7 +169,7 @@
     [650, 850, 1050, 1250].forEach((x, i) => {
       const t0 = 25.4 + i * 0.3;
       const rod = s.d(A.rod(110), t0, 0.6, P(x, by0));
-      rod.dyn = lt => { const p = E.ease(clamp((lt + t0 - 28.4) / 3.2)); return P(x, by0 + p * 205); };
+      rod.dyn = lt => { const p = E.ease(clamp((lt + (t0 - 28.4) * s.k) / (3.2 * s.k))); return P(x, by0 + p * 205); };
     });
     s.sfx('clunk', 29.0); s.sfx('clunk', 30.2, 0.8);
     s.txt('стержни из бора / кадмия', 25.6, 1.8, 1690, 800, 36, C.ink, { anchor: 'middle' });
@@ -177,7 +179,7 @@
 
   /* ======== СЦЕНА 5: контуры и миф про трубы ======== */
   (function () {
-    const s = E.scene(ST[4], ST[5], 'sponge');
+    const s = mk(4);
     s.txt('ТРИ НЕЗАВИСИМЫХ КОНТУРА', 0.2, 2.2, 960, 90, 62, C.ink, { anchor: 'middle' });
     const loops = [[80, 360, 520, 430, C.red, '1-й контур: РЕАКТОР', 340], [600, 360, 520, 430, C.blue, '2-й контур: ПАР → ТУРБИНА', 860], [1120, 360, 380, 430, C.green, '3-й контур: ОХЛАЖДЕНИЕ', 1310]];
     const dashes = [];
@@ -214,7 +216,7 @@
 
   /* ======== СЦЕНА 6: масштаб в цифрах ======== */
   (function () {
-    const s = E.scene(ST[5], ST[6], 'sponge');
+    const s = mk(5);
     s.d(A.pelletTiny(), 0.4, 1.0, P(250, 500, 1.9));
     s.txt('5 г урана', 1.6, 1.0, 250, 580, 46, C.ink, { anchor: 'middle' });
     s.bub('Да, я маленькая, но зато какая эффективная!', 2.4, 340, 230, 260, 410, { maxW: 420, fs: 38 });
@@ -238,7 +240,7 @@
 
   /* ======== СЦЕНА 7: финал ======== */
   (function () {
-    const s = E.scene(ST[6], END, 'sponge');
+    const s = mk(6);
     s.d(A.stickman(), 0.3, 2.6, P(380, 985, 1.5));
     s.d(A.wallSwitch(), 2.9, 0.9, P(590, 760));
     s.d(A.bulb(), 3.6, 1.4, P(400, 330));
