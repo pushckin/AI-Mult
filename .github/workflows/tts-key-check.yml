@@ -5,7 +5,7 @@ on:
 
 permissions: {}
 
-jobs:
+
   check:
     runs-on: ubuntu-latest
     steps:
@@ -29,17 +29,20 @@ jobs:
           done
           exit 1
 
-      - name: ElevenLabs TTS
+            - name: ElevenLabs Sound Effects
         if: ${{ !cancelled() }}
         env:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         run: |
-          status=$(curl -sS --max-time 60 -o elevenlabs.mp3 -w '%{http_code} %{content_type}' \
+          status=$(curl -sS --max-time 60 -o elevenlabs-response -w '%{http_code} %{content_type}' \
             -H "xi-api-key: $ELEVENLABS_API_KEY" \
             -H 'Content-Type: application/json' \
             -H 'Accept: audio/mpeg' \
-            -d '{"text":"Hello.","model_id":"eleven_multilingual_v2"}' \
-            'https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL')
-          echo "ElevenLabs — $status"
-          [[ "$status" == "200 audio/"* ]] && test -s elevenlabs.mp3
-          echo "ElevenLabs TTS — audio received"
+            -d '{"text":"A single soft cartoon pop","duration_seconds":1}' \
+            'https://api.elevenlabs.io/v1/sound-generation')
+          echo "ElevenLabs Sound Effects — $status"
+          if [[ "$status" != "200 audio/"* || ! -s elevenlabs-response ]]; then
+            jq -r '(.detail.status? // .detail.type? // empty) | strings | select(test("^[a-zA-Z0-9_-]{1,80}$"))' elevenlabs-response 2>/dev/null || true
+            exit 1
+          fi
+          echo "ElevenLabs Sound Effects — audio received"
