@@ -1,0 +1,45 @@
+name: TTS key check
+on:
+  push:
+    branches: ['codex/tts-key-check-manual']
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gemini TTS
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          for model in gemini-3.8-flash-tts gemini-2.5-flash-preview-tts; do
+            status=$(curl -sS --max-time 60 -o gemini.json -w '%{http_code}' \
+              -H "x-goog-api-key: $GEMINI_API_KEY" \
+              -H 'Content-Type: application/json' \
+              -d '{"contents":[{"parts":[{"text":"Hello."}]}],"generationConfig":{"responseModalities":["AUDIO"],"speechConfig":{"voiceConfig":{"prebuiltVoiceConfig":{"voiceName":"Puck"}}}}}' \
+              "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent")
+            echo "$model — HTTP $status"
+            if [ "$status" = 200 ]; then
+              jq -e 'any(.candidates[]?.content.parts[]?; (.inlineData.data // "") != "")' gemini.json >/dev/null
+              echo "Gemini TTS — audio received"
+              exit 0
+            fi
+            [ "$status" = 404 ] || exit 1
+          done
+          exit 1
+
+      - name: ElevenLabs TTS
+        if: ${{ !cancelled() }}
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: |
+          status=$(curl -sS --max-time 60 -o elevenlabs.mp3 -w '%{http_code} %{content_type}' \
+            -H "xi-api-key: $ELEVENLABS_API_KEY" \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: audio/mpeg' \
+            -d '{"text":"Hello.","model_id":"eleven_multilingual_v2"}' \
+            'https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL')
+          echo "ElevenLabs — $status"
+          [[ "$status" == "200 audio/"* ]] && test -s elevenlabs.mp3
+          echo "ElevenLabs TTS — audio received"
