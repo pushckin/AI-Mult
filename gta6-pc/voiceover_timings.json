@@ -1,0 +1,49 @@
+{
+ "starts": [
+  0,
+  30.89,
+  69.25,
+  106.435,
+  138.293,
+  167.827,
+  200.338
+ ],
+ "end": 225.829,
+ "segs": [
+  {
+   "scene": 1,
+   "voiceStart": 0.35,
+   "voiceEnd": 28.99
+  },
+  {
+   "scene": 2,
+   "voiceStart": 31.24,
+   "voiceEnd": 67.35
+  },
+  {
+   "scene": 3,
+   "voiceStart": 69.6,
+   "voiceEnd": 104.535
+  },
+  {
+   "scene": 4,
+   "voiceStart": 106.785,
+   "voiceEnd": 136.393
+  },
+  {
+   "scene": 5,
+   "voiceStart": 138.643,
+   "voiceEnd": 165.927
+  },
+  {
+   "scene": 6,
+   "voiceStart": 168.177,
+   "voiceEnd": 198.438
+  },
+  {
+   "scene": 7,
+   "voiceStart": 200.688,
+   "voiceEnd": 223.529
+  }
+ ]
+}

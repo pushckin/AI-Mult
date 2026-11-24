@@ -1,0 +1,6 @@
+{
+  "name": "gta6-pc-audio",
+  "private": true,
+  "type": "module",
+  "dependencies": { "https-proxy-agent": "^7.0.6", "ws": "^8.18.3" }
+}

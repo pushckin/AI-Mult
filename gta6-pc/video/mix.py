@@ -4,7 +4,7 @@ import json, os, subprocess
 info = json.loads(subprocess.check_output(['node', 'render.mjs', 'info'], stderr=subprocess.DEVNULL))
 INTRO, TOTAL = info['intro'], info['total']
 voice = '../voiceover.mp3'; music = '../audio/music/bg.mp3'
-VOL = {'pop': 0.5, 'whoosh': 0.5, 'fire': 0.25, 'zap': 0.45, 'boom': 0.5, 'clunk': 0.55, 'ding': 0.45, 'logo': 0.6}
+VOL = {'pop': 0.5, 'whoosh': 0.5, 'fire': 0.25, 'zap': 0.45, 'boom': 0.5, 'clunk': 0.55, 'ding': 0.45, 'logo': 0.6, 'cash': 0.5, 'squish': 0.55, 'defib': 0.45, 'error': 0.4, 'saw': 0.35, 'clink': 0.55, 'coins': 0.45}
 ev = [e for e in info['sfx'] if os.path.exists(f"sfx/{e['name']}.mp3")]
 inputs, filt, labels = [], [], []
 if os.path.exists(voice):

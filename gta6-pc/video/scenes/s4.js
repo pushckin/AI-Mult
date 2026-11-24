@@ -11,7 +11,7 @@
   /* ---------- гора денег ---------- */
   const MX0 = 520, MX1 = 1400, MY = 1020, PX = 960, PY = 540;
   s.d(S(R.poly([[MX0, MY], [760, 700], [860, 610], [PX - 40, PY], [PX + 40, PY], [1080, 600], [1190, 690], [MX1, MY]],
-    { c: DG, w: 6, fill: C.ltgreen, gap: 9, fw: 3 })), 1.8, 3.0);
+    { c: DG, w: 6, fill: C.ltgreen, gap: 9, fw: 3 })), 1.0, 2.4);
   const bill = () => S(R.rect(-34, -18, 68, 36, { c: DG, w: 3.5, fill: '#CDEBC0', fs: 'solid', r: 0.8 }),
     R.circ(0, 0, 20, { c: DG, w: 3, r: 0.6 }), R.line(-26, -9, -26, 9, { c: DG, w: 2.5, r: 0.3 }), R.line(26, -9, 26, 9, { c: DG, w: 2.5, r: 0.3 }));
   const coin = () => S(R.circ(0, 0, 40, { c: ink, w: 3.5, fill: C.yellow, fs: 'solid', r: 0.7 }), R.circ(0, 0, 28, { c: ink, w: 2, r: 0.6 }));
@@ -27,14 +27,14 @@
   items.sort((p, q) => p.y - q.y);
   items.forEach((it, i) => {
     const at = 4.6 + i * 0.07 + (it.y > 800 ? 8.6 : 0) * (i % 2 ? 0 : 0) ;
-    const t0 = i < 14 ? 10.3 + i * 0.12 : 14.7 + (i - 14) * 0.11;
+    const t0 = i < 14 ? 9.6 + i * 0.1 : 13.4 + (i - 14) * 0.1;
     if (it.t === 'bill') s.d(bill(), t0, 0.28, P(it.x, it.y, 0.9, it.r));
     else if (it.t === 'coin') s.d(coin(), t0, 0.28, P(it.x, it.y, 0.62, it.r));
     else s.txt('$', t0, 0.22, it.x, it.y + 16, 56, DG, { anchor: 'middle', rot: it.r });
   });
-  s.sfx('ding', 10.4); s.sfx('ding', 12.6); s.sfx('ding', 15.0); s.sfx('ding', 16.4);
+  s.sfx('coins', 9.7); s.sfx('coins', 13.3);
   // монеты, сыплющиеся с вершины
-  s.anim(10.3, 1e9, g => { for (let i = 0; i < 5; i++) el('circle', { r: 11, fill: C.yellow, stroke: ink, 'stroke-width': 3 }, g); },
+  s.anim(9.6, 1e9, g => { for (let i = 0; i < 5; i++) el('circle', { r: 11, fill: C.yellow, stroke: ink, 'stroke-width': 3 }, g); },
     (lt, g) => { [...g.children].forEach((c, i) => { const p = ((lt * 0.5 + i / 5) % 1);
       c.setAttribute('cx', 980 + (i - 2) * 36 + Math.sin(lt * 3 + i) * 6); c.setAttribute('cy', 560 + p * 250); c.setAttribute('opacity', 1 - p); }); });
 
@@ -52,14 +52,14 @@
     R.lin([[-56, -206], [-92, -160], [-100, -122]], { c: ink, w: 6 }),   // рука на поясе
     R.lin([[56, -206], [100, -240], [126, -300]], { c: ink, w: 6 }),     // рука вверх
     R.circ(128, -312, 26, { c: ink, w: 3.5, fill: C.skin, fs: 'solid', r: 0.6 }));
-  s.d(boss(), 4.3, 3.2, P(PX, PY + 6, 1.15));
+  s.d(boss(), 3.0, 2.6, P(PX, PY + 6, 1.15));
   // бейдж
-  s.d(S(R.rect(-52, -190, 92, 40, { c: ink, w: 3.5, fill: '#fff', fs: 'solid', r: 0.7 }), R.rect(-52, -190, 92, 40, { c: C.blue, w: 3, r: 0.7 })), 7.4, 0.5, P(PX - 5, PY + 6, 1.15));
-  s.txt('Take-Two', 7.6, 0.7, PX - 8, PY - 175, 26, C.blue, { anchor: 'middle' });
+  s.d(S(R.rect(-52, -190, 92, 40, { c: ink, w: 3.5, fill: '#fff', fs: 'solid', r: 0.7 }), R.rect(-52, -190, 92, 40, { c: C.blue, w: 3, r: 0.7 })), 5.2, 0.5, P(PX - 5, PY + 6, 1.15));
+  s.txt('Take-Two', 5.4, 0.7, PX - 8, PY - 175, 26, C.blue, { anchor: 'middle' });
   // купюра в поднятой руке и «блеск»
-  s.d(bill(), 7.9, 0.3, P(PX + 150, PY - 355, 0.8, -25));
+  s.d(bill(), 5.6, 0.3, P(PX + 150, PY - 355, 0.8, -25));
   // зубы-золото: блеск вокруг головы
-  s.anim(8.2, 1e9, g => { for (let i = 0; i < 3; i++) el('path', { d: 'M0,-14 L4,0 L0,14 L-4,0Z M-14,0 L0,-4 L14,0 L0,4Z', fill: C.yellow, stroke: ink, 'stroke-width': 2 }, g); },
+  s.anim(5.8, 1e9, g => { for (let i = 0; i < 3; i++) el('path', { d: 'M0,-14 L4,0 L0,14 L-4,0Z M-14,0 L0,-4 L14,0 L0,4Z', fill: C.yellow, stroke: ink, 'stroke-width': 2 }, g); },
     (lt, g) => [...g.children].forEach((c, i) => { const k = Math.max(0, Math.sin(lt * 4 + i * 2.1)); const x = [PX - 100, PX + 70, PX + 160][i], y = [PY - 330, PY - 370, PY - 280][i];
       c.setAttribute('transform', `translate(${x},${y}) scale(${k * 1.2 + 0.05})`); }));
 
@@ -73,42 +73,42 @@
     s.txt(l1, at + 1.0, 0.7, cx, top + 44, 40, C.red, { anchor: 'middle' });
     s.txt(l2, at + 1.6, 0.6, cx, top + 82, 28, ink, { anchor: 'middle' });
   }
-  flag(700, 848, 590, -1, '32,5 млн', 'предзаказов', 11.5);
-  flag(1220, 848, 590, 1, '$3,79 млрд', 'в 1-й день', 13.3);
-  s.sfx('ding', 12.5); s.sfx('ding', 14.3);
+  flag(700, 848, 590, -1, '32,5 млн', 'предзаказов', 9.8);
+  flag(1220, 848, 590, 1, '$3,79 млрд', 'в 1-й день', 13.1);
+  s.sfx('cash', 10.0); s.sfx('cash', 13.2);
 
   /* ---------- консоль под прожектором ---------- */
   const CX = 270, CY = 790;
   s.d(S(R.line(190, 60, 190, 190, { c: ink, w: 5, r: 0.5 }),
     R.poly([[160, 190], [220, 190], [250, 262], [130, 262]], { c: ink, w: 4.5, fill: C.gray, gap: 6, fw: 3 }),
-    R.ell(190, 266, 130, 30, { c: ink, w: 4, fill: C.yellow, fs: 'solid' })), 6.4, 1.2);
+    R.ell(190, 266, 130, 30, { c: ink, w: 4, fill: C.yellow, fs: 'solid' })), 5.0, 1.2);
   // луч
-  s.anim(8.0, 1e9, g => {
+  s.anim(6.3, 1e9, g => {
     el('polygon', { points: `150,270 230,270 500,830 70,830`, fill: C.yellow, opacity: 0 }, g);
     el('ellipse', { cx: CX, cy: 832, rx: 215, ry: 30, fill: C.yellow, opacity: 0 }, g);
     for (const x of [90, 190, 270, 360, 470]) el('line', { x1: 190, y1: 270, x2: x, y2: 820, stroke: C.orange, 'stroke-width': 3, 'stroke-dasharray': '16 22', opacity: 0.5, 'stroke-linecap': 'round' }, g);
   }, (lt, g) => { const k = clamp(lt / 0.5), p = 0.5 + 0.5 * Math.sin(lt * 5);
     g.children[0].setAttribute('opacity', (0.20 + 0.12 * p) * k); g.children[1].setAttribute('opacity', (0.35 + 0.2 * p) * k);
     [...g.children].slice(2).forEach((c, i) => c.setAttribute('stroke-dashoffset', -lt * 25 - i * 5)); });
-  s.sfx('zap', 8.0);
+  s.sfx('zap', 6.3);
   const console_ = () => S(
     R.rect(-130, -150, 260, 150, { c: ink, w: 5, fill: '#fff', fs: 'solid', r: 1 }),
     R.rect(-130, -150, 260, 150, { c: C.blue, w: 3, fill: C.ltblue, gap: 12, fw: 2 }),
     R.rect(-110, -128, 140, 18, { c: ink, w: 3.5, fill: ink, fs: 'solid', r: 0.6 }),   // щель диска
     R.circ(80, -118, 20, { c: ink, w: 3, fill: C.green, fs: 'solid', r: 0.5 }),       // кнопка
     R.line(-110, -60, 110, -60, { c: ink, w: 3, r: 0.8 }));
-  s.d(console_(), 8.6, 1.6, P(CX, CY - 6));
-  s.txt('КОНСОЛЬ', 9.9, 0.8, CX, CY - 30, 40, C.blue, { anchor: 'middle' });
+  s.d(console_(), 6.6, 1.4, P(CX, CY - 6));
+  s.txt('КОНСОЛЬ', 7.8, 0.8, CX, CY - 30, 40, C.blue, { anchor: 'middle' });
   // геймпад
   const pad = () => S(R.path('M-70,-24 C-82,-60 -50,-72 -30,-62 L30,-62 C50,-72 82,-60 70,-24 C64,-2 40,-6 28,-20 L-28,-20 C-40,-6 -64,-2 -70,-24Z', { c: ink, w: 4.5, fill: C.ltblue, gap: 6, fw: 3 }),
     R.circ(-38, -44, 18, { c: ink, w: 3, r: 0.6 }), R.circ(22, -34, 18, { c: ink, w: 3, r: 0.6 }),
     R.line(-52, -44, -26, -44, { w: 3, r: 0.3 }), R.line(-38, -58, -38, -30, { w: 3, r: 0.3 }),
     R.circ(52, -50, 9, { c: C.red, w: 2.5, fill: C.red, fs: 'solid', r: 0.4 }), R.circ(64, -40, 9, { c: C.green, w: 2.5, fill: C.green, fs: 'solid', r: 0.4 }));
-  s.d(pad(), 10.0, 1.0, P(CX + 40, CY + 74, 1.25));
+  s.d(pad(), 7.4, 1.0, P(CX + 40, CY + 74, 1.25));
   // сердечки-обожание
-  s.d(K.mark('star', 0, 0, 0.9, C.yellow), 10.9, 0.4, P(CX - 150, CY - 220));
-  s.d(K.mark('star', 0, 0, 0.7, C.yellow), 11.2, 0.4, P(CX + 160, CY - 250));
-  s.txt('любимчик!', 11.0, 0.8, CX + 10, CY - 190, 36, C.orange, { anchor: 'middle', rot: -5 });
+  s.d(K.mark('star', 0, 0, 0.9, C.yellow), 8.4, 0.4, P(CX - 150, CY - 220));
+  s.d(K.mark('star', 0, 0, 0.7, C.yellow), 8.7, 0.4, P(CX + 160, CY - 250));
+  s.txt('любимчик!', 8.5, 0.8, CX + 10, CY - 190, 36, C.orange, { anchor: 'middle', rot: -5 });
 
   /* ---------- чемодан от Sony ---------- */
   const case_ = () => S(
@@ -116,30 +116,30 @@
     R.path('M-24,-78 L-24,-96 L24,-96 L24,-78', { c: ink, w: 4.5 }),
     R.rect(-10, -48, 20, 16, { c: ink, w: 3, fill: C.yellow, fs: 'solid', r: 0.5 }),
     R.line(-70, -42, 70, -42, { c: ink, w: 3, r: 0.5 }), R.line(-50, 0, -50, 8, { c: ink, w: 5 }), R.line(50, 0, 50, 8, { c: ink, w: 5 }));
-  s.d(case_(), 17.4, 1.1, P(215, 975, 1.0));
-  s.txt('$$$', 18.0, 0.6, 215, 954, 30, DG, { anchor: 'middle' });
-  s.txt('Sony', 18.4, 0.5, 215, 928, 24, ink, { anchor: 'middle' });
-  s.d(K.mark('cross', 0, 0, 2.0, C.red), 19.7, 0.5, P(215, 935));
-  s.sfx('clunk', 19.8);
-  s.txt('Теория заговора? Отвергнуто', 20.4, 1.6, 255, 1045, 32, C.red, { anchor: 'middle', rot: -2 });
+  s.d(case_(), 17.3, 1.1, P(215, 975, 1.0));
+  s.txt('$$$', 17.9, 0.6, 215, 954, 30, DG, { anchor: 'middle' });
+  s.txt('Sony', 18.3, 0.5, 215, 928, 24, ink, { anchor: 'middle' });
+  s.d(K.mark('cross', 0, 0, 2.0, C.red), 21.3, 0.5, P(215, 935));
+  s.sfx('clunk', 21.4);
+  s.txt('Теория заговора? Отвергнуто', 21.7, 1.6, 255, 1045, 32, C.red, { anchor: 'middle', rot: -2 });
 
   /* ---------- яма с рукой ПК-игрока ---------- */
-  s.d(S(R.ell(1670, 985, 340, 100, { c: ink, w: 5, fill: ink, gap: 5, fw: 4 }), R.ell(1670, 976, 260, 60, { c: ink, w: 3, fill: '#222', fs: 'solid', r: 0.5 })), 22.4, 1.4);
-  s.d(S(R.line(1500, 900, 1500, 800, { c: ink, w: 7, r: 0.5 }), R.poly([[1420, 735], [1585, 742], [1580, 810], [1418, 803]], { c: ink, w: 4.5, fill: '#F7E1B0', gap: 7, fw: 3 })), 23.3, 1.0);
-  s.txt('Потом', 24.0, 0.6, 1500, 788, 46, C.red, { anchor: 'middle', rot: 2 });
+  s.d(S(R.ell(1670, 985, 340, 100, { c: ink, w: 5, fill: ink, gap: 5, fw: 4 }), R.ell(1670, 976, 260, 60, { c: ink, w: 3, fill: '#222', fs: 'solid', r: 0.5 })), 22.5, 1.2);
+  s.d(S(R.line(1500, 900, 1500, 800, { c: ink, w: 7, r: 0.5 }), R.poly([[1420, 735], [1585, 742], [1580, 810], [1418, 803]], { c: ink, w: 4.5, fill: '#F7E1B0', gap: 7, fw: 3 })), 23.2, 1.0);
+  s.txt('Потом', 23.8, 0.6, 1500, 788, 46, C.red, { anchor: 'middle', rot: 2 });
   const hand = S(
     R.poly([[-34, 210], [-30, 20], [30, 20], [36, 210]], { c: ink, w: 4.5, fill: C.ltblue, gap: 6, fw: 3 }),            // рукав
     R.circ(0, -6, 82, { c: ink, w: 4.5, fill: C.skin, fs: 'solid', r: 0.8 }),                                           // кисть
     R.lin([[-28, -64], [-34, -100]], { c: ink, w: 4.5 }), R.lin([[-6, -80], [-8, -118]], { c: ink, w: 4.5 }), R.lin([[18, -76], [24, -108]], { c: ink, w: 4.5 }),
     R.ell(0, -34, 62, 92, { c: ink, w: 4.5, fill: '#fff', fs: 'solid', r: 0.8 }), R.ell(0, -34, 62, 92, { c: C.blue, w: 3, r: 0.8 }),
     R.line(0, -78, 0, -40, { c: ink, w: 3.5, r: 0.3 }), R.line(-31, -40, 31, -40, { c: ink, w: 3.5, r: 0.3 }), R.rect(-5, -70, 10, 20, { c: C.red, w: 3, fill: C.red, fs: 'solid', r: 0.3 }));
-  const h = s.d(hand, 24.6, 1.6, P(1690, 800));
+  const h = s.d(hand, 24.2, 1.4, P(1690, 800));
   h.dyn = lt => `rotate(${Math.sin(lt * 2.6) * 5} 1690 985) translate(1690,800)`;
-  s.bub('Я тут подожду…', 26.3, 1650, 560, 1690, 690, { fs: 36, maxW: 280 });
+  s.bub('Я тут подожду…', 26.4, 1650, 560, 1690, 690, { fs: 36, maxW: 280 });
 
   /* ---------- облачко босса ---------- */
-  s.bub('Ничего личного, ребята, просто вы — наш десерт на следующий квартал!', 24.9, 1500, 300, 1035, 258, { maxW: 480, fs: 42 });
-  s.sfx('ding', 25.0);
+  s.bub('Ничего личного, ребята, просто вы — наш десерт на следующий квартал!', 24.6, 1500, 300, 1035, 258, { maxW: 480, fs: 42 });
+  s.sfx('ding', 24.7);
 
   // живая доска до губки: летающие долларики
   s.anim(17.0, 1e9, g => { for (let i = 0; i < 4; i++) { const t = el('text', { 'font-size': 44, fill: DG, 'font-family': 'Neucha, Caveat, sans-serif', 'text-anchor': 'middle', 'font-weight': 700 }, g); t.textContent = '$'; } },
