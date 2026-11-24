@@ -7,7 +7,7 @@
   let ST, END;
   if (VT && VT.starts && VT.starts.length === 7) { ST = VT.starts.slice(); END = VT.end; }
   else { ST = []; let t = 0; for (const d of NOM) { ST.push(t); t += d; } END = t; }
-  const INTRO = 2.8, OUTRO = 3.2;
+  const INTRO = 2.8, OUTRO = 4.5;
   const P = (x, y, s = 1, r = 0) => `translate(${x},${y}) scale(${s})${r ? ` rotate(${r})` : ''}`;
   const sc = [];
   const mk = (i, outro = 'sponge') => {

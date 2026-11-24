@@ -12,7 +12,7 @@ if os.path.exists(voice):
 n = len(inputs) // 2
 if os.path.exists(music):
     inputs += ['-stream_loop', '-1', '-i', music]
-    m = f'[{n}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume=0.16,afade=t=in:d=1.5,afade=t=out:st={TOTAL-3}:d=3,atrim=0:{TOTAL}[mraw]'
+    m = f'[{n}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume=0.28,afade=t=in:d=1.5,afade=t=out:st={TOTAL-3}:d=3,atrim=0:{TOTAL}[mraw]'
     if labels: filt += [m, '[mraw][vsc]sidechaincompress=threshold=0.03:ratio=4:attack=40:release=500[m]']
     else: filt.append(m.replace('[mraw]', '[m]'))
     labels.append('[m]'); n += 1

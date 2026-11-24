@@ -32,3 +32,13 @@ cd video
 npm install
 npx remotion studio
 ```
+
+## gta6-pc/ — «Почему GTA 6 не вышла на ПК одновременно с консолями?» (whiteboard, 1920×1080, 30 fps, 3:53)
+Whiteboard-анимация в стиле «Научпок» с чёрным юмором, на движке ролика про АЭС (SVG + Rough.js, Playwright → FFmpeg). 7 сцен рисовали субагенты по сценарию `gta6-pc/script/Claude_Gta6_Pc_Whiteboard_Prompt.txt`.
+
+- Озвучка: один диктор, Gemini TTS (`gemini-3.8-flash-tts`, голос Algenib): `gta6-pc/tts_gemini.mjs` → `audio/voice/s1..s7.wav`, `voiceover.mp3`, тайминги `voiceover_timings.json` и `video/voice_timings.js`
+- Музыка: Gemini Lyria RealTime (`gta6-pc/music_lyria_rt.mjs`) → `audio/music/bg.mp3`, приглушается под голос
+- Звуковые эффекты: ElevenLabs (`gta6-pc/video/gen_sfx.py` → `video/sfx/`)
+- Сцены: `gta6-pc/video/scenes/s1..s7.js`, общие персонажи `scenes/common.js`, тайминги слов диктора для синхронизации `scenes/cues_sN.txt`, правила для авторов сцен `video/SCENE_RULES.md`
+- Сборка: `cd gta6-pc/video && npm i && ./build.sh && python3 mix.py` → `gta6-pc/final_gta6_pc_dark.mp4`
+- Контрольные кадры: `gta6-pc/video/checks_final/`
